@@ -1,7 +1,9 @@
 import {
   type HealthCheckResult,
+  type HealthResponse,
   isHealthResponse,
 } from "./types";
+import { safeFetchJson } from "./request";
 
 export interface FetchHealthOptions {
   signal?: AbortSignal;
@@ -13,6 +15,8 @@ export const DEFAULT_TIMEOUT_MS = 5000;
 
 export const OFFLINE_MESSAGE =
   "VECTOR Local Agent is offline. Start the VECTOR local service on this laptop and try again.";
+export const TIMEOUT_HEALTH_MESSAGE =
+  "Connection check timed out. Ensure the VECTOR local service is responding.";
 
 /**
  * Performs a health check request to the local VECTOR API.
@@ -22,81 +26,32 @@ export const OFFLINE_MESSAGE =
 export async function checkHealth(
   options: FetchHealthOptions = {}
 ): Promise<HealthCheckResult> {
-  const { signal: externalSignal, timeoutMs = DEFAULT_TIMEOUT_MS } = options;
+  const { signal, timeoutMs = DEFAULT_TIMEOUT_MS } = options;
 
-  if (externalSignal?.aborted) {
-    throw new DOMException("The operation was aborted.", "AbortError");
-  }
-
-  const internalController = new AbortController();
-
-  const timeoutId = setTimeout(() => {
-    internalController.abort();
-  }, timeoutMs);
-
-  const onExternalAbort = () => {
-    internalController.abort();
-  };
-
-  if (externalSignal) {
-    externalSignal.addEventListener("abort", onExternalAbort, { once: true });
-  }
-
-  try {
-    const response = await fetch(HEALTH_ENDPOINT, {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-      },
-      signal: internalController.signal,
-    });
-
-    if (!response.ok) {
-      return {
-        state: "OFFLINE",
-        data: null,
-        errorMessage: `VECTOR Local Agent returned HTTP ${response.status}.`,
-      };
+  const result = await safeFetchJson<HealthResponse>(
+    HEALTH_ENDPOINT,
+    isHealthResponse,
+    {
+      signal,
+      timeoutMs,
+      fallbackErrorMessage: OFFLINE_MESSAGE,
+      timeoutErrorMessage: TIMEOUT_HEALTH_MESSAGE,
     }
+  );
 
-    let payload: unknown;
-    try {
-      payload = await response.json();
-    } catch {
-      return {
-        state: "OFFLINE",
-        data: null,
-        errorMessage: "Received an invalid response format from VECTOR Local Agent.",
-      };
-    }
-
-    if (!isHealthResponse(payload)) {
-      return {
-        state: "OFFLINE",
-        data: null,
-        errorMessage: "Received an unexpected schema from VECTOR Local Agent.",
-      };
-    }
-
+  if (result.ok) {
     return {
       state: "ONLINE",
-      data: payload,
+      data: result.data,
       errorMessage: null,
     };
-  } catch (error: unknown) {
-    if (externalSignal?.aborted) {
-      throw error;
-    }
-
-    return {
-      state: "OFFLINE",
-      data: null,
-      errorMessage: OFFLINE_MESSAGE,
-    };
-  } finally {
-    clearTimeout(timeoutId);
-    if (externalSignal) {
-      externalSignal.removeEventListener("abort", onExternalAbort);
-    }
   }
+
+  return {
+    state: "OFFLINE",
+    data: null,
+    errorMessage:
+      result.error.kind === "TIMEOUT" ? OFFLINE_MESSAGE : result.error.message,
+    error: result.error,
+  };
 }

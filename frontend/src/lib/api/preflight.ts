@@ -3,6 +3,7 @@ import {
   type PreflightResult,
   isPreflightResponse,
 } from "./types";
+import { safeFetchJson } from "./request";
 
 export interface FetchPreflightOptions {
   signal?: AbortSignal;
@@ -14,6 +15,8 @@ export const DEFAULT_PREFLIGHT_TIMEOUT_MS = 5000;
 
 export const PREFLIGHT_ERROR_MESSAGE =
   "VECTOR could not complete the system check. Ensure the VECTOR local service is running and try again.";
+export const TIMEOUT_PREFLIGHT_MESSAGE =
+  "System check timed out. Ensure the VECTOR local service is responding and try again.";
 
 /**
  * Performs a system preflight environment inspection via GET /api/v1/system/preflight.
@@ -22,81 +25,31 @@ export const PREFLIGHT_ERROR_MESSAGE =
 export async function fetchPreflight(
   options: FetchPreflightOptions = {}
 ): Promise<PreflightResult> {
-  const { signal: externalSignal, timeoutMs = DEFAULT_PREFLIGHT_TIMEOUT_MS } = options;
+  const { signal, timeoutMs = DEFAULT_PREFLIGHT_TIMEOUT_MS } = options;
 
-  if (externalSignal?.aborted) {
-    throw new DOMException("The operation was aborted.", "AbortError");
-  }
-
-  const internalController = new AbortController();
-
-  const timeoutId = setTimeout(() => {
-    internalController.abort();
-  }, timeoutMs);
-
-  const onExternalAbort = () => {
-    internalController.abort();
-  };
-
-  if (externalSignal) {
-    externalSignal.addEventListener("abort", onExternalAbort, { once: true });
-  }
-
-  try {
-    const response = await fetch(PREFLIGHT_ENDPOINT, {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-      },
-      signal: internalController.signal,
-    });
-
-    if (!response.ok) {
-      return {
-        state: "ERROR",
-        data: null,
-        errorMessage: `VECTOR Local Agent returned HTTP ${response.status} during system preflight.`,
-      };
+  const result = await safeFetchJson<PreflightResponse>(
+    PREFLIGHT_ENDPOINT,
+    isPreflightResponse,
+    {
+      signal,
+      timeoutMs,
+      fallbackErrorMessage: PREFLIGHT_ERROR_MESSAGE,
+      timeoutErrorMessage: TIMEOUT_PREFLIGHT_MESSAGE,
     }
+  );
 
-    let payload: unknown;
-    try {
-      payload = await response.json();
-    } catch {
-      return {
-        state: "ERROR",
-        data: null,
-        errorMessage: "Received an invalid JSON response format during system check.",
-      };
-    }
-
-    if (!isPreflightResponse(payload)) {
-      return {
-        state: "ERROR",
-        data: null,
-        errorMessage: "Received an unexpected schema from VECTOR system preflight endpoint.",
-      };
-    }
-
+  if (result.ok) {
     return {
       state: "COMPLETE",
-      data: payload as PreflightResponse,
+      data: result.data,
       errorMessage: null,
     };
-  } catch (error: unknown) {
-    if (externalSignal?.aborted) {
-      throw error;
-    }
-
-    return {
-      state: "ERROR",
-      data: null,
-      errorMessage: PREFLIGHT_ERROR_MESSAGE,
-    };
-  } finally {
-    clearTimeout(timeoutId);
-    if (externalSignal) {
-      externalSignal.removeEventListener("abort", onExternalAbort);
-    }
   }
+
+  return {
+    state: "ERROR",
+    data: null,
+    errorMessage: result.error.message,
+    error: result.error,
+  };
 }

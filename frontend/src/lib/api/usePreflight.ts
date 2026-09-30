@@ -47,21 +47,33 @@ export function usePreflight(
 
   const activeControllerRef = useRef<AbortController | null>(null);
   const isMountedRef = useRef<boolean>(true);
+  const requestIdRef = useRef<number>(0);
 
   const executeCheck = useCallback(
     (controller: AbortController) => {
+      const requestId = ++requestIdRef.current;
+
       provider
         .getPreflight({ signal: controller.signal, timeoutMs })
         .then((result) => {
-          if (!isMountedRef.current || controller.signal.aborted) {
+          if (
+            !isMountedRef.current ||
+            controller.signal.aborted ||
+            requestId !== requestIdRef.current
+          ) {
             return;
           }
           setState(result.state);
           setData(result.data);
           setErrorMessage(result.errorMessage);
         })
-        .catch(() => {
-          if (!isMountedRef.current || controller.signal.aborted) {
+        .catch((error: unknown) => {
+          if (
+            !isMountedRef.current ||
+            controller.signal.aborted ||
+            requestId !== requestIdRef.current ||
+            (error instanceof DOMException && error.name === "AbortError")
+          ) {
             return;
           }
           setState("ERROR");
@@ -79,6 +91,7 @@ export function usePreflight(
     const controller = new AbortController();
     activeControllerRef.current = controller;
     setState("CHECKING");
+    setData(null);
     setErrorMessage(null);
     executeCheck(controller);
   }, [executeCheck]);

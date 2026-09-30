@@ -15,13 +15,13 @@ Hackathon challenge: Advanced Computational Intelligence — Hybrid Evolutionary
 
 ## Current Phase
 
-PHASE 1C VERIFIED - AWAITING USER COMMIT
+PHASE 1 COMPLETE AND VERIFIED - AWAITING USER COMMIT
 
 ---
 
 ## Baseline Commit at Milestone Start
 
-dadc39a
+df45c37
 
 ---
 
@@ -33,7 +33,7 @@ dadc39a
 
 ## Last Green Commit SHA
 
-dadc39a
+df45c37
 
 ---
 
@@ -45,10 +45,12 @@ main
 
 ## Current Architecture Status
 
-Phase 1C System Preflight Endpoint and Minimal Preflight UI implemented and verified.
-Backend: `SystemPreflightService` evaluates host laptop platform readiness (OS platform, Python runtime, VECTOR Local Agent internal status, Android ADB tool presence, iOS libimobiledevice tooling presence) without executing any device discovery commands (`adb devices`, `idevice_id -l`, `dumpsys`, `getprop` are strictly prohibited and tested). Missing platform tools return `NOT_INSTALLED` resulting in overall status `PARTIAL` rather than HTTP failure.
-Frontend: `DiagnosticProvider` extended with `getPreflight()`. `LiveDiagnosticProvider` delegates to relative `/api/v1/system/preflight`. `DemoDiagnosticProvider` returns deterministic demo preflight fixture explicitly identified as demo data. `PreflightStatus` component renders overall readiness badge, individual check text statuses, actionable guidance, and recheck button with visible focus states and aria-live announcements.
-All 15 repository verification checks passing.
+Phase 1 is complete and fully hardened across Phase 0 (foundation), Phase 1A (health handshake), Phase 1B (Live/Demo provider abstraction), Phase 1C (preflight endpoint & minimal UI), and Phase 1D (error handling, request sequencing, race condition protection, cancellation safety, and integration hardening).
+
+- **Architecture:** Frontend communicates through `DiagnosticProvider` abstraction. `LiveDiagnosticProvider` delegates to relative `/api/v1` routes with zero-dependency `safeFetchJson<T>`. `DemoDiagnosticProvider` delivers deterministic frozen demo fixtures. Mode selection is explicit via `VITE_VECTOR_MODE` (defaulting to `live`) with fail-fast validation. Automatic live-to-demo fallback is strictly disabled.
+- **Backend:** FastAPI hardware agent running on `127.0.0.1:8742` provides `/api/v1/health` and `/api/v1/system/preflight`. `SystemPreflightService` evaluates host OS, Python runtime, agent readiness, ADB availability, and iOS tooling availability. All subprocess checks use argument arrays, bounded timeouts, and strict isolation preventing individual check failures from crashing the service or leaking internal paths/tracebacks.
+- **Resilience:** Generational request sequencing (`requestIdRef`) prevents out-of-order race conditions from overwriting state. Stale data is cleared upon retry/recheck initiation. All in-flight requests abort cleanly on unmount.
+- **Verification:** All 15 repository verification checks passing with 143 total automated tests (58 agent + 21 intelligence + 64 frontend).
 
 ---
 
@@ -88,7 +90,7 @@ All 15 repository verification checks passing.
 - [x] Frontend: React + Vite + TypeScript + ESLint + Vitest scaffold
 - [x] Frontend: vite.config.ts with /api proxy to local agent
 - [x] Frontend test setup (testing-library, jsdom, vitest)
-- [x] local-agent: 55 passing tests (errors, models, security, API, preflight)
+- [x] local-agent: 58 passing tests (errors, models, security, API, preflight, resilience)
 - [x] intelligence: 21 passing tests (fuzzy, genome, perturbation, baseline)
 - [x] .env.example for local-agent
 - [x] Phase 1A: Typed frontend API client (`types.ts`, `health.ts`, `useHealthCheck.ts`, `client.ts`)
@@ -105,18 +107,24 @@ All 15 repository verification checks passing.
 - [x] Phase 1C: SystemPreflightService with OS, Python, Agent, ADB, and iOS environment checks (`local-agent/src/vector_agent/services/preflight.py`)
 - [x] Phase 1C: Hardened prohibition against device enumeration commands in preflight service
 - [x] Phase 1C: Route implementation for GET /api/v1/system/preflight (`local-agent/src/vector_agent/api/system.py`)
-- [x] Phase 1C: Backend automated preflight tests (14 new tests in `test_preflight.py` and `test_api.py`)
+- [x] Phase 1C: Backend automated preflight tests (14 tests in `test_preflight.py` and `test_api.py`)
 - [x] Phase 1C: Typed frontend preflight API client and hook (`types.ts`, `preflight.ts`, `usePreflight.ts`)
 - [x] Phase 1C: Extended DiagnosticProvider with `getPreflight()` in Live and Demo providers
 - [x] Phase 1C: Deterministic demo preflight fixture clearly labeled as demo data (`fixtures.ts`)
 - [x] Phase 1C: PreflightStatus accessible UI component with text statuses, visible focus, aria-live, and retry button (`PreflightStatus.tsx`)
-- [x] Phase 1C: Frontend automated tests (11 new tests in `PreflightStatus.test.tsx` and `DiagnosticProvider.test.ts`, 47 total)
+- [x] Phase 1C: Frontend automated tests (11 tests in `PreflightStatus.test.tsx` and `DiagnosticProvider.test.ts`)
+- [x] Phase 1D: Error taxonomy (`ApiErrorKind`, `ApiError`) and zero-dependency `safeFetchJson<T>` helper
+- [x] Phase 1D: Request sequencing and race condition protection (`requestIdRef`) in `useHealthCheck` and `usePreflight`
+- [x] Phase 1D: Stale data prevention on retry and recheck in frontend hooks
+- [x] Phase 1D: Component unmount cancellation and post-unmount update suppression
+- [x] Phase 1D: Backend check isolation in `SystemPreflightService.run_preflight()` preventing endpoint failure
+- [x] Phase 1D: Frontend integration and resilience tests (17 new tests across `request.test.ts` and `integration_hardening.test.tsx`, 64 total frontend tests)
 
 ---
 
 ## Verified Features
 
-- [x] local-agent: 55/55 tests PASS, 0 warnings (pytest)
+- [x] local-agent: 58/58 tests PASS, 0 warnings (pytest)
 - [x] local-agent: ruff check PASS (0 lint errors)
 - [x] local-agent: ruff format PASS (all 39 files clean)
 - [x] local-agent: mypy PASS (33 source files checked, 0 errors)
@@ -127,7 +135,7 @@ All 15 repository verification checks passing.
 - [x] frontend: npm install PASS
 - [x] frontend: ESLint PASS (exit 0, 0 errors, 0 warnings)
 - [x] frontend: TypeScript check PASS (tsc --noEmit, 0 errors)
-- [x] frontend: Vitest PASS (47/47 tests in 5 test suites)
+- [x] frontend: Vitest PASS (64/64 tests in 7 test suites)
 - [x] frontend: Production build PASS (`tsc -b && vite build`)
 - [x] verify.ps1: 15/15 checks PASS
 
@@ -135,8 +143,8 @@ All 15 repository verification checks passing.
 
 ## Partially Implemented Features
 
-- [ ] Device discovery (Android ADB): architecture in place, bridge stubs not yet implemented (Phase 2)
-- [ ] Device discovery (iOS): architecture in place, bridge stubs not yet implemented (Phase 2)
+- [ ] Device discovery (Android ADB): architecture in place, bridge stubs not yet implemented (Phase 2A)
+- [ ] Device discovery (iOS): architecture in place, bridge stubs not yet implemented (Phase 2B)
 - [ ] Scan state machine: state enum defined, orchestrator not yet implemented (Phase 3)
 - [ ] NSGA-II full optimizer: objectives defined, main loop not yet implemented (Phase 5)
 - [ ] Baseline B (Static Fuzzy), C (Evolutionary Linear), D (Logistic), E (RF): not yet implemented (Phase 5)
@@ -147,8 +155,8 @@ All 15 repository verification checks passing.
 
 ## Not Started
 
-- [ ] Android ADB bridge implementation (Phase 2)
-- [ ] iOS libimobiledevice bridge implementation (Phase 2)
+- [ ] Android ADB bridge implementation (Phase 2A)
+- [ ] iOS libimobiledevice bridge implementation (Phase 2B)
 - [ ] DeviceCapabilityProfile real population (Phase 2)
 - [ ] DiagnosticPlanner and TestRegistry (Phase 3)
 - [ ] Real battery/storage/identity/sensor diagnostics (Phase 4)
@@ -197,6 +205,9 @@ None currently.
 15. Strict isolation: Demo mode never contacts live hardware; Live mode failure never falls back silently to demo mode
 16. SystemPreflightService checks local laptop environment only; strictly NO device discovery commands (`adb devices`, `idevice_id -l`) are executed
 17. Missing optional platform tools (ADB / iOS) produce status `NOT_INSTALLED` resulting in overall readiness `PARTIAL`, never an API failure
+18. Shared zero-dependency `safeFetchJson<T>` encapsulates bounded timeouts, external cancellation propagation, and `ApiErrorKind` categorization (`NETWORK`, `TIMEOUT`, `HTTP`, `INVALID_RESPONSE`, `ABORTED`, `CONFIGURATION`, `UNKNOWN`)
+19. Request sequencing (`requestIdRef`) in React hooks guarantees latest requested call wins during out-of-order promise settlement
+20. Check isolation in `SystemPreflightService` catches unexpected exceptions per-check, preventing endpoint crashes while withholding internal tracebacks for privacy
 
 ---
 
@@ -228,7 +239,7 @@ None currently.
 - lucide-react 0.475.0
 - @testing-library/react 16.3.0
 
-Dependencies added in Phase 1C: NONE
+Dependencies added in Phase 1D: NONE
 
 ---
 
@@ -247,37 +258,45 @@ Dependencies added in Phase 1C: NONE
 
 ## Android Device Status
 
-Not connected during Phase 1C (preflight checks tooling only, no device enumeration).
+- Android device discovery: NOT STARTED
+- ADB environment availability checking: IMPLEMENTED in Phase 1C
+- ADB device enumeration: NOT IMPLEMENTED
+- Real Redmi Note 14 Pro 5G connection: NOT YET VERIFIED
 
 ---
 
 ## iPhone Device Status
 
-Not connected during Phase 1C (preflight checks tooling only, no device enumeration).
+- iPhone device discovery: NOT STARTED
+- iOS tooling availability checking: IMPLEMENTED in Phase 1C
+- iPhone enumeration: NOT IMPLEMENTED
+- Pairing/trust communication: NOT IMPLEMENTED
+- Real iPhone 17 Pro connection: NOT YET VERIFIED
 
 ---
 
 ## Frontend Status
 
-Phase 1C Preflight UI and provider integration verified:
-- Provider contract extended: `getPreflight(options?: CheckPreflightOptions): Promise<PreflightResult>`.
-- `LiveDiagnosticProvider`: Calls relative `/api/v1/system/preflight` via `fetchPreflight()`.
-- `DemoDiagnosticProvider`: Returns deterministic `DEMO_PREFLIGHT_FIXTURE` (`PARTIAL`, with simulated demo checks).
-- `PreflightStatus`: Accessible component with text badges, visible focus outline, `role="status"`, `aria-live="polite"`, recheck button, and clear guidance for missing tools.
-- App integration: `App.tsx` renders `HealthStatus` and `PreflightStatus`.
-- 47 passing tests across 5 test suites (`health.test.ts`, `DiagnosticProvider.test.ts`, `App.test.tsx`, `PreflightStatus.test.tsx`, `HealthStatus.test.tsx`).
+Phase 1 frontend implementation complete and verified:
+- Provider contract: `mode`, `checkHealth()`, `getPreflight()`.
+- Client layer: Shared `safeFetchJson<T>` with timeout handling, cancellation, response validation, and structured error categorization.
+- State management: `useHealthCheck` and `usePreflight` hooks hardened with request sequencing (`requestIdRef`), stale data clearing on retry/recheck, and unmount cancellation.
+- UI: `HealthStatus` and `PreflightStatus` accessible components with clear text badges, visible focus outlines, `role="status"`, `aria-live="polite"`, recheck buttons, and guidance.
+- App integration: `App.tsx` cleanly renders both status components under `DiagnosticProviderComponent`.
+- 64 passing tests across 7 test suites (`health.test.ts`, `request.test.ts`, `DiagnosticProvider.test.ts`, `App.test.tsx`, `PreflightStatus.test.tsx`, `HealthStatus.test.tsx`, `integration_hardening.test.tsx`).
 - ESLint: 0 errors, 0 warnings. TypeScript: 0 errors. Build: clean.
 
 ---
 
 ## Backend Status
 
-FastAPI agent operational. Phase 1C system preflight implemented and verified:
-- `PreflightCheck` and `PreflightResponse` typed Pydantic models in `models/preflight.py`.
-- `SystemPreflightService` in `services/preflight.py` evaluating OS, Python runtime, agent readiness, ADB availability, and iOS tooling availability.
-- Endpoint `GET /api/v1/system/preflight` mounted via `api/system.py`.
-- Invariant verified: NO device discovery commands executed during preflight.
-- 55 tests pass in local-agent (pytest). Ruff: 0 errors, formatted. Mypy: 0 errors across 33 files.
+FastAPI agent operational. Phase 1 backend endpoints verified:
+- `/api/v1/health` returning deterministic health response (`OK`, version, mode, timestamp).
+- `/api/v1/system/preflight` returning structured `PreflightResponse` with independent check isolation.
+- Security: Subprocess policy strictly enforces argument arrays, timeouts, and no shell.
+- Privacy: No environment secrets or file paths leaked in error outputs or API responses.
+- Invariant verified: NO device discovery or phone queries executed in Phase 1.
+- 58 tests pass in local-agent (pytest). Ruff: 0 errors, formatted. Mypy: 0 errors across 33 files.
 
 ---
 
@@ -335,7 +354,7 @@ $env:PATH = "C:\Program Files\nodejs;C:\Program Files\Git\cmd;" + $env:PATH; .\s
 # - Agent: Ruff lint [PASS]
 # - Agent: Ruff format [PASS]
 # - Agent: Mypy [PASS]
-# - Agent: Pytest [PASS] (55/55)
+# - Agent: Pytest [PASS] (58/58)
 # - Intelligence: Install deps [PASS]
 # - Intelligence: Ruff lint [PASS]
 # - Intelligence: Ruff format [PASS]
@@ -344,7 +363,7 @@ $env:PATH = "C:\Program Files\nodejs;C:\Program Files\Git\cmd;" + $env:PATH; .\s
 # - Frontend: npm install [PASS]
 # - Frontend: ESLint [PASS]
 # - Frontend: TypeScript check [PASS]
-# - Frontend: Tests [PASS] (47/47)
+# - Frontend: Tests [PASS] (64/64)
 # - Frontend: Build [PASS]
 ```
 
@@ -353,7 +372,7 @@ $env:PATH = "C:\Program Files\nodejs;C:\Program Files\Git\cmd;" + $env:PATH; .\s
 ## Last Successful
 
 - All 15 verification checks passed via `.\scripts\verify.ps1` on 2026-09-30
-- local-agent pytest: 55/55 PASS (0 warnings)
+- local-agent pytest: 58/58 PASS (0 warnings)
 - intelligence pytest: 21/21 PASS
 - local-agent ruff & format: PASS
 - local-agent mypy: PASS (33 source files)
@@ -362,77 +381,65 @@ $env:PATH = "C:\Program Files\nodejs;C:\Program Files\Git\cmd;" + $env:PATH; .\s
 - frontend npm install: PASS
 - frontend ESLint: PASS (0 errors, 0 warnings)
 - frontend TypeScript check: PASS (0 errors)
-- frontend Vitest tests: PASS (47/47 tests across 5 suites)
+- frontend Vitest tests: PASS (64/64 tests across 7 suites)
 - frontend production build: PASS (`tsc -b && vite build`)
 
 ---
 
 ## Current Uncommitted Files
 
-The working tree contains verified Phase 1C changes awaiting checkpoint:
+The working tree contains verified Phase 1D changes awaiting checkpoint:
 - `docs/ARCHITECTURE.md` (modified)
-- `docs/LIMITATIONS.md` (modified)
-- `frontend/src/App.css` (modified)
-- `frontend/src/App.tsx` (modified)
-- `frontend/src/__tests__/HealthStatus.test.tsx` (modified)
-- `frontend/src/__tests__/PreflightStatus.test.tsx` (created)
-- `frontend/src/components/PreflightStatus.tsx` (created)
+- `frontend/src/__tests__/integration_hardening.test.tsx` (created)
+- `frontend/src/lib/api/__tests__/request.test.ts` (created)
 - `frontend/src/lib/api/client.ts` (modified)
-- `frontend/src/lib/api/preflight.ts` (created)
+- `frontend/src/lib/api/health.ts` (modified)
+- `frontend/src/lib/api/preflight.ts` (modified)
+- `frontend/src/lib/api/request.ts` (created)
 - `frontend/src/lib/api/types.ts` (modified)
-- `frontend/src/lib/api/usePreflight.ts` (created)
-- `frontend/src/providers/DiagnosticProvider.ts` (modified)
-- `frontend/src/providers/LiveDiagnosticProvider.ts` (modified)
-- `frontend/src/providers/DemoDiagnosticProvider.ts` (modified)
-- `frontend/src/providers/demo/fixtures.ts` (modified)
-- `frontend/src/providers/__tests__/DiagnosticProvider.test.ts` (modified)
-- `local-agent/src/vector_agent/api/health.py` (modified)
-- `local-agent/src/vector_agent/api/system.py` (created)
-- `local-agent/src/vector_agent/main.py` (modified)
-- `local-agent/src/vector_agent/models/preflight.py` (created)
-- `local-agent/src/vector_agent/services/preflight.py` (created)
-- `local-agent/tests/test_api.py` (modified)
-- `local-agent/tests/test_preflight.py` (created)
+- `frontend/src/lib/api/useHealthCheck.ts` (modified)
+- `frontend/src/lib/api/usePreflight.ts` (modified)
+- `local-agent/src/vector_agent/services/preflight.py` (modified)
+- `local-agent/tests/test_preflight.py` (modified)
 - `STATUS.md` (modified)
 
 ---
 
 ## Important Files Changed Recently
 
-- `local-agent/src/vector_agent/models/preflight.py`
-- `local-agent/src/vector_agent/services/preflight.py`
-- `local-agent/src/vector_agent/api/system.py`
-- `local-agent/tests/test_preflight.py`
+- `frontend/src/lib/api/request.ts`
 - `frontend/src/lib/api/types.ts`
+- `frontend/src/lib/api/health.ts`
 - `frontend/src/lib/api/preflight.ts`
+- `frontend/src/lib/api/useHealthCheck.ts`
 - `frontend/src/lib/api/usePreflight.ts`
-- `frontend/src/components/PreflightStatus.tsx`
-- `frontend/src/__tests__/PreflightStatus.test.tsx`
-- `frontend/src/providers/DiagnosticProvider.ts`
-- `frontend/src/providers/LiveDiagnosticProvider.ts`
-- `frontend/src/providers/DemoDiagnosticProvider.ts`
+- `frontend/src/lib/api/__tests__/request.test.ts`
+- `frontend/src/__tests__/integration_hardening.test.tsx`
+- `local-agent/src/vector_agent/services/preflight.py`
+- `local-agent/tests/test_preflight.py`
+- `docs/ARCHITECTURE.md`
 - `STATUS.md`
 
 ---
 
 ## Next Recommended Action
 
-Phase 1D - Phase 1 Error Handling and Integration Hardening
+Phase 2A - Android Environment and ADB Device Discovery
 
 ---
 
 ## Next Three Tasks
 
-1. Review and consolidate error models, failure states, and boundary conditions across Phase 1.
-2. Hardening integration between health, preflight, and provider abstraction.
-3. Final Phase 1 verification pass prior to beginning Phase 2 device discovery.
+1. Review and plan Phase 2A Android bridge boundaries and permissions.
+2. Implement safe ADB device enumeration using existing subprocess security policy.
+3. Handle unauthorized, recovery, offline, and multiple-device states.
 
 ---
 
 ## Do Not Redo
 
 - Do not rewrite frontend/src/providers/ (DiagnosticProvider, LiveDiagnosticProvider, DemoDiagnosticProvider, createDiagnosticProvider, DiagnosticProviderContext, DiagnosticProviderComponent).
-- Do not rewrite frontend/src/lib/api/ (types.ts, health.ts, preflight.ts, useHealthCheck.ts, usePreflight.ts, client.ts).
+- Do not rewrite frontend/src/lib/api/ (types.ts, request.ts, health.ts, preflight.ts, useHealthCheck.ts, usePreflight.ts, client.ts).
 - Do not rewrite PreflightStatus, HealthStatus, or App.tsx.
 - Do not rewrite SystemPreflightService or /api/v1/system/preflight route.
 - Don't rewrite the error model — it is comprehensive and tested.
@@ -443,18 +450,18 @@ Phase 1D - Phase 1 Error Handling and Integration Hardening
 
 ## Risks
 
-1. Python 3.14.7 is newer than required-python ">=3.11" — CI uses Python 3.12 which is fully supported.
-2. libimobiledevice on Windows requires manual installation; preflight safely reports NOT_INSTALLED and overall PARTIAL if absent.
-3. Device discovery is strictly deferred to Phase 2; preflight must never run device interrogation.
+1. Real Android phone discovery requires USB debugging to be enabled by user; handle UNAUTHORIZED state cleanly.
+2. Multiple connected devices must be flagged (Phase 2 requirement: support single target device or report MULTIPLE_DEVICES_FOUND).
+3. Do not run any phone discovery command until Phase 2A begins.
 
 ---
 
 ## Notes for Next AI Agent
 
-Phase 1C is verified and awaiting user commit. The preflight endpoint (`/api/v1/system/preflight`) and minimal preflight UI evaluate host laptop platform readiness without executing device discovery commands. All 15 verify checks pass (55 backend agent tests, 21 intelligence tests, 47 frontend tests). The latest trusted baseline commit is dadc39a. Run `git rev-parse HEAD`, `git status`, and `.\scripts\verify.ps1` before continuing with Phase 1D.
+Phase 1 is complete, hardened, and verified awaiting user commit. The entire foundation (FastAPI agent, health handshake, Live/Demo provider abstraction, system preflight, error taxonomy, request sequencing, and accessible UI) is green. All 15 verify checks pass (58 agent tests, 21 intelligence tests, 64 frontend tests = 143 total). The latest trusted baseline commit is df45c37. Run `git rev-parse HEAD`, `git status`, `git log --oneline -5`, and `.\scripts\verify.ps1` before continuing with Phase 2A.
 
 ---
 
 ## HANDOFF PROMPT
 
-VECTOR Phase 1C is complete and verified awaiting user commit. Baseline commit is dadc39a. System preflight endpoint and minimal preflight UI are implemented with explicit separation between host environment readiness and device discovery. All 15 repository verification checks (.\scripts\verify.ps1) pass with 123 total automated tests (55 agent + 21 intelligence + 47 frontend). Check git status to review uncommitted Phase 1C files. Once committed by the user, proceed to Phase 1D: Phase 1 Error Handling and Integration Hardening.
+VECTOR Phase 1 is complete and verified awaiting user commit. Baseline commit is df45c37. Error handling, request sequencing, race condition protection, cancellation safety, and integration between health, preflight, and provider abstraction are fully hardened. All 15 repository verification checks (.\scripts\verify.ps1) pass with 143 total automated tests (58 agent + 21 intelligence + 64 frontend). Check git status to review uncommitted Phase 1D files. Once committed by the user, proceed to Phase 2A: Android Environment and ADB Device Discovery.

@@ -5,6 +5,7 @@ from __future__ import annotations
 import platform
 import shutil
 import sys
+from collections.abc import Callable
 from datetime import UTC, datetime
 
 from vector_agent import __version__
@@ -37,20 +38,39 @@ class SystemPreflightService:
         """Runs all local host checks and compiles an aggregate readiness report."""
         checks: list[PreflightCheck] = []
 
-        # 1. Platform / Operating System
-        checks.append(self._check_platform())
+        check_registry: list[tuple[str, str, str, bool, Callable[[], PreflightCheck]]] = [
+            ("platform_os", "Operating System", "platform", False, self._check_platform),
+            ("python_runtime", "Python Runtime", "runtime", True, self._check_python_runtime),
+            ("vector_agent", "VECTOR Local Agent", "agent", True, self._check_agent_readiness),
+            ("android_adb", "Android Tooling (ADB)", "android", False, self._check_android_tooling),
+            (
+                "ios_libimobiledevice",
+                "iOS Tooling (libimobiledevice)",
+                "ios",
+                False,
+                self._check_ios_tooling,
+            ),
+        ]
 
-        # 2. Python Runtime
-        checks.append(self._check_python_runtime())
-
-        # 3. VECTOR Local Agent Readiness
-        checks.append(self._check_agent_readiness())
-
-        # 4. Android Platform Tools (ADB)
-        checks.append(self._check_android_tooling())
-
-        # 5. iOS Platform Tools (libimobiledevice)
-        checks.append(self._check_ios_tooling())
+        for check_id, check_name, check_cat, check_req, check_fn in check_registry:
+            try:
+                checks.append(check_fn())
+            except Exception as exc:
+                logger.exception(
+                    "Unexpected error executing preflight check '%s': %s", check_id, exc
+                )
+                checks.append(
+                    PreflightCheck(
+                        id=check_id,
+                        name=check_name,
+                        category=check_cat,
+                        status=PreflightStatus.FAIL,
+                        message=f"An unexpected error occurred while executing {check_name}.",
+                        required=check_req,
+                        details="Error suppressed for privacy. Check local agent logs for details.",
+                        detail="Check error occurred.",
+                    )
+                )
 
         # Derive overall readiness
         overall = self._compute_overall(checks)

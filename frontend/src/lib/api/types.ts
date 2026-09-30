@@ -14,10 +14,32 @@ export interface HealthResponse {
  */
 export type ConnectionState = "CHECKING" | "ONLINE" | "OFFLINE" | "DEMO_READY";
 
+/**
+ * Normalized category of client/network error.
+ */
+export type ApiErrorKind =
+  | "NETWORK"
+  | "TIMEOUT"
+  | "HTTP"
+  | "INVALID_RESPONSE"
+  | "ABORTED"
+  | "CONFIGURATION"
+  | "UNKNOWN";
+
+/**
+ * Structured client error carrying category, user message, and optional HTTP status code.
+ */
+export interface ApiError {
+  kind: ApiErrorKind;
+  message: string;
+  statusCode?: number;
+}
+
 export interface HealthCheckResult {
   state: ConnectionState;
   data: HealthResponse | null;
   errorMessage: string | null;
+  error?: ApiError | null;
 }
 
 /**
@@ -90,6 +112,7 @@ export interface PreflightResult {
   state: PreflightState;
   data: PreflightResponse | null;
   errorMessage: string | null;
+  error?: ApiError | null;
 }
 
 /**

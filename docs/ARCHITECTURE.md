@@ -84,6 +84,17 @@ There is a fundamental separation between environment checks and device discover
 
 Tool availability alone does not prove phone connection or authorization. Device discovery and interrogation belong strictly to Phase 2.
 
+## Phase 1 Error Handling and Integration Hardening
+
+Phase 1D hardens the integration between the frontend providers and backend endpoints:
+
+- **Error Taxonomy:** Normalized categories (`NETWORK`, `TIMEOUT`, `HTTP`, `INVALID_RESPONSE`, `ABORTED`, `CONFIGURATION`, `UNKNOWN`) via `safeFetchJson<T>`.
+- **Race Condition Protection:** Generational request sequencing (`requestIdRef`) guarantees that if older requests resolve out-of-order, only the latest requested state can update the UI.
+- **Stale State Prevention:** Existing data is immediately cleared when a retry or recheck is initiated, ensuring outdated results are not displayed alongside in-flight or failed states.
+- **Cancellation & Unmount Safety:** All in-flight requests abort automatically upon component unmount, preventing memory leaks, uncaught rejections, and invalid React state updates.
+- **Backend Check Isolation:** Each check in `SystemPreflightService` executes independently within a guarded boundary. Unexpected runtime exceptions in individual checks are logged and isolated to prevent endpoint crashes or traceback leakage.
+
+
 
 
 ## Scan Lifecycle (State Machine)

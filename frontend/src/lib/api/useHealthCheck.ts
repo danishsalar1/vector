@@ -38,21 +38,33 @@ export function useHealthCheck(
 
   const activeControllerRef = useRef<AbortController | null>(null);
   const isMountedRef = useRef<boolean>(true);
+  const requestIdRef = useRef<number>(0);
 
   const runCheck = useCallback(
     (controller: AbortController) => {
+      const requestId = ++requestIdRef.current;
+
       provider
         .checkHealth({ signal: controller.signal, timeoutMs })
         .then((result) => {
-          if (!isMountedRef.current || controller.signal.aborted) {
+          if (
+            !isMountedRef.current ||
+            controller.signal.aborted ||
+            requestId !== requestIdRef.current
+          ) {
             return;
           }
           setState(result.state);
           setData(result.data);
           setErrorMessage(result.errorMessage);
         })
-        .catch(() => {
-          if (!isMountedRef.current || controller.signal.aborted) {
+        .catch((error: unknown) => {
+          if (
+            !isMountedRef.current ||
+            controller.signal.aborted ||
+            requestId !== requestIdRef.current ||
+            (error instanceof DOMException && error.name === "AbortError")
+          ) {
             return;
           }
           setState("OFFLINE");
@@ -72,6 +84,7 @@ export function useHealthCheck(
     const controller = new AbortController();
     activeControllerRef.current = controller;
     setState("CHECKING");
+    setData(null);
     setErrorMessage(null);
     runCheck(controller);
   }, [runCheck]);

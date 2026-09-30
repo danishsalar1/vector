@@ -207,6 +207,31 @@ class TestSystemPreflightService:
             assert "dumpsys" not in joined, f"Preflight must not query device dumpsys: {cmd}"
             assert "getprop" not in joined, f"Preflight must not query device getprop: {cmd}"
 
+    def test_unhandled_exception_in_single_optional_check_is_isolated(self) -> None:
+        service = SystemPreflightService()
+
+        with patch.object(
+            service, "_check_platform", side_effect=RuntimeError("Kernel query failure")
+        ):
+            response = service.run_preflight()
+
+        platform_check = next(c for c in response.checks if c.id == "platform_os")
+        assert platform_check.status == PreflightStatus.FAIL
+        assert "Kernel query failure" not in (platform_check.details or "")
+        assert response.overall == PreflightOverall.PARTIAL
+
+    def test_unhandled_exception_in_required_check_blocks_overall(self) -> None:
+        service = SystemPreflightService()
+
+        with patch.object(
+            service, "_check_agent_readiness", side_effect=RuntimeError("Agent crash")
+        ):
+            response = service.run_preflight()
+
+        agent_check = next(c for c in response.checks if c.id == "vector_agent")
+        assert agent_check.status == PreflightStatus.FAIL
+        assert response.overall == PreflightOverall.BLOCKED
+
 
 class TestPreflightEndpointIntegration:
     async def test_endpoint_returns_200_and_typed_schema(self, client: AsyncClient) -> None:
@@ -230,3 +255,13 @@ class TestPreflightEndpointIntegration:
             assert "message" in check
             assert "required" in check
             assert "details" in check
+
+    async def test_preflight_does_not_leak_environment_secrets(self, client: AsyncClient) -> None:
+        response = await client.get("/api/v1/system/preflight")
+        assert response.status_code == 200
+        raw_text = response.text
+
+        # Ensure raw PATH or authorization tokens are not dumped in endpoint output
+        assert "PATH=" not in raw_text
+        assert "TOKEN" not in raw_text
+        assert "SECRET" not in raw_text
