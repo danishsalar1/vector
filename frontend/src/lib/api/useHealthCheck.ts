@@ -1,15 +1,37 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { checkHealth } from "./health";
+import type {
+  DiagnosticProvider,
+  ProviderMode,
+} from "../../providers/DiagnosticProvider";
+import { useDiagnosticProvider } from "../../providers/DiagnosticProviderContext";
 import type { ConnectionState, HealthResponse } from "./types";
 
+export interface UseHealthCheckOptions {
+  timeoutMs?: number;
+  provider?: DiagnosticProvider;
+}
+
 export interface UseHealthCheckReturn {
+  mode: ProviderMode;
   state: ConnectionState;
   data: HealthResponse | null;
   errorMessage: string | null;
   retry: () => void;
 }
 
-export function useHealthCheck(timeoutMs?: number): UseHealthCheckReturn {
+export function useHealthCheck(
+  optionsOrTimeout?: number | UseHealthCheckOptions
+): UseHealthCheckReturn {
+  const contextProvider = useDiagnosticProvider();
+
+  const options: UseHealthCheckOptions =
+    typeof optionsOrTimeout === "number"
+      ? { timeoutMs: optionsOrTimeout }
+      : (optionsOrTimeout ?? {});
+
+  const provider = options.provider ?? contextProvider;
+  const timeoutMs = options.timeoutMs;
+
   const [state, setState] = useState<ConnectionState>("CHECKING");
   const [data, setData] = useState<HealthResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -19,7 +41,8 @@ export function useHealthCheck(timeoutMs?: number): UseHealthCheckReturn {
 
   const runCheck = useCallback(
     (controller: AbortController) => {
-      checkHealth({ signal: controller.signal, timeoutMs })
+      provider
+        .checkHealth({ signal: controller.signal, timeoutMs })
         .then((result) => {
           if (!isMountedRef.current || controller.signal.aborted) {
             return;
@@ -39,7 +62,7 @@ export function useHealthCheck(timeoutMs?: number): UseHealthCheckReturn {
           );
         });
     },
-    [timeoutMs]
+    [provider, timeoutMs]
   );
 
   const retry = useCallback(() => {
@@ -68,6 +91,7 @@ export function useHealthCheck(timeoutMs?: number): UseHealthCheckReturn {
   }, [runCheck]);
 
   return {
+    mode: provider.mode,
     state,
     data,
     errorMessage,

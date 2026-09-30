@@ -10,9 +10,9 @@ export interface HealthResponse {
 }
 
 /**
- * Explicit connection state for the health handshake.
+ * Explicit connection state for the health handshake and provider availability.
  */
-export type ConnectionState = "CHECKING" | "ONLINE" | "OFFLINE";
+export type ConnectionState = "CHECKING" | "ONLINE" | "OFFLINE" | "DEMO_READY";
 
 export interface HealthCheckResult {
   state: ConnectionState;

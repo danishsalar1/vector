@@ -1,4 +1,4 @@
-﻿# VECTOR Architecture
+# VECTOR Architecture
 
 ## Overview
 
@@ -48,16 +48,26 @@ Used for public hackathon evaluation link.
 The frontend uses a clean provider abstraction so demo mode does not scatter `if (demoMode)` throughout components:
 
 ```typescript
-interface DiagnosticProvider {
-  getDevices(): Promise<DeviceListResponse>
-  startScan(deviceId: string): Promise<ScanStartResponse>
-  getScanEvents(scanId: string): EventSource
+export type ProviderMode = "live" | "demo";
+
+export interface DiagnosticProvider {
+  readonly mode: ProviderMode;
+  checkHealth(options?: CheckHealthOptions): Promise<HealthCheckResult>;
+  // Future milestones will extend this interface with getDevices(), startScan(), etc.
 }
 
 // Implementations:
-// LiveDiagnosticProvider  -> /api/v1 on local agent
-// DemoDiagnosticProvider  -> static demo fixtures
+// LiveDiagnosticProvider  -> /api/v1 on local FastAPI agent
+// DemoDiagnosticProvider  -> static deterministic demo fixtures
 ```
+
+### Mode Selection and Isolation
+
+- Configured explicitly via `VITE_VECTOR_MODE` (`live` | `demo`), defaulting to `live`.
+- Factory function `createDiagnosticProvider()` centralizes initialization.
+- Invalid configuration fails fast with a descriptive error.
+- **No Automatic Fallback:** If `LiveDiagnosticProvider` cannot reach the local agent, it reports `OFFLINE`. It never silently switches to `demo` mode.
+
 
 ## Scan Lifecycle (State Machine)
 

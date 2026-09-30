@@ -15,7 +15,13 @@ Hackathon challenge: Advanced Computational Intelligence — Hybrid Evolutionary
 
 ## Current Phase
 
-PHASE 1A VERIFIED
+PHASE 1B VERIFIED - AWAITING USER COMMIT
+
+---
+
+## Baseline Commit at Milestone Start
+
+7844ebb
 
 ---
 
@@ -27,7 +33,7 @@ PHASE 1A VERIFIED
 
 ## Last Green Commit SHA
 
-d8c88df
+7844ebb
 
 ---
 
@@ -39,7 +45,7 @@ main
 
 ## Current Architecture Status
 
-Foundation scaffolded and Phase 1A health handshake implemented. React frontend communicates reliably with FastAPI local agent via relative `/api/v1/health` through Vite dev proxy. All 15 verification checks passing.
+Foundation scaffolded, Phase 1A health handshake verified, and Phase 1B DiagnosticProvider abstraction verified. Frontend cleanly abstracts diagnostic data sources into LiveDiagnosticProvider (local FastAPI agent via relative /api/v1/health) and DemoDiagnosticProvider (deterministic demonstration datasets). Mode selection is explicit via VITE_VECTOR_MODE with fail-fast validation and no automatic live-to-demo fallback. All 15 repository verification checks passing.
 
 ---
 
@@ -85,6 +91,13 @@ Foundation scaffolded and Phase 1A health handshake implemented. React frontend 
 - [x] Phase 1A: Typed frontend API client (`types.ts`, `health.ts`, `useHealthCheck.ts`, `client.ts`)
 - [x] Phase 1A: HealthStatus UI with accessible status badges, retry control, and responsive layout
 - [x] Phase 1A: Frontend automated tests (15/15 tests PASS across 3 test suites)
+- [x] Phase 1B: DiagnosticProvider typed contract (`DiagnosticProvider.ts`)
+- [x] Phase 1B: LiveDiagnosticProvider delegating to real FastAPI health client
+- [x] Phase 1B: DemoDiagnosticProvider with deterministic demonstration fixtures
+- [x] Phase 1B: Central provider factory (`createDiagnosticProvider.ts`) and explicit mode resolution
+- [x] Phase 1B: React provider context injection (`DiagnosticProviderContext.ts`, `DiagnosticProviderComponent.tsx`)
+- [x] Phase 1B: HealthStatus mode indicator and semantic DEMO READY state display
+- [x] Phase 1B: Frontend automated tests (36/36 tests passing across 4 test suites)
 
 ---
 
@@ -101,7 +114,7 @@ Foundation scaffolded and Phase 1A health handshake implemented. React frontend 
 - [x] frontend: npm install PASS
 - [x] frontend: ESLint PASS (exit 0, 0 errors, 0 warnings)
 - [x] frontend: TypeScript check PASS (tsc --noEmit, 0 errors)
-- [x] frontend: Vitest PASS (15/15 tests in 3 test suites)
+- [x] frontend: Vitest PASS (36/36 tests in 4 test suites)
 - [x] frontend: Production build PASS (`tsc -b && vite build`)
 - [x] verify.ps1: 15/15 checks PASS
 
@@ -121,7 +134,6 @@ Foundation scaffolded and Phase 1A health handshake implemented. React frontend 
 
 ## Not Started
 
-- [ ] DiagnosticProvider abstraction: Live vs Demo (Phase 1B)
 - [ ] System preflight UI (Phase 1C)
 - [ ] Android ADB bridge implementation (Phase 2)
 - [ ] iOS libimobiledevice bridge implementation (Phase 2)
@@ -145,7 +157,9 @@ None currently.
 
 ## Known Limitations
 
-- The local FastAPI service must be running for ONLINE state.
+- In LIVE mode, the local FastAPI service must be running for ONLINE state.
+- In DEMO mode, data is deterministic demo fixture data; no live hardware communication is performed.
+- Automatic fallback from Live to Demo is explicitly disabled by design.
 - See docs/LIMITATIONS.md for comprehensive list.
 - Key: iOS restricts most hardware diagnostics, some physical defects are not detectable via USB.
 
@@ -163,8 +177,11 @@ None currently.
 8. UNSUPPORTED evidence uses 0.5 (neutral) not 0.0 (false penalty) in evidence vectors
 9. All subprocess calls use argument arrays, shell=False mandatory
 10. Health check client uses relative URL `/api/v1/health` and standard fetch with AbortSignal cancellation and configurable timeout
-11. Explicit ConnectionState model: "CHECKING" | "ONLINE" | "OFFLINE"
+11. Explicit ConnectionState model: "CHECKING" | "ONLINE" | "OFFLINE" | "DEMO_READY"
 12. React 19 safe async effect pattern in useHealthCheck avoiding synchronous setState in effect bodies
+13. DiagnosticProvider abstraction with LiveDiagnosticProvider and DemoDiagnosticProvider
+14. Explicit mode resolution via VITE_VECTOR_MODE (default: "live"); invalid values fail fast with a descriptive Error
+15. Strict isolation: Demo mode never contacts live hardware; Live mode failure never falls back silently to demo mode
 
 ---
 
@@ -213,26 +230,27 @@ None currently.
 
 ## Android Device Status
 
-Not connected during Phase 1A.
+Not connected during Phase 1B.
 
 ---
 
 ## iPhone Device Status
 
-Not connected during Phase 1A.
+Not connected during Phase 1B.
 
 ---
 
 ## Frontend Status
 
-Phase 1A health handshake implemented and verified:
-- Typed health API client (`frontend/src/lib/api/`) communicating with local agent via relative `/api/v1/health` request.
-- Explicit connection states: CHECKING, ONLINE, OFFLINE.
-- AbortSignal support on unmount and retry to prevent state update errors.
-- Default 5000ms timeout handling with user-safe error messaging.
-- Malformed response and HTTP non-success safely caught without crashing.
-- Accessible `HealthStatus` UI with live status indicator, version/mode metadata display on ONLINE, clear actionable guidance on OFFLINE, visible keyboard focus state on Retry control, and semantic HTML adhering to restrained design system.
-- 15 passing tests across 3 test suites (`health.test.ts`, `HealthStatus.test.tsx`, `App.test.tsx`).
+Phase 1B DiagnosticProvider abstraction implemented and verified:
+- Provider boundary defined in `frontend/src/providers/`: `DiagnosticProvider` interface with `mode` and `checkHealth()`.
+- `LiveDiagnosticProvider`: Delegates directly to `checkHealth()` relative `/api/v1/health` request without duplicating fetch logic.
+- `DemoDiagnosticProvider`: Returns deterministic demonstration fixtures (`DEMO_READY`) without calling fetch or contacting any backend service.
+- Mode selection: `createDiagnosticProvider()` evaluates `VITE_VECTOR_MODE` (default: `live`); throws descriptive Error on invalid mode values.
+- Isolation: No automatic live-to-demo fallback; failed live checks stay explicitly `OFFLINE`.
+- React integration: `DiagnosticProviderComponent` and `useDiagnosticProvider()` allow injection via props or context.
+- UI: `HealthStatus` displays `Mode: LIVE` or `Mode: DEMO`, distinct semantic status badges (`ONLINE`, `OFFLINE`, `DEMO READY`), and distinct subtitles.
+- 36 passing tests across 4 test suites (`health.test.ts`, `DiagnosticProvider.test.ts`, `HealthStatus.test.tsx`, `App.test.tsx`).
 - ESLint: 0 errors, 0 warnings. TypeScript: 0 errors. Build: clean.
 
 ---
@@ -260,7 +278,7 @@ No actual benchmark results yet.
 
 ## CI Status
 
-.github/workflows/ci.yml created. Pushed to origin/main at commit d8c88df.
+.github/workflows/ci.yml created. Pushed to origin/main at commit d8c88df / 7844ebb.
 
 ---
 
@@ -306,7 +324,7 @@ $env:PATH = "C:\Program Files\nodejs;C:\Program Files\Git\cmd;" + $env:PATH; .\s
 # - Frontend: npm install [PASS]
 # - Frontend: ESLint [PASS]
 # - Frontend: TypeScript check [PASS]
-# - Frontend: Tests [PASS] (15/15)
+# - Frontend: Tests [PASS] (36/36)
 # - Frontend: Build [PASS]
 ```
 
@@ -324,48 +342,72 @@ $env:PATH = "C:\Program Files\nodejs;C:\Program Files\Git\cmd;" + $env:PATH; .\s
 - frontend npm install: PASS
 - frontend ESLint: PASS (0 errors, 0 warnings)
 - frontend TypeScript check: PASS (0 errors)
-- frontend Vitest tests: PASS (15/15 tests across 3 suites)
+- frontend Vitest tests: PASS (36/36 tests across 4 suites)
 - frontend production build: PASS (`tsc -b && vite build`)
 
 ---
 
 ## Current Uncommitted Files
 
-NONE (working tree clean before this metadata update).
+The working tree contains verified Phase 1B changes awaiting checkpoint:
+- `docs/ARCHITECTURE.md` (modified)
+- `frontend/.env.example` (created)
+- `frontend/src/App.css` (modified)
+- `frontend/src/App.tsx` (modified)
+- `frontend/src/__tests__/App.test.tsx` (modified)
+- `frontend/src/__tests__/HealthStatus.test.tsx` (modified)
+- `frontend/src/components/HealthStatus.tsx` (modified)
+- `frontend/src/lib/api/types.ts` (modified)
+- `frontend/src/lib/api/useHealthCheck.ts` (modified)
+- `frontend/src/providers/DiagnosticProvider.ts` (created)
+- `frontend/src/providers/LiveDiagnosticProvider.ts` (created)
+- `frontend/src/providers/DemoDiagnosticProvider.ts` (created)
+- `frontend/src/providers/createDiagnosticProvider.ts` (created)
+- `frontend/src/providers/DiagnosticProviderContext.ts` (created)
+- `frontend/src/providers/DiagnosticProviderComponent.tsx` (created)
+- `frontend/src/providers/index.ts` (created)
+- `frontend/src/providers/demo/fixtures.ts` (created)
+- `frontend/src/providers/__tests__/DiagnosticProvider.test.ts` (created)
+- `STATUS.md` (modified)
 
 ---
 
 ## Important Files Changed Recently
 
-- `frontend/src/lib/api/types.ts`
-- `frontend/src/lib/api/health.ts`
+- `docs/ARCHITECTURE.md`
+- `frontend/src/providers/DiagnosticProvider.ts`
+- `frontend/src/providers/LiveDiagnosticProvider.ts`
+- `frontend/src/providers/DemoDiagnosticProvider.ts`
+- `frontend/src/providers/createDiagnosticProvider.ts`
+- `frontend/src/providers/DiagnosticProviderContext.ts`
+- `frontend/src/providers/DiagnosticProviderComponent.tsx`
+- `frontend/src/providers/demo/fixtures.ts`
+- `frontend/src/providers/__tests__/DiagnosticProvider.test.ts`
 - `frontend/src/lib/api/useHealthCheck.ts`
-- `frontend/src/lib/api/client.ts`
 - `frontend/src/components/HealthStatus.tsx`
 - `frontend/src/App.tsx`
 - `frontend/src/App.css`
-- `frontend/src/__tests__/HealthStatus.test.tsx`
-- `frontend/src/lib/api/__tests__/health.test.ts`
 - `STATUS.md`
 
 ---
 
 ## Next Recommended Action
 
-Phase 1B - Live/Demo Provider Abstraction
+Phase 1C - System Preflight Endpoint and Minimal Preflight UI
 
 ---
 
 ## Next Three Tasks
 
-1. Design and specify DiagnosticProvider interface for Live and Demo modes (Phase 1B planning).
-2. Implement LiveDiagnosticProvider (/api/v1 adapter) and DemoDiagnosticProvider (static fixture adapter).
-3. Integrate DiagnosticProviderContext into frontend with comprehensive unit and integration tests.
+1. Review and test GET /api/v1/system/preflight contract and requirements (Phase 1C planning).
+2. Implement typed frontend preflight API client and provider integration.
+3. Build minimal, accessible preflight status UI.
 
 ---
 
 ## Do Not Redo
 
+- Do not rewrite frontend/src/providers/ (DiagnosticProvider, LiveDiagnosticProvider, DemoDiagnosticProvider, createDiagnosticProvider, DiagnosticProviderContext, DiagnosticProviderComponent).
 - Do not rewrite frontend/src/lib/api/ (types.ts, health.ts, useHealthCheck.ts, client.ts).
 - Do not rewrite HealthStatus component or App.tsx.
 - Do not modify FastAPI health endpoint (/api/v1/health).
@@ -385,10 +427,10 @@ Phase 1B - Live/Demo Provider Abstraction
 
 ## Notes for Next AI Agent
 
-Phase 1A is verified, committed, and pushed at d8c88df. The health handshake operates between React frontend and FastAPI local agent via relative /api/v1/health proxied by Vite. All 15 verify checks pass. Do not implement device discovery, ADB, or iPhone bridges yet. The next task is Phase 1B: Live/Demo provider abstraction.
+Phase 1B is verified and awaiting user commit. The DiagnosticProvider abstraction cleanly separates LiveDiagnosticProvider (local FastAPI) from DemoDiagnosticProvider (deterministic fixtures) with explicit configuration and no automatic fallback. All 15 verify checks pass. The latest trusted baseline commit is 7844ebb. Run `git rev-parse HEAD`, `git status`, and `.\scripts\verify.ps1` before continuing with Phase 1C.
 
 ---
 
 ## HANDOFF PROMPT
 
-VECTOR Phase 1A is complete, verified, committed, and pushed to origin/main at commit d8c88df, which is the latest trusted checkpoint. The frontend <-> FastAPI health handshake is implemented with a typed API client (types.ts, health.ts, useHealthCheck.ts, client.ts), accessible HealthStatus UI, and 15 frontend tests passing alongside 62 Python tests (41 agent + 21 intelligence). Full repository verification (.\scripts\verify.ps1) passes 15/15 checks with exit code 0. Before making any changes, the next agent must verify the repository baseline using .\scripts\verify.ps1. The next task is Phase 1B: designing and implementing the DiagnosticProvider abstraction (LiveDiagnosticProvider and DemoDiagnosticProvider).
+VECTOR Phase 1B is complete and verified awaiting user commit. Baseline commit is 7844ebb. The DiagnosticProvider abstraction (LiveDiagnosticProvider and DemoDiagnosticProvider) is implemented with explicit mode resolution, no automatic fallback, and 36 passing frontend tests alongside 62 passing Python tests (41 agent + 21 intelligence). Full repository verification (.\scripts\verify.ps1) passes 15/15 checks with exit code 0. Check git status to review uncommitted Phase 1B files. Once committed by the user, proceed to Phase 1C: System Preflight Endpoint and Minimal Preflight UI.

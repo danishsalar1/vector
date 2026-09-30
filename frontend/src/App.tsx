@@ -1,11 +1,19 @@
+import { DiagnosticProviderComponent } from "./providers";
 import { HealthStatus } from "./components/HealthStatus";
+import type { DiagnosticProvider } from "./providers";
 import "./App.css";
 
-function App() {
+export interface AppProps {
+  provider?: DiagnosticProvider;
+}
+
+function App({ provider }: AppProps) {
   return (
-    <main id="app-container">
-      <HealthStatus />
-    </main>
+    <DiagnosticProviderComponent provider={provider}>
+      <main id="app-container">
+        <HealthStatus />
+      </main>
+    </DiagnosticProviderComponent>
   );
 }
 
