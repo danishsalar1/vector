@@ -1,0 +1,84 @@
+﻿# VECTOR Attempt 01 Configuration
+# ============================================================
+# This is the initial configuration for competition Attempt 01.
+# All parameters must be set here; never scatter them in source code.
+# ============================================================
+
+attempt: 1
+description: "Initial evolutionary-fuzzy configuration. Standard NSGA-II with triangular membership functions. No Shift-Guided Mutation."
+
+# ---- Evolutionary algorithm ----
+evolution:
+  algorithm: "NSGA-II"
+  population_size: 100
+  n_generations: 200
+  crossover_probability: 0.9
+  mutation_probability: null       # null = 1/genome_length (adaptive default)
+  tournament_size: 2
+  seed: 42
+
+# ---- Fuzzy system ----
+fuzzy:
+  n_terms: 3                       # LOW, MEDIUM, HIGH
+  membership_function: "triangular"
+  n_params_per_term: 3             # a, b, c for triangular MF
+  epsilon: 1.0e-9                  # Sugeno denominator protection
+
+# ---- Features (to be finalized after benchmark design) ----
+features:
+  n_features: null                 # TBD after benchmark generator is built
+  feature_names: null              # TBD
+
+# ---- Rules ----
+rules:
+  n_rules: null                    # TBD after feature count is set
+  initial_enable_probability: 0.7  # 70% rules enabled at initialization
+
+# ---- Objectives ----
+objectives:
+  - name: "prediction_error"
+    weight: 1.0
+    minimize: true
+  - name: "perturbation_instability"
+    weight: 1.0
+    minimize: true
+  - name: "rule_complexity"
+    weight: 1.0
+    minimize: true
+  - name: "latency_proxy"
+    weight: 1.0
+    minimize: true
+
+# ---- Perturbation (training-time) ----
+perturbation:
+  type: "NOISE"
+  magnitude: 0.1
+  affected_fraction: 0.3
+
+# ---- Benchmark ----
+benchmark:
+  seeds: [42, 1337, 2026]
+  n_train_samples: 800
+  n_test_samples: 200
+  scenario_families:
+    - "healthy_genuine"
+    - "battery_degradation"
+    - "thermal_instability"
+    - "camera_failure"
+    - "sensor_failure"
+    - "missing_capabilities"
+    - "conflicting_evidence"
+    - "noisy_measurements"
+
+# ---- Innovation flags ----
+innovation:
+  shift_guided_mutation: false     # Disabled for Attempt 01
+  shift_sensitivity_lambda: 0.5   # Not used in Attempt 01
+
+# ---- Artifact output ----
+artifacts:
+  output_dir: "benchmark/artifacts/attempt_01"
+  save_convergence: true
+  save_pareto_front: true
+  save_results_json: true
+  save_config_snapshot: true

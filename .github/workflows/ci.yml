@@ -1,0 +1,115 @@
+﻿name: VECTOR CI
+
+on:
+  push:
+    branches: ["main", "dev", "feature/**"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  # ---- Python: local-agent ----
+  agent-checks:
+    name: "Agent — Lint / Type / Test"
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: local-agent
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: uv pip install -e ".[dev]" --system
+
+      - name: Lint (ruff)
+        run: uv run ruff check src/ tests/
+
+      - name: Format check (ruff)
+        run: uv run ruff format --check src/ tests/
+
+      - name: Type check (mypy)
+        run: uv run mypy src/
+
+      - name: Tests (pytest)
+        run: uv run pytest tests/ --tb=short -v --cov=src --cov-report=xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: local-agent/coverage.xml
+        continue-on-error: true
+
+  # ---- Python: intelligence ----
+  intelligence-checks:
+    name: "Intelligence — Lint / Type / Test"
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: intelligence
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: uv pip install -e ".[dev]" --system
+
+      - name: Lint (ruff)
+        run: uv run ruff check src/ tests/
+
+      - name: Type check (mypy)
+        run: uv run mypy src/
+
+      - name: Tests (pytest)
+        run: uv run pytest tests/ --tb=short -v
+
+  # ---- Frontend ----
+  frontend-checks:
+    name: "Frontend — Lint / Type / Test / Build"
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint (ESLint)
+        run: npm run lint
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Tests (Vitest)
+        run: npm run test
+
+      - name: Build (production)
+        run: npm run build

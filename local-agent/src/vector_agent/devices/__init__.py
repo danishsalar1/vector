@@ -1,0 +1,1 @@
+"""VECTOR device bridge abstraction."""
