@@ -15,7 +15,7 @@ Hackathon challenge: Advanced Computational Intelligence — Hybrid Evolutionary
 
 ## Current Phase
 
-PHASE 0 - VERIFIED (awaiting commit approval)
+PHASE 1A VERIFIED
 
 ---
 
@@ -39,7 +39,7 @@ main
 
 ## Current Architecture Status
 
-Foundation scaffolded. All Phase 0 files created and verified. FastAPI agent working, tests passing, frontend scaffolded.
+Foundation scaffolded and Phase 1A health handshake implemented. React frontend communicates reliably with FastAPI local agent via relative `/api/v1/health` through Vite dev proxy. All 15 verification checks passing.
 
 ---
 
@@ -82,6 +82,9 @@ Foundation scaffolded. All Phase 0 files created and verified. FastAPI agent wor
 - [x] local-agent: 41 passing tests (errors, models, security, API)
 - [x] intelligence: 21 passing tests (fuzzy, genome, perturbation, baseline)
 - [x] .env.example for local-agent
+- [x] Phase 1A: Typed frontend API client (`types.ts`, `health.ts`, `useHealthCheck.ts`, `client.ts`)
+- [x] Phase 1A: HealthStatus UI with accessible status badges, retry control, and responsive layout
+- [x] Phase 1A: Frontend automated tests (15/15 tests PASS across 3 test suites)
 
 ---
 
@@ -96,10 +99,10 @@ Foundation scaffolded. All Phase 0 files created and verified. FastAPI agent wor
 - [x] intelligence: ruff format PASS (all 17 files clean)
 - [x] intelligence: mypy PASS (15 files checked, 0 errors)
 - [x] frontend: npm install PASS
-- [x] frontend: ESLint PASS (exit 0, no errors)
-- [x] frontend: TypeScript check PASS (tsc --noEmit)
-- [x] frontend: Vitest PASS (1/1 unit test)
-- [x] frontend: Production build PASS (tsc -b && vite build)
+- [x] frontend: ESLint PASS (exit 0, 0 errors, 0 warnings)
+- [x] frontend: TypeScript check PASS (tsc --noEmit, 0 errors)
+- [x] frontend: Vitest PASS (15/15 tests in 3 test suites)
+- [x] frontend: Production build PASS (`tsc -b && vite build`)
 - [x] verify.ps1: 15/15 checks PASS
 
 ---
@@ -112,12 +115,14 @@ Foundation scaffolded. All Phase 0 files created and verified. FastAPI agent wor
 - [ ] NSGA-II full optimizer: objectives defined, main loop not yet implemented
 - [ ] Baseline B (Static Fuzzy), C (Evolutionary Linear), D (Logistic), E (RF): not yet implemented
 - [ ] Synthetic benchmark generator: not yet implemented
-- [ ] Frontend UI components: default Vite template only; no VECTOR UI yet
+- [ ] Frontend full UI (home, scan, results, methodology pages): not yet implemented (Phase 7)
 
 ---
 
 ## Not Started
 
+- [ ] DiagnosticProvider abstraction: Live vs Demo (Phase 1B)
+- [ ] System preflight UI (Phase 1C)
 - [ ] Android ADB bridge implementation (Phase 2)
 - [ ] iOS libimobiledevice bridge implementation (Phase 2)
 - [ ] DeviceCapabilityProfile real population (Phase 2)
@@ -140,8 +145,9 @@ None currently.
 
 ## Known Limitations
 
-See docs/LIMITATIONS.md for comprehensive list.
-Key: iOS restricts most hardware diagnostics, some physical defects are not detectable via USB.
+- The local FastAPI service must be running for ONLINE state.
+- See docs/LIMITATIONS.md for comprehensive list.
+- Key: iOS restricts most hardware diagnostics, some physical defects are not detectable via USB.
 
 ---
 
@@ -152,10 +158,13 @@ Key: iOS restricts most hardware diagnostics, some physical defects are not dete
 3. uv used for fast Python package management
 4. All TOML files written without BOM (System.Text.UTF8Encoding(False))
 5. Vite proxy to /api routes to localhost:8742 (avoids CORS in dev)
-6. Frontend package name: "vector-frontend" (not the auto-generated path string)
+6. Frontend package name: "vector-frontend"
 7. NSGA-II minimizes 4 objectives: prediction_error, perturbation_instability, rule_complexity, latency_proxy
 8. UNSUPPORTED evidence uses 0.5 (neutral) not 0.0 (false penalty) in evidence vectors
 9. All subprocess calls use argument arrays, shell=False mandatory
+10. Health check client uses relative URL `/api/v1/health` and standard fetch with AbortSignal cancellation and configurable timeout
+11. Explicit ConnectionState model: "CHECKING" | "ONLINE" | "OFFLINE"
+12. React 19 safe async effect pattern in useHealthCheck avoiding synchronous setState in effect bodies
 
 ---
 
@@ -183,9 +192,9 @@ Key: iOS restricts most hardware diagnostics, some physical defects are not dete
 - Vite 8.3.0
 - TypeScript 6.0.2
 - ESLint 10.10.0
-- Vitest 3.1.1 (being installed)
-- lucide-react 0.475.0 (being installed)
-- @testing-library/react 16.3.0 (being installed)
+- Vitest 3.2.7
+- lucide-react 0.475.0
+- @testing-library/react 16.3.0
 
 ---
 
@@ -204,25 +213,33 @@ Key: iOS restricts most hardware diagnostics, some physical defects are not dete
 
 ## Android Device Status
 
-Not connected during Phase 0.
+Not connected during Phase 1A.
 
 ---
 
 ## iPhone Device Status
 
-Not connected during Phase 0.
+Not connected during Phase 1A.
 
 ---
 
 ## Frontend Status
 
-Scaffolded with Vite/React/TypeScript/ESLint/Vitest. Default Vite template (no VECTOR UI yet). ESLint clean.
+Phase 1A health handshake implemented and verified:
+- Typed health API client (`frontend/src/lib/api/`) communicating with local agent via relative `/api/v1/health` request.
+- Explicit connection states: CHECKING, ONLINE, OFFLINE.
+- AbortSignal support on unmount and retry to prevent state update errors.
+- Default 5000ms timeout handling with user-safe error messaging.
+- Malformed response and HTTP non-success safely caught without crashing.
+- Accessible `HealthStatus` UI with live status indicator, version/mode metadata display on ONLINE, clear actionable guidance on OFFLINE, visible keyboard focus state on Retry control, and semantic HTML adhering to restrained design system.
+- 15 passing tests across 3 test suites (`health.test.ts`, `HealthStatus.test.tsx`, `App.test.tsx`).
+- ESLint: 0 errors, 0 warnings. TypeScript: 0 errors. Build: clean.
 
 ---
 
 ## Backend Status
 
-FastAPI agent operational. All API stubs working. 41 tests pass.
+FastAPI agent operational. No backend modifications were required. The existing `/api/v1/health` endpoint already adheres to the deterministic schema: `{"status": "OK", "timestamp": "...", "version": "0.1.0", "mode": "LIVE"}`. 41 tests pass.
 
 ---
 
@@ -274,9 +291,9 @@ Not implemented. Will be /terms route in Phase 7.
 ## Exact Verification Commands Last Run
 
 ```powershell
-.\scripts\verify.ps1
+$env:PATH = "C:\Program Files\nodejs;C:\Program Files\Git\cmd;" + $env:PATH; .\scripts\verify.ps1
 # Result: 15/15 checks passed, exit code 0
-# - Agent: pip install [PASS]
+# - Agent: Install deps (uv) [PASS]
 # - Agent: Ruff lint [PASS]
 # - Agent: Ruff format [PASS]
 # - Agent: Mypy [PASS]
@@ -289,7 +306,7 @@ Not implemented. Will be /terms route in Phase 7.
 # - Frontend: npm install [PASS]
 # - Frontend: ESLint [PASS]
 # - Frontend: TypeScript check [PASS]
-# - Frontend: Tests [PASS] (1/1)
+# - Frontend: Tests [PASS] (15/15)
 # - Frontend: Build [PASS]
 ```
 
@@ -305,59 +322,63 @@ Not implemented. Will be /terms route in Phase 7.
 - intelligence ruff & format: PASS
 - intelligence mypy: PASS (15 source files)
 - frontend npm install: PASS
-- frontend ESLint: PASS
-- frontend TypeScript check: PASS
-- frontend Vitest tests: PASS (1/1)
+- frontend ESLint: PASS (0 errors, 0 warnings)
+- frontend TypeScript check: PASS (0 errors)
+- frontend Vitest tests: PASS (15/15 tests across 3 suites)
 - frontend production build: PASS (`tsc -b && vite build`)
 
 ---
 
 ## Current Uncommitted Files
 
-All files (no commits yet). Repository is empty except .git.
+- `frontend/src/lib/api/types.ts` (created)
+- `frontend/src/lib/api/health.ts` (created)
+- `frontend/src/lib/api/useHealthCheck.ts` (created)
+- `frontend/src/lib/api/client.ts` (created)
+- `frontend/src/lib/api/__tests__/health.test.ts` (created)
+- `frontend/src/components/HealthStatus.tsx` (created)
+- `frontend/src/__tests__/HealthStatus.test.tsx` (created)
+- `frontend/src/__tests__/App.test.tsx` (modified)
+- `frontend/src/App.tsx` (modified)
+- `frontend/src/App.css` (modified)
+- `STATUS.md` (modified)
 
 ---
 
 ## Important Files Changed Recently
 
-All files created in this session (Phase 0).
-
-Key files:
-- local-agent/src/vector_agent/main.py
-- local-agent/src/vector_agent/models/device.py
-- local-agent/src/vector_agent/core/errors.py
-- local-agent/src/vector_agent/security/subprocess_policy.py
-- intelligence/src/vector_intelligence/fuzzy/inference.py
-- intelligence/src/vector_intelligence/evolution/genome.py
-- docs/FORMULATION.md
-- docs/ARCHITECTURE.md
-- .github/workflows/ci.yml
+- `frontend/src/lib/api/types.ts`
+- `frontend/src/lib/api/health.ts`
+- `frontend/src/lib/api/useHealthCheck.ts`
+- `frontend/src/lib/api/client.ts`
+- `frontend/src/components/HealthStatus.tsx`
+- `frontend/src/App.tsx`
+- `frontend/src/App.css`
+- `frontend/src/__tests__/HealthStatus.test.tsx`
+- `frontend/src/lib/api/__tests__/health.test.ts`
+- `STATUS.md`
 
 ---
 
 ## Next Recommended Action
 
-1. Run: npm install + npm run typecheck + npm run test:run + npm run build (in frontend/)
-2. Run ruff and mypy on local-agent
-3. Review and approve commit
-4. git add -A && git commit -m "chore: scaffold vector monorepo (Phase 0)"
-5. git push origin main
+PHASE 1B only (Live/Demo Provider Abstraction)
 
 ---
 
 ## Next Three Tasks
 
-1. Complete frontend verification (typecheck, test, build)
-2. Run Python linting (ruff) and type checking (mypy)
-3. Commit and push Phase 0 (after user approval)
-
-After Phase 0 commit:
-- Phase 1: FastAPI health handshake + frontend live/demo provider abstraction + system preflight UI
+1. Design and specify DiagnosticProvider interface for Live and Demo modes (Phase 1B planning).
+2. Implement LiveDiagnosticProvider (/api/v1 adapter) and DemoDiagnosticProvider (static fixture adapter).
+3. Integrate DiagnosticProviderContext into frontend with comprehensive unit and integration tests.
 
 ---
 
 ## Do Not Redo
 
+- Do not rewrite frontend/src/lib/api/ (types.ts, health.ts, useHealthCheck.ts, client.ts).
+- Do not rewrite HealthStatus component or App.tsx.
+- Do not modify FastAPI health endpoint (/api/v1/health).
 - Don't rewrite the error model — it is comprehensive and tested.
 - Don't rewrite the device models — they implement all required fields.
 - Don't rewrite the subprocess_policy.py — security requirements are correctly enforced.
@@ -374,15 +395,10 @@ After Phase 0 commit:
 
 ## Notes for Next AI Agent
 
-This is Phase 0. Everything is scaffolded but devices are not connected. The next major work is:
-- Phase 1: Making the health endpoint show from the frontend (verify the /api proxy works end-to-end)
-- Phase 2: ADB device discovery (Android bridge implementation)
-- Phase 2: iOS device discovery stub
-
-The architecture is clean and tested. Do not rewrite modules that already have passing tests.
+Phase 1A is verified. The health handshake operates between React frontend and FastAPI local agent via relative /api/v1/health proxied by Vite. All 15 verify checks pass. Do not implement device discovery, ADB, or iPhone bridges yet. The next task is Phase 1B: Live/Demo provider abstraction.
 
 ---
 
 ## HANDOFF PROMPT
 
-VECTOR Phase 0 is complete and passing 62 tests (41 agent + 21 intelligence). The repository is scaffolded with FastAPI agent, intelligence engine (fuzzy inference, genome encoding, perturbation engine, Baseline A), and Vite/React/TypeScript frontend. All Python source is in C:\Users\danis\vector. Before doing anything else: (1) check git status in C:\Users\danis\vector, (2) run .\scripts\verify.ps1 from the repo root to confirm green, (3) check if the first commit has been made yet by reading STATUS.md "Last Green Commit SHA". If no commit exists, verify all checks pass and await user instruction to commit. The next phase after commit is Phase 1: implementing the frontend live/demo diagnostic provider abstraction and verifying the /api proxy from frontend to FastAPI agent works end-to-end.
+VECTOR Phase 1A is complete and verified. The frontend <-> FastAPI health handshake is implemented with typed API client (types.ts, health.ts, useHealthCheck.ts), accessible HealthStatus UI, and 15 frontend tests passing alongside 62 Python tests (41 agent + 21 intelligence). Full repository verification (.\scripts\verify.ps1) passes 15/15 checks with exit code 0. Check git status to confirm uncommitted Phase 1A changes. Await user instructions to commit Phase 1A. Once committed, proceed to Phase 1B: designing and implementing the DiagnosticProvider abstraction (LiveDiagnosticProvider and DemoDiagnosticProvider).
