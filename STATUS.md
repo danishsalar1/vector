@@ -27,7 +27,7 @@ PHASE 1A VERIFIED
 
 ## Last Green Commit SHA
 
-None yet (no commits exist – Phase 0 is the first commit, pending approval)
+d8c88df
 
 ---
 
@@ -260,7 +260,7 @@ No actual benchmark results yet.
 
 ## CI Status
 
-.github/workflows/ci.yml created. Not yet running (no commit pushed).
+.github/workflows/ci.yml created. Pushed to origin/main at commit d8c88df.
 
 ---
 
@@ -331,17 +331,7 @@ $env:PATH = "C:\Program Files\nodejs;C:\Program Files\Git\cmd;" + $env:PATH; .\s
 
 ## Current Uncommitted Files
 
-- `frontend/src/lib/api/types.ts` (created)
-- `frontend/src/lib/api/health.ts` (created)
-- `frontend/src/lib/api/useHealthCheck.ts` (created)
-- `frontend/src/lib/api/client.ts` (created)
-- `frontend/src/lib/api/__tests__/health.test.ts` (created)
-- `frontend/src/components/HealthStatus.tsx` (created)
-- `frontend/src/__tests__/HealthStatus.test.tsx` (created)
-- `frontend/src/__tests__/App.test.tsx` (modified)
-- `frontend/src/App.tsx` (modified)
-- `frontend/src/App.css` (modified)
-- `STATUS.md` (modified)
+NONE (working tree clean before this metadata update).
 
 ---
 
@@ -362,7 +352,7 @@ $env:PATH = "C:\Program Files\nodejs;C:\Program Files\Git\cmd;" + $env:PATH; .\s
 
 ## Next Recommended Action
 
-PHASE 1B only (Live/Demo Provider Abstraction)
+Phase 1B - Live/Demo Provider Abstraction
 
 ---
 
@@ -389,16 +379,16 @@ PHASE 1B only (Live/Demo Provider Abstraction)
 
 1. Python 3.14.7 is newer than required-python ">=3.11" — CI uses Python 3.12 which should be fine.
 2. libimobiledevice on Windows requires manual installation (no winget package verified).
-3. Production build and tests are verified locally; CI runner validation pending initial commit.
+3. Production build and tests are verified locally; CI runner validation pending on pushed commits.
 
 ---
 
 ## Notes for Next AI Agent
 
-Phase 1A is verified. The health handshake operates between React frontend and FastAPI local agent via relative /api/v1/health proxied by Vite. All 15 verify checks pass. Do not implement device discovery, ADB, or iPhone bridges yet. The next task is Phase 1B: Live/Demo provider abstraction.
+Phase 1A is verified, committed, and pushed at d8c88df. The health handshake operates between React frontend and FastAPI local agent via relative /api/v1/health proxied by Vite. All 15 verify checks pass. Do not implement device discovery, ADB, or iPhone bridges yet. The next task is Phase 1B: Live/Demo provider abstraction.
 
 ---
 
 ## HANDOFF PROMPT
 
-VECTOR Phase 1A is complete and verified. The frontend <-> FastAPI health handshake is implemented with typed API client (types.ts, health.ts, useHealthCheck.ts), accessible HealthStatus UI, and 15 frontend tests passing alongside 62 Python tests (41 agent + 21 intelligence). Full repository verification (.\scripts\verify.ps1) passes 15/15 checks with exit code 0. Check git status to confirm uncommitted Phase 1A changes. Await user instructions to commit Phase 1A. Once committed, proceed to Phase 1B: designing and implementing the DiagnosticProvider abstraction (LiveDiagnosticProvider and DemoDiagnosticProvider).
+VECTOR Phase 1A is complete, verified, committed, and pushed to origin/main at commit d8c88df, which is the latest trusted checkpoint. The frontend <-> FastAPI health handshake is implemented with a typed API client (types.ts, health.ts, useHealthCheck.ts, client.ts), accessible HealthStatus UI, and 15 frontend tests passing alongside 62 Python tests (41 agent + 21 intelligence). Full repository verification (.\scripts\verify.ps1) passes 15/15 checks with exit code 0. Before making any changes, the next agent must verify the repository baseline using .\scripts\verify.ps1. The next task is Phase 1B: designing and implementing the DiagnosticProvider abstraction (LiveDiagnosticProvider and DemoDiagnosticProvider).
