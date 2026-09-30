@@ -1,4 +1,4 @@
-# VECTOR STATUS.md
+﻿# VECTOR STATUS.md
 
 **Purpose:** This file allows any new agent or developer to continue work without reading the entire conversation history.
 
@@ -6,22 +6,22 @@
 
 ## Project
 
-**VECTOR** – Verified Evidence-Based Computational Trust for Ownership Review  
+**VECTOR** â€“ Verified Evidence-Based Computational Trust for Ownership Review  
 Standardized diagnostics and verification for the second-hand smartphone market.
 
-Hackathon challenge: Advanced Computational Intelligence — Hybrid Evolutionary-Fuzzy Frameworks (CIS track)
+Hackathon challenge: Advanced Computational Intelligence â€” Hybrid Evolutionary-Fuzzy Frameworks (CIS track)
 
 ---
 
 ## Current Phase
 
-PHASE 1 COMPLETE AND VERIFIED - AWAITING USER COMMIT
+PHASE 2A COMPLETE AND VERIFIED â€” AWAITING USER COMMIT
 
 ---
 
-## Baseline Commit at Milestone Start
+## Baseline Commit at Phase 2A Start
 
-df45c37
+1ae24fa
 
 ---
 
@@ -33,7 +33,7 @@ df45c37
 
 ## Last Green Commit SHA
 
-df45c37
+1ae24fa
 
 ---
 
@@ -45,12 +45,14 @@ main
 
 ## Current Architecture Status
 
-Phase 1 is complete and fully hardened across Phase 0 (foundation), Phase 1A (health handshake), Phase 1B (Live/Demo provider abstraction), Phase 1C (preflight endpoint & minimal UI), and Phase 1D (error handling, request sequencing, race condition protection, cancellation safety, and integration hardening).
+Phase 2A adds real Android device discovery and battery telemetry verification on top of the Phase 1 foundation.
 
-- **Architecture:** Frontend communicates through `DiagnosticProvider` abstraction. `LiveDiagnosticProvider` delegates to relative `/api/v1` routes with zero-dependency `safeFetchJson<T>`. `DemoDiagnosticProvider` delivers deterministic frozen demo fixtures. Mode selection is explicit via `VITE_VECTOR_MODE` (defaulting to `live`) with fail-fast validation. Automatic live-to-demo fallback is strictly disabled.
-- **Backend:** FastAPI hardware agent running on `127.0.0.1:8742` provides `/api/v1/health` and `/api/v1/system/preflight`. `SystemPreflightService` evaluates host OS, Python runtime, agent readiness, ADB availability, and iOS tooling availability. All subprocess checks use argument arrays, bounded timeouts, and strict isolation preventing individual check failures from crashing the service or leaking internal paths/tracebacks.
-- **Resilience:** Generational request sequencing (`requestIdRef`) prevents out-of-order race conditions from overwriting state. Stale data is cleared upon retry/recheck initiation. All in-flight requests abort cleanly on unmount.
-- **Verification:** All 15 repository verification checks passing with 143 total automated tests (58 agent + 21 intelligence + 64 frontend).
+- **AndroidDeviceBridge** (`local-agent/src/vector_agent/devices/android/bridge.py`): All ADB operations use safe subprocess policy â€” argument arrays, bounded timeouts, no shell strings. Handles: `discover_devices()`, `get_identity()`, `get_battery_telemetry()`.
+- **Android API Router** (`/api/v1/devices/android`): GET lists devices; GET `/{device_id}/battery` runs battery telemetry. `device_id` is an opaque SHA256 hash â€” never the raw ADB serial. Registry maps device_id â†’ validated serial in-memory.
+- **Pydantic models** (`models/android.py`): `AndroidDeviceResponse`, `AndroidDeviceListResponse`, `BatteryTelemetryResponse`.
+- **Frontend**: Types, hooks, API client, and `AndroidStatus` component fully wired. Manual detection only. Battery test enabled only after single authorized device confirmed.
+- **PASS disclaimer**: Battery PASS status always displays `status_note` explicitly stating this is evidence collection, not battery-health assessment.
+- **Verification**: 15/15 verify.ps1 checks pass. 85 backend tests (58 existing + 27 new). 80 frontend tests (64 existing + 16 new Android tests). Total: 166 tests.
 
 ---
 
@@ -90,64 +92,55 @@ Phase 1 is complete and fully hardened across Phase 0 (foundation), Phase 1A (he
 - [x] Frontend: React + Vite + TypeScript + ESLint + Vitest scaffold
 - [x] Frontend: vite.config.ts with /api proxy to local agent
 - [x] Frontend test setup (testing-library, jsdom, vitest)
-- [x] local-agent: 58 passing tests (errors, models, security, API, preflight, resilience)
+- [x] local-agent: 58 passing tests (errors, models, security, API, preflight, resilience) [Phase 1]
 - [x] intelligence: 21 passing tests (fuzzy, genome, perturbation, baseline)
 - [x] .env.example for local-agent
-- [x] Phase 1A: Typed frontend API client (`types.ts`, `health.ts`, `useHealthCheck.ts`, `client.ts`)
-- [x] Phase 1A: HealthStatus UI with accessible status badges, retry control, and responsive layout
-- [x] Phase 1A: Frontend automated tests (15/15 tests PASS across 3 test suites)
-- [x] Phase 1B: DiagnosticProvider typed contract (`DiagnosticProvider.ts`)
-- [x] Phase 1B: LiveDiagnosticProvider delegating to real FastAPI health client
-- [x] Phase 1B: DemoDiagnosticProvider with deterministic demonstration fixtures
-- [x] Phase 1B: Central provider factory (`createDiagnosticProvider.ts`) and explicit mode resolution
-- [x] Phase 1B: React provider context injection (`DiagnosticProviderContext.ts`, `DiagnosticProviderComponent.tsx`)
-- [x] Phase 1B: HealthStatus mode indicator and semantic DEMO READY state display
-- [x] Phase 1B: Frontend automated tests (36/36 tests passing across 4 test suites)
-- [x] Phase 1C: Backend typed PreflightCheck and PreflightResponse models (`local-agent/src/vector_agent/models/preflight.py`)
-- [x] Phase 1C: SystemPreflightService with OS, Python, Agent, ADB, and iOS environment checks (`local-agent/src/vector_agent/services/preflight.py`)
-- [x] Phase 1C: Hardened prohibition against device enumeration commands in preflight service
-- [x] Phase 1C: Route implementation for GET /api/v1/system/preflight (`local-agent/src/vector_agent/api/system.py`)
-- [x] Phase 1C: Backend automated preflight tests (14 tests in `test_preflight.py` and `test_api.py`)
-- [x] Phase 1C: Typed frontend preflight API client and hook (`types.ts`, `preflight.ts`, `usePreflight.ts`)
-- [x] Phase 1C: Extended DiagnosticProvider with `getPreflight()` in Live and Demo providers
-- [x] Phase 1C: Deterministic demo preflight fixture clearly labeled as demo data (`fixtures.ts`)
-- [x] Phase 1C: PreflightStatus accessible UI component with text statuses, visible focus, aria-live, and retry button (`PreflightStatus.tsx`)
-- [x] Phase 1C: Frontend automated tests (11 tests in `PreflightStatus.test.tsx` and `DiagnosticProvider.test.ts`)
-- [x] Phase 1D: Error taxonomy (`ApiErrorKind`, `ApiError`) and zero-dependency `safeFetchJson<T>` helper
-- [x] Phase 1D: Request sequencing and race condition protection (`requestIdRef`) in `useHealthCheck` and `usePreflight`
-- [x] Phase 1D: Stale data prevention on retry and recheck in frontend hooks
-- [x] Phase 1D: Component unmount cancellation and post-unmount update suppression
-- [x] Phase 1D: Backend check isolation in `SystemPreflightService.run_preflight()` preventing endpoint failure
-- [x] Phase 1D: Frontend integration and resilience tests (17 new tests across `request.test.ts` and `integration_hardening.test.tsx`, 64 total frontend tests)
+- [x] Phase 1A: Typed frontend API client (types.ts, health.ts, useHealthCheck.ts, client.ts)
+- [x] Phase 1A: HealthStatus UI
+- [x] Phase 1B: DiagnosticProvider abstraction and Live/Demo providers
+- [x] Phase 1C: SystemPreflightService and PreflightStatus UI
+- [x] Phase 1D: Error taxonomy, request sequencing, integration hardening (64 frontend tests)
+- [x] **Phase 2A: AndroidDeviceBridge** â€” safe ADB device enumeration via argument arrays
+- [x] **Phase 2A: ADB state handling** â€” DEVICE, UNAUTHORIZED, OFFLINE, NO_DEVICE, MULTIPLE_DEVICES, ERROR
+- [x] **Phase 2A: Android identity retrieval** â€” manufacturer, model, android_version, sdk_level via getprop
+- [x] **Phase 2A: Battery Telemetry Verification** â€” dumpsys battery evidence, PASS/INCONCLUSIVE/ERROR
+- [x] **Phase 2A: Opaque device_id** â€” SHA256 hash prevents raw serial exposure in API/URL
+- [x] **Phase 2A: Android API router** â€” GET /api/v1/devices/android, GET /api/v1/devices/android/{device_id}/battery
+- [x] **Phase 2A: Pydantic models** â€” AndroidDeviceResponse, AndroidDeviceListResponse, BatteryTelemetryResponse
+- [x] **Phase 2A: Frontend types** â€” AndroidDevice, AndroidDeviceListResponse, BatteryTelemetryResponse
+- [x] **Phase 2A: Frontend hooks** â€” useAndroidDiscovery, useAndroidBattery (request sequencing + cancellation)
+- [x] **Phase 2A: AndroidStatus component** â€” manual detect, state-driven UI, battery test with PASS disclaimer
+- [x] **Phase 2A: 27 new backend tests** â€” bridge parser tests + API tests (fixture-based, no real hardware)
+- [x] **Phase 2A: 16 new frontend tests** â€” AndroidStatus.test.tsx covering all 15 required behaviors
+- [x] **Phase 2A: 15/15 verify.ps1 PASS** â€” all lint, type-check, test, and build checks clean
 
 ---
 
 ## Verified Features
 
-- [x] local-agent: 58/58 tests PASS, 0 warnings (pytest)
+- [x] local-agent: 85/85 tests PASS, 0 warnings (pytest)
 - [x] local-agent: ruff check PASS (0 lint errors)
-- [x] local-agent: ruff format PASS (all 39 files clean)
-- [x] local-agent: mypy PASS (33 source files checked, 0 errors)
+- [x] local-agent: ruff format PASS (all files clean)
+- [x] local-agent: mypy PASS (36 source files checked, 0 errors)
 - [x] intelligence: 21/21 tests PASS (pytest)
 - [x] intelligence: ruff check PASS (0 lint errors)
-- [x] intelligence: ruff format PASS (all 17 files clean)
-- [x] intelligence: mypy PASS (15 files checked, 0 errors)
+- [x] intelligence: ruff format PASS
+- [x] intelligence: mypy PASS
 - [x] frontend: npm install PASS
-- [x] frontend: ESLint PASS (exit 0, 0 errors, 0 warnings)
-- [x] frontend: TypeScript check PASS (tsc --noEmit, 0 errors)
-- [x] frontend: Vitest PASS (64/64 tests in 7 test suites)
-- [x] frontend: Production build PASS (`tsc -b && vite build`)
+- [x] frontend: ESLint PASS (0 errors, 0 warnings)
+- [x] frontend: TypeScript check PASS (0 errors)
+- [x] frontend: Vitest PASS (80/80 tests in 8 test suites)
+- [x] frontend: Production build PASS
 - [x] verify.ps1: 15/15 checks PASS
 
 ---
 
 ## Partially Implemented Features
 
-- [ ] Device discovery (Android ADB): architecture in place, bridge stubs not yet implemented (Phase 2A)
 - [ ] Device discovery (iOS): architecture in place, bridge stubs not yet implemented (Phase 2B)
 - [ ] Scan state machine: state enum defined, orchestrator not yet implemented (Phase 3)
 - [ ] NSGA-II full optimizer: objectives defined, main loop not yet implemented (Phase 5)
-- [ ] Baseline B (Static Fuzzy), C (Evolutionary Linear), D (Logistic), E (RF): not yet implemented (Phase 5)
+- [ ] Baseline B/C/D/E: not yet implemented (Phase 5)
 - [ ] Synthetic benchmark generator: not yet implemented (Phase 5)
 - [ ] Frontend full UI (home, scan, results, methodology pages): not yet implemented (Phase 7)
 
@@ -155,11 +148,10 @@ Phase 1 is complete and fully hardened across Phase 0 (foundation), Phase 1A (he
 
 ## Not Started
 
-- [ ] Android ADB bridge implementation (Phase 2A)
 - [ ] iOS libimobiledevice bridge implementation (Phase 2B)
 - [ ] DeviceCapabilityProfile real population (Phase 2)
 - [ ] DiagnosticPlanner and TestRegistry (Phase 3)
-- [ ] Real battery/storage/identity/sensor diagnostics (Phase 4)
+- [ ] Additional diagnostics beyond battery (Phase 4)
 - [ ] NSGA-II main optimizer loop (Phase 5)
 - [ ] Synthetic benchmark generator (Phase 5)
 - [ ] Full benchmark run with real metrics (Phase 6)
@@ -171,18 +163,19 @@ Phase 1 is complete and fully hardened across Phase 0 (foundation), Phase 1A (he
 
 ## Known Bugs
 
-None currently.
+None.
 
 ---
 
 ## Known Limitations
 
-- Preflight environment verification checks only local tooling presence (`shutil.which` and harmless `--version`), NOT smartphone connectivity or trust authorization.
+- Preflight checks local tooling presence only (shutil.which). NOT phone connectivity.
+- Battery Telemetry PASS = evidence successfully collected. NOT battery-health assessment.
 - In LIVE mode, the local FastAPI service must be running for ONLINE state.
-- In DEMO mode, data is deterministic demo fixture data; no live hardware communication is performed.
+- In DEMO mode, data is deterministic demo fixture; no live hardware communication.
 - Automatic fallback from Live to Demo is explicitly disabled by design.
+- ADB device registry is in-memory/transient; lost on agent restart.
 - See docs/LIMITATIONS.md for comprehensive list.
-- Key: iOS restricts most hardware diagnostics, some physical defects are not detectable via USB.
 
 ---
 
@@ -191,112 +184,67 @@ None currently.
 1. Python 3.14.7 environment (requires-python is ">=3.11" for CI compatibility)
 2. FastAPI uses lifespan context manager (not deprecated on_event)
 3. uv used for fast Python package management
-4. All TOML files written without BOM (System.Text.UTF8Encoding(False))
+4. All TOML files written without BOM
 5. Vite proxy to /api routes to localhost:8742 (avoids CORS in dev)
 6. Frontend package name: "vector-frontend"
 7. NSGA-II minimizes 4 objectives: prediction_error, perturbation_instability, rule_complexity, latency_proxy
-8. UNSUPPORTED evidence uses 0.5 (neutral) not 0.0 (false penalty) in evidence vectors
+8. UNSUPPORTED evidence uses 0.5 (neutral) not 0.0 (false penalty)
 9. All subprocess calls use argument arrays, shell=False mandatory
-10. Health check client uses relative URL `/api/v1/health` and standard fetch with AbortSignal cancellation and configurable timeout
-11. Explicit ConnectionState model: "CHECKING" | "ONLINE" | "OFFLINE" | "DEMO_READY"
-12. React 19 safe async effect pattern in useHealthCheck and usePreflight avoiding synchronous setState in effect bodies
-13. DiagnosticProvider abstraction with LiveDiagnosticProvider and DemoDiagnosticProvider
-14. Explicit mode resolution via VITE_VECTOR_MODE (default: "live"); invalid values fail fast with a descriptive Error
-15. Strict isolation: Demo mode never contacts live hardware; Live mode failure never falls back silently to demo mode
-16. SystemPreflightService checks local laptop environment only; strictly NO device discovery commands (`adb devices`, `idevice_id -l`) are executed
-17. Missing optional platform tools (ADB / iOS) produce status `NOT_INSTALLED` resulting in overall readiness `PARTIAL`, never an API failure
-18. Shared zero-dependency `safeFetchJson<T>` encapsulates bounded timeouts, external cancellation propagation, and `ApiErrorKind` categorization (`NETWORK`, `TIMEOUT`, `HTTP`, `INVALID_RESPONSE`, `ABORTED`, `CONFIGURATION`, `UNKNOWN`)
-19. Request sequencing (`requestIdRef`) in React hooks guarantees latest requested call wins during out-of-order promise settlement
-20. Check isolation in `SystemPreflightService` catches unexpected exceptions per-check, preventing endpoint crashes while withholding internal tracebacks for privacy
-
----
-
-## Dependencies Installed
-
-### Python (global system env)
-- fastapi 0.142.1
-- uvicorn 0.54.0
-- pydantic 2.13.5
-- pydantic-settings 2.15.0
-- pytest 9.1.1
-- pytest-asyncio 1.4.0
-- httpx 0.28.1
-- ruff 0.16.9
-- mypy 2.3.1
-- numpy 2.5.3
-- scipy 1.18.1
-- matplotlib 3.11.2
-- uv 0.12.21
-
-### Node.js
-- Node.js 24.19.0 LTS
-- npm 11.17.0
-- React 19.2.8
-- Vite 8.3.0
-- TypeScript 6.0.2
-- ESLint 10.10.0
-- Vitest 3.2.7
-- lucide-react 0.475.0
-- @testing-library/react 16.3.0
-
-Dependencies added in Phase 1D: NONE
-
----
-
-## Required External Tools
-
-| Tool | Purpose | Status |
-|---|---|---|
-| ADB (Android Platform Tools) | Android device communication | Checked via Preflight (NOT_INSTALLED / PASS depending on host PATH) |
-| libimobiledevice | iOS device communication | Checked via Preflight (NOT_INSTALLED / PASS depending on host PATH) |
-| Git | Version control | INSTALLED (C:\Program Files\Git) |
-| Python 3.14.7 | Agent and intelligence | INSTALLED |
-| Node.js 24.19.0 | Frontend | INSTALLED |
-| uv | Python package management | INSTALLED |
+10. Explicit ConnectionState model: "CHECKING" | "ONLINE" | "OFFLINE" | "DEMO_READY"
+11. React 19 safe async effect pattern in hooks
+12. DiagnosticProvider abstraction with Live/Demo separation
+13. Mode resolution via VITE_VECTOR_MODE (default: "live"); invalid values fail fast
+14. SystemPreflightService checks local laptop environment ONLY â€” no device discovery
+15. Shared safeFetchJson<T> with bounded timeouts, cancellation, and structured error categorization
+16. Request sequencing (requestIdRef) prevents out-of-order race conditions
+17. Check isolation in SystemPreflightService prevents endpoint crashes
+18. **Phase 2A:** device_id is opaque SHA256 hash (12 chars) â€” ADB serial never exposed in API/URL
+19. **Phase 2A:** Device registry in-memory only (dict); serial never persisted or logged
+20. **Phase 2A:** Battery PASS â‰  battery health assessment; status_note always displayed
+21. **Phase 2A:** ADB command list: ["adb", "devices", "-l"], ["adb", "-s", SERIAL, "shell", "getprop", PROP], ["adb", "-s", SERIAL, "shell", "dumpsys", "battery"] â€” fixed lists, never user-supplied strings
+22. **Phase 2A:** Plugged state inferred from AC/USB powered boolean fields (not from string "ac powered" key which is always present)
 
 ---
 
 ## Android Device Status
 
-- Android device discovery: NOT STARTED
-- ADB environment availability checking: IMPLEMENTED in Phase 1C
-- ADB device enumeration: NOT IMPLEMENTED
-- Real Redmi Note 14 Pro 5G connection: NOT YET VERIFIED
+- ADB environment availability checking: IMPLEMENTED (Phase 1C preflight)
+- ADB device enumeration: IMPLEMENTED (Phase 2A â€” 'adb devices -l' via safe subprocess)
+- ADB state handling (DEVICE/UNAUTHORIZED/OFFLINE/NO_DEVICE/MULTIPLE_DEVICES): IMPLEMENTED
+- Android identity retrieval (manufacturer, model, android_version, sdk_level): IMPLEMENTED
+- Battery Telemetry Verification ('adb shell dumpsys battery'): IMPLEMENTED
+- Opaque device_id (SHA256, never raw serial): IMPLEMENTED
+- Real Redmi Note 14 Pro 5G connection: NOT YET VERIFIED (ADB not on system PATH during implementation â€” see Required External Tools section)
 
 ---
 
 ## iPhone Device Status
 
-- iPhone device discovery: NOT STARTED
-- iOS tooling availability checking: IMPLEMENTED in Phase 1C
-- iPhone enumeration: NOT IMPLEMENTED
-- Pairing/trust communication: NOT IMPLEMENTED
-- Real iPhone 17 Pro connection: NOT YET VERIFIED
+- iPhone device discovery: NOT STARTED (Phase 2B)
+- iOS tooling availability checking: IMPLEMENTED (Phase 1C)
 
 ---
 
 ## Frontend Status
 
-Phase 1 frontend implementation complete and verified:
-- Provider contract: `mode`, `checkHealth()`, `getPreflight()`.
-- Client layer: Shared `safeFetchJson<T>` with timeout handling, cancellation, response validation, and structured error categorization.
-- State management: `useHealthCheck` and `usePreflight` hooks hardened with request sequencing (`requestIdRef`), stale data clearing on retry/recheck, and unmount cancellation.
-- UI: `HealthStatus` and `PreflightStatus` accessible components with clear text badges, visible focus outlines, `role="status"`, `aria-live="polite"`, recheck buttons, and guidance.
-- App integration: `App.tsx` cleanly renders both status components under `DiagnosticProviderComponent`.
-- 64 passing tests across 7 test suites (`health.test.ts`, `request.test.ts`, `DiagnosticProvider.test.ts`, `App.test.tsx`, `PreflightStatus.test.tsx`, `HealthStatus.test.tsx`, `integration_hardening.test.tsx`).
-- ESLint: 0 errors, 0 warnings. TypeScript: 0 errors. Build: clean.
+Phase 2A adds Android device discovery and battery UI on top of Phase 1:
+- Provider contract extended: `discoverAndroidDevices()`, `getAndroidBatteryTelemetry(deviceId)`.
+- Client layer: `lib/api/android.ts` with `fetchAndroidDevices` and `fetchAndroidBatteryTelemetry` using `safeFetchJson<T>`.
+- State management: `useAndroidDiscovery` and `useAndroidBattery` hooks with request sequencing, stale data clearing, and unmount cancellation.
+- UI: `AndroidStatus` component with manual detection, all ADB state cases, battery section (only for DEVICE state), PASS disclaimer note.
+- 80 passing tests across 8 test suites.
+- ESLint: 0 errors. TypeScript: 0 errors. Build: clean.
 
 ---
 
 ## Backend Status
 
-FastAPI agent operational. Phase 1 backend endpoints verified:
-- `/api/v1/health` returning deterministic health response (`OK`, version, mode, timestamp).
-- `/api/v1/system/preflight` returning structured `PreflightResponse` with independent check isolation.
-- Security: Subprocess policy strictly enforces argument arrays, timeouts, and no shell.
-- Privacy: No environment secrets or file paths leaked in error outputs or API responses.
-- Invariant verified: NO device discovery or phone queries executed in Phase 1.
-- 58 tests pass in local-agent (pytest). Ruff: 0 errors, formatted. Mypy: 0 errors across 33 files.
+FastAPI agent operational. Phase 2A backend additions:
+- `GET /api/v1/devices/android` â€” ADB device discovery with identity retrieval for authorized devices.
+- `GET /api/v1/devices/android/{device_id}/battery` â€” Battery telemetry from 'adb shell dumpsys battery'.
+- Security: All ADB commands use validated fixed argument lists. device_id path param never reaches ADB.
+- Privacy: Serial numbers internal/transient only. Not in API response or logs.
+- 85 tests pass in local-agent (58 existing + 27 new Phase 2A tests). Ruff: 0 errors. Mypy: 0 errors across 36 files.
 
 ---
 
@@ -304,44 +252,6 @@ FastAPI agent operational. Phase 1 backend endpoints verified:
 
 Fuzzy inference, genome encoding, perturbation engine, and Baseline A implemented. 21 tests pass.
 NSGA-II main optimizer loop: NOT YET IMPLEMENTED (Phase 5).
-
----
-
-## Benchmark Status
-
-configs/attempt_01.yaml scaffold created.
-Synthetic benchmark generator: NOT YET IMPLEMENTED.
-No actual benchmark results yet.
-
----
-
-## CI Status
-
-.github/workflows/ci.yml created.
-
----
-
-## Vercel Status
-
-Not deployed. Phase 8.
-
----
-
-## Custom Domain Status
-
-Not configured.
-
----
-
-## Privacy Page Status
-
-Not implemented. Will be /privacy route in Phase 7.
-
----
-
-## Terms Page Status
-
-Not implemented. Will be /terms route in Phase 7.
 
 ---
 
@@ -354,7 +264,7 @@ $env:PATH = "C:\Program Files\nodejs;C:\Program Files\Git\cmd;" + $env:PATH; .\s
 # - Agent: Ruff lint [PASS]
 # - Agent: Ruff format [PASS]
 # - Agent: Mypy [PASS]
-# - Agent: Pytest [PASS] (58/58)
+# - Agent: Pytest [PASS] (85/85)
 # - Intelligence: Install deps [PASS]
 # - Intelligence: Ruff lint [PASS]
 # - Intelligence: Ruff format [PASS]
@@ -363,105 +273,82 @@ $env:PATH = "C:\Program Files\nodejs;C:\Program Files\Git\cmd;" + $env:PATH; .\s
 # - Frontend: npm install [PASS]
 # - Frontend: ESLint [PASS]
 # - Frontend: TypeScript check [PASS]
-# - Frontend: Tests [PASS] (64/64)
+# - Frontend: Tests [PASS] (80/80)
 # - Frontend: Build [PASS]
 ```
 
 ---
 
-## Last Successful
+## Required External Tools
 
-- All 15 verification checks passed via `.\scripts\verify.ps1` on 2026-09-30
-- local-agent pytest: 58/58 PASS (0 warnings)
-- intelligence pytest: 21/21 PASS
-- local-agent ruff & format: PASS
-- local-agent mypy: PASS (33 source files)
-- intelligence ruff & format: PASS
-- intelligence mypy: PASS (15 source files)
-- frontend npm install: PASS
-- frontend ESLint: PASS (0 errors, 0 warnings)
-- frontend TypeScript check: PASS (0 errors)
-- frontend Vitest tests: PASS (64/64 tests across 7 suites)
-- frontend production build: PASS (`tsc -b && vite build`)
+| Tool | Purpose | Status |
+|---|---|---|
+| ADB (Android Platform Tools) | Android device communication | Not found on system PATH during Phase 2A. Install before running live device test. |
+| libimobiledevice | iOS device communication | Checked via Preflight (NOT_INSTALLED / PASS depending on host PATH) |
+| Git | Version control | INSTALLED (C:\Program Files\Git) |
+| Python 3.14.7 | Agent and intelligence | INSTALLED |
+| Node.js 24.19.0 | Frontend | INSTALLED |
+| uv | Python package management | INSTALLED |
+
+---
+
+## Phase 2A New Files
+
+**Backend:**
+- `local-agent/src/vector_agent/devices/android/bridge.py` â€” AndroidDeviceBridge + parsing functions
+- `local-agent/src/vector_agent/devices/android/__init__.py` â€” updated exports
+- `local-agent/src/vector_agent/api/android.py` â€” GET /devices/android, GET /devices/android/{id}/battery
+- `local-agent/src/vector_agent/models/android.py` â€” Pydantic API models
+- `local-agent/src/vector_agent/main.py` â€” android router registered
+- `local-agent/tests/test_android_bridge.py` â€” 18 fixture-based parser tests
+- `local-agent/tests/test_android_api.py` â€” 9 API endpoint tests
+
+**Frontend:**
+- `frontend/src/lib/api/android.ts` â€” fetchAndroidDevices, fetchAndroidBatteryTelemetry
+- `frontend/src/lib/api/useAndroidDiscovery.ts` â€” hook
+- `frontend/src/lib/api/useAndroidBattery.ts` â€” hook
+- `frontend/src/components/AndroidStatus.tsx` â€” full UI component
+- `frontend/src/__tests__/AndroidStatus.test.tsx` â€” 16 tests
+
+**Modified:**
+- `frontend/src/lib/api/types.ts` â€” added Android types + type guards
+- `frontend/src/providers/DiagnosticProvider.ts` â€” extended interface
+- `frontend/src/providers/LiveDiagnosticProvider.ts` â€” implemented Android methods
+- `frontend/src/providers/DemoDiagnosticProvider.ts` â€” demo stubs for Android methods
+- `frontend/src/App.tsx` â€” added AndroidStatus component
+- `frontend/src/__tests__/HealthStatus.test.tsx` â€” updated mock to include new interface methods
 
 ---
 
 ## Current Uncommitted Files
 
-The working tree contains verified Phase 1D changes awaiting checkpoint:
-- `docs/ARCHITECTURE.md` (modified)
-- `frontend/src/__tests__/integration_hardening.test.tsx` (created)
-- `frontend/src/lib/api/__tests__/request.test.ts` (created)
-- `frontend/src/lib/api/client.ts` (modified)
-- `frontend/src/lib/api/health.ts` (modified)
-- `frontend/src/lib/api/preflight.ts` (modified)
-- `frontend/src/lib/api/request.ts` (created)
-- `frontend/src/lib/api/types.ts` (modified)
-- `frontend/src/lib/api/useHealthCheck.ts` (modified)
-- `frontend/src/lib/api/usePreflight.ts` (modified)
-- `local-agent/src/vector_agent/services/preflight.py` (modified)
-- `local-agent/tests/test_preflight.py` (modified)
-- `STATUS.md` (modified)
-
----
-
-## Important Files Changed Recently
-
-- `frontend/src/lib/api/request.ts`
-- `frontend/src/lib/api/types.ts`
-- `frontend/src/lib/api/health.ts`
-- `frontend/src/lib/api/preflight.ts`
-- `frontend/src/lib/api/useHealthCheck.ts`
-- `frontend/src/lib/api/usePreflight.ts`
-- `frontend/src/lib/api/__tests__/request.test.ts`
-- `frontend/src/__tests__/integration_hardening.test.tsx`
-- `local-agent/src/vector_agent/services/preflight.py`
-- `local-agent/tests/test_preflight.py`
-- `docs/ARCHITECTURE.md`
-- `STATUS.md`
-
----
-
-## Next Recommended Action
-
-Phase 2A - Android Environment and ADB Device Discovery
-
----
-
-## Next Three Tasks
-
-1. Review and plan Phase 2A Android bridge boundaries and permissions.
-2. Implement safe ADB device enumeration using existing subprocess security policy.
-3. Handle unauthorized, recovery, offline, and multiple-device states.
+All Phase 2A files listed above are uncommitted (untracked/modified).
+Working tree is clean only of Phase 1 committed files.
 
 ---
 
 ## Do Not Redo
 
-- Do not rewrite frontend/src/providers/ (DiagnosticProvider, LiveDiagnosticProvider, DemoDiagnosticProvider, createDiagnosticProvider, DiagnosticProviderContext, DiagnosticProviderComponent).
-- Do not rewrite frontend/src/lib/api/ (types.ts, request.ts, health.ts, preflight.ts, useHealthCheck.ts, usePreflight.ts, client.ts).
-- Do not rewrite PreflightStatus, HealthStatus, or App.tsx.
-- Do not rewrite SystemPreflightService or /api/v1/system/preflight route.
-- Don't rewrite the error model — it is comprehensive and tested.
-- Don't rewrite the device models — they implement all required fields.
-- Don't rewrite the subprocess_policy.py — security requirements are correctly enforced.
-
----
-
-## Risks
-
-1. Real Android phone discovery requires USB debugging to be enabled by user; handle UNAUTHORIZED state cleanly.
-2. Multiple connected devices must be flagged (Phase 2 requirement: support single target device or report MULTIPLE_DEVICES_FOUND).
-3. Do not run any phone discovery command until Phase 2A begins.
+- Do not rewrite any Phase 1 files unless fixing a bug.
+- Do not rewrite AndroidDeviceBridge â€” all ADB paths are fixed lists.
+- Do not add fallback demo data to live ADB paths.
+- Do not expose raw ADB serial numbers in the API or logs.
+- Battery PASS note must always disclaim health assessment.
 
 ---
 
 ## Notes for Next AI Agent
 
-Phase 1 is complete, hardened, and verified awaiting user commit. The entire foundation (FastAPI agent, health handshake, Live/Demo provider abstraction, system preflight, error taxonomy, request sequencing, and accessible UI) is green. All 15 verify checks pass (58 agent tests, 21 intelligence tests, 64 frontend tests = 143 total). The latest trusted baseline commit is df45c37. Run `git rev-parse HEAD`, `git status`, `git log --oneline -5`, and `.\scripts\verify.ps1` before continuing with Phase 2A.
+Phase 2A is complete and verified awaiting user commit. All 15 verify.ps1 checks pass. 166 total automated tests (85 agent + 21 intelligence + 80 frontend). Baseline committed SHA is 1ae24fa.
+
+ADB is not on the system PATH â€” the next agent or user needs to install Android Platform Tools and add to PATH to test with a real Redmi Note 14 Pro 5G. The VECTOR local agent (`local-agent/`) must be running before discovery can function.
+
+To start the agent: `cd local-agent && uv run uvicorn vector_agent.main:create_app --factory --host 127.0.0.1 --port 8742`
+To start the frontend: `cd frontend && npm run dev`
 
 ---
 
 ## HANDOFF PROMPT
 
-VECTOR Phase 1 is complete and verified awaiting user commit. Baseline commit is df45c37. Error handling, request sequencing, race condition protection, cancellation safety, and integration between health, preflight, and provider abstraction are fully hardened. All 15 repository verification checks (.\scripts\verify.ps1) pass with 143 total automated tests (58 agent + 21 intelligence + 64 frontend). Check git status to review uncommitted Phase 1D files. Once committed by the user, proceed to Phase 2A: Android Environment and ADB Device Discovery.
+VECTOR Phase 2A is complete and verified awaiting user commit. Real ADB device discovery (argument-array subprocess policy), identity retrieval, battery telemetry, opaque device_id registry, AndroidStatus frontend component, and 43 new tests (27 backend + 16 frontend) are all green. verify.ps1 15/15. Total: 166 tests. Baseline commit: 1ae24fa. ADB not on PATH â€” install Android Platform Tools to test with real Redmi Note 14 Pro 5G device.
+Discovery.

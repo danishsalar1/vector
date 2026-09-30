@@ -1,6 +1,7 @@
 import { DiagnosticProviderComponent } from "./providers";
 import { HealthStatus } from "./components/HealthStatus";
 import { PreflightStatus } from "./components/PreflightStatus";
+import { AndroidStatus } from "./components/AndroidStatus";
 import type { DiagnosticProvider } from "./providers";
 import "./App.css";
 
@@ -14,6 +15,7 @@ function App({ provider }: AppProps) {
       <main id="app-container">
         <HealthStatus />
         <PreflightStatus />
+        <AndroidStatus />
       </main>
     </DiagnosticProviderComponent>
   );

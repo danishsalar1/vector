@@ -150,3 +150,143 @@ export function isPreflightResponse(data: unknown): data is PreflightResponse {
     );
   });
 }
+
+// ============================================================
+// Android device types (Phase 2A)
+// ============================================================
+
+/**
+ * ADB connection state returned by the discovery endpoint.
+ */
+export type AndroidConnectionState =
+  | "DEVICE"
+  | "UNAUTHORIZED"
+  | "OFFLINE"
+  | "NO_DEVICE"
+  | "MULTIPLE_DEVICES"
+  | "ERROR";
+
+/**
+ * A single Android device entry from the discovery response.
+ */
+export interface AndroidDevice {
+  device_id: string;
+  connection_state: AndroidConnectionState;
+  adb_available: boolean;
+  message: string;
+
+  // Identity — only present when state is DEVICE
+  manufacturer: string | null;
+  model: string | null;
+  device_codename: string | null;
+  android_version: string | null;
+  sdk_level: number | null;
+  brand: string | null;
+
+  discovered_at: string;
+}
+
+/**
+ * Response from GET /api/v1/devices/android.
+ */
+export interface AndroidDeviceListResponse {
+  devices: AndroidDevice[];
+  count: number;
+  state: AndroidConnectionState;
+  message: string;
+  adb_available: boolean;
+}
+
+/**
+ * Battery telemetry diagnostic status.
+ * PASS = telemetry collected successfully. NOT a battery health assessment.
+ */
+export type BatteryDiagnosticStatus = "PASS" | "INCONCLUSIVE" | "ERROR";
+
+/**
+ * Response from GET /api/v1/devices/android/{device_id}/battery.
+ */
+export interface BatteryTelemetryResponse {
+  device_id: string;
+  status: BatteryDiagnosticStatus;
+  status_note: string; // Explicitly disclaims battery health
+  confidence: number;
+
+  level_pct: number | null;
+  charging_state: string | null;
+  health_state: string | null;
+  plugged: string | null;
+  voltage_v: number | null;
+  temperature_c: number | null;
+  technology: string | null;
+  present: boolean | null;
+
+  evidence_source: string;
+  collection_method: string;
+  collected_at: string;
+
+  error: string | null;
+}
+
+/**
+ * State of the Android device discovery cycle.
+ */
+export type AndroidDiscoveryState = "IDLE" | "CHECKING" | "COMPLETE" | "ERROR";
+
+/**
+ * Result returned by provider.discoverAndroidDevices().
+ */
+export interface AndroidDiscoveryResult {
+  state: AndroidDiscoveryState;
+  data: AndroidDeviceListResponse | null;
+  errorMessage: string | null;
+  error?: ApiError | null;
+}
+
+/**
+ * State of the battery telemetry collection cycle.
+ */
+export type BatteryState = "IDLE" | "RUNNING" | "COMPLETE" | "ERROR";
+
+/**
+ * Result returned by provider.getAndroidBatteryTelemetry().
+ */
+export interface BatteryTelemetryResult {
+  state: BatteryState;
+  data: BatteryTelemetryResponse | null;
+  errorMessage: string | null;
+  error?: ApiError | null;
+}
+
+/**
+ * Type guard for AndroidDeviceListResponse.
+ */
+export function isAndroidDeviceListResponse(
+  data: unknown
+): data is AndroidDeviceListResponse {
+  if (typeof data !== "object" || data === null) return false;
+  const d = data as Record<string, unknown>;
+  return (
+    typeof d.state === "string" &&
+    typeof d.adb_available === "boolean" &&
+    typeof d.message === "string" &&
+    Array.isArray(d.devices)
+  );
+}
+
+/**
+ * Type guard for BatteryTelemetryResponse.
+ */
+export function isBatteryTelemetryResponse(
+  data: unknown
+): data is BatteryTelemetryResponse {
+  if (typeof data !== "object" || data === null) return false;
+  const d = data as Record<string, unknown>;
+  return (
+    typeof d.device_id === "string" &&
+    typeof d.status === "string" &&
+    typeof d.status_note === "string" &&
+    typeof d.confidence === "number" &&
+    typeof d.evidence_source === "string"
+  );
+}

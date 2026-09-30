@@ -247,6 +247,8 @@ describe("HealthStatus Component", () => {
           errorMessage: null,
         }),
         getPreflight: vi.fn(),
+        discoverAndroidDevices: vi.fn(),
+        getAndroidBatteryTelemetry: vi.fn(),
       };
 
       render(

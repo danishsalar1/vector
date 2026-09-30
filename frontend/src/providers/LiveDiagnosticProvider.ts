@@ -2,11 +2,22 @@ import type {
   CheckHealthOptions,
   CheckPreflightOptions,
   DiagnosticProvider,
+  DiscoverAndroidOptions,
+  GetBatteryOptions,
   ProviderMode,
 } from "./DiagnosticProvider";
-import type { HealthCheckResult, PreflightResult } from "../lib/api/types";
+import type {
+  AndroidDiscoveryResult,
+  BatteryTelemetryResult,
+  HealthCheckResult,
+  PreflightResult,
+} from "../lib/api/types";
 import { checkHealth } from "../lib/api/health";
 import { fetchPreflight } from "../lib/api/preflight";
+import {
+  fetchAndroidDevices,
+  fetchAndroidBatteryTelemetry,
+} from "../lib/api/android";
 
 /**
  * Live hardware diagnostic provider.
@@ -21,5 +32,18 @@ export class LiveDiagnosticProvider implements DiagnosticProvider {
 
   async getPreflight(options?: CheckPreflightOptions): Promise<PreflightResult> {
     return fetchPreflight(options);
+  }
+
+  async discoverAndroidDevices(
+    options?: DiscoverAndroidOptions
+  ): Promise<AndroidDiscoveryResult> {
+    return fetchAndroidDevices(options);
+  }
+
+  async getAndroidBatteryTelemetry(
+    deviceId: string,
+    options?: GetBatteryOptions
+  ): Promise<BatteryTelemetryResult> {
+    return fetchAndroidBatteryTelemetry(deviceId, options);
   }
 }

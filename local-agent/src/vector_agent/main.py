@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from vector_agent import __version__
-from vector_agent.api import devices, health, scans, system
+from vector_agent.api import android, devices, health, scans, system
 from vector_agent.core.config import get_settings
 from vector_agent.core.errors import VectorError
 from vector_agent.core.logging import configure_logging, get_logger
@@ -88,6 +88,7 @@ def create_app() -> FastAPI:
     prefix = "/api/v1"
     app.include_router(health.router, prefix=prefix)
     app.include_router(system.router, prefix=prefix)
+    app.include_router(android.router, prefix=prefix)
     app.include_router(devices.router, prefix=prefix)
     app.include_router(scans.router, prefix=prefix)
 
