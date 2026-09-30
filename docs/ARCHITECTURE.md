@@ -53,6 +53,7 @@ export type ProviderMode = "live" | "demo";
 export interface DiagnosticProvider {
   readonly mode: ProviderMode;
   checkHealth(options?: CheckHealthOptions): Promise<HealthCheckResult>;
+  getPreflight(options?: CheckPreflightOptions): Promise<PreflightResult>;
   // Future milestones will extend this interface with getDevices(), startScan(), etc.
 }
 
@@ -66,7 +67,23 @@ export interface DiagnosticProvider {
 - Configured explicitly via `VITE_VECTOR_MODE` (`live` | `demo`), defaulting to `live`.
 - Factory function `createDiagnosticProvider()` centralizes initialization.
 - Invalid configuration fails fast with a descriptive error.
-- **No Automatic Fallback:** If `LiveDiagnosticProvider` cannot reach the local agent, it reports `OFFLINE`. It never silently switches to `demo` mode.
+- **No Automatic Fallback:** If `LiveDiagnosticProvider` cannot reach the local agent, it reports `OFFLINE` or `ERROR`. It never silently switches to `demo` mode.
+
+## System Preflight Service
+
+The `SystemPreflightService` evaluates whether the host laptop environment is ready for future hardware operations before any smartphone scan begins.
+
+### Environment Readiness vs. Device Discovery
+
+There is a fundamental separation between environment checks and device discovery:
+- **Environment Preflight (Phase 1C):** Answers *"Is the laptop prepared with necessary tools (Windows OS, Python runtime, local agent, ADB, iOS tooling)?"*
+  - Checks executable presence safely using `shutil.which` and harmless `--version` invocations.
+  - **Never** invokes `adb devices`, `idevice_id -l`, or device queries.
+  - Absence of optional platform tools produces `NOT_INSTALLED` with overall status `PARTIAL`, never an API failure.
+- **Device Discovery (Phase 2):** Answers *"Which specific smartphone is currently connected via USB, what is its authorization state, and what capabilities does it have?"*
+
+Tool availability alone does not prove phone connection or authorization. Device discovery and interrogation belong strictly to Phase 2.
+
 
 
 ## Scan Lifecycle (State Machine)

@@ -1,4 +1,4 @@
-﻿# VECTOR Known Limitations
+# VECTOR Known Limitations
 
 This document honestly states what VECTOR cannot do, what it can only partially verify, and where evidence may be incomplete or unavailable.
 
@@ -92,6 +92,7 @@ The `DeviceIdentityVerifier` interface exists and `LocalIdentityVerifier` is imp
 
 ## Connectivity Limitations
 
+- Tool availability alone (e.g., adb or ideviceinfo found on PATH during preflight) does not prove actual device connectivity, trust status, or successful pairing.
 - USB cable must support data transfer (charging-only cables will not work)
 - ADB requires USB debugging to be enabled on Android
 - iOS requires the device to trust the computer

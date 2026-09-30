@@ -5,8 +5,11 @@ import {
   createDiagnosticProvider,
   resolveProviderMode,
 } from "../createDiagnosticProvider";
-import { DEMO_HEALTH_FIXTURE } from "../demo/fixtures";
-import type { HealthResponse } from "../../lib/api/types";
+import {
+  DEMO_HEALTH_FIXTURE,
+  DEMO_PREFLIGHT_FIXTURE,
+} from "../demo/fixtures";
+import type { HealthResponse, PreflightResponse } from "../../lib/api/types";
 
 describe("DiagnosticProvider Abstraction (Phase 1B)", () => {
   const originalFetch = globalThis.fetch;
@@ -81,6 +84,57 @@ describe("DiagnosticProvider Abstraction (Phase 1B)", () => {
       expect(result.data).toBeNull();
       expect(result.errorMessage).toContain("503");
     });
+
+    it("delegates getPreflight to /api/v1/system/preflight endpoint", async () => {
+      const mockPreflight: PreflightResponse = {
+        overall: "PARTIAL",
+        overall_status: "PARTIAL",
+        checks: [
+          {
+            id: "platform_os",
+            name: "Operating System",
+            category: "platform",
+            status: "PASS",
+            message: "Windows 11 detected.",
+            required: false,
+            details: "Windows 11",
+          },
+        ],
+        timestamp: "2026-09-30T12:00:00Z",
+      };
+
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => mockPreflight,
+      });
+      globalThis.fetch = mockFetch;
+
+      const provider = new LiveDiagnosticProvider();
+      const result = await provider.getPreflight();
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/system/preflight",
+        expect.objectContaining({ method: "GET" })
+      );
+      expect(result).toEqual({
+        state: "COMPLETE",
+        data: mockPreflight,
+        errorMessage: null,
+      });
+    });
+
+    it("propagates getPreflight network failure as ERROR state", async () => {
+      globalThis.fetch = vi.fn().mockRejectedValue(new TypeError("Network error"));
+
+      const provider = new LiveDiagnosticProvider();
+      const result = await provider.getPreflight();
+
+      expect(result.state).toBe("ERROR");
+      expect(result.data).toBeNull();
+      expect(result.errorMessage).toContain("VECTOR could not complete the system check");
+    });
   });
 
   describe("DemoDiagnosticProvider", () => {
@@ -110,6 +164,20 @@ describe("DiagnosticProvider Abstraction (Phase 1B)", () => {
       expect(result.errorMessage).toBeNull();
     });
 
+    it("returns deterministic demo preflight without calling fetch", async () => {
+      const mockFetch = vi.fn();
+      globalThis.fetch = mockFetch;
+
+      const provider = new DemoDiagnosticProvider();
+      const result = await provider.getPreflight();
+
+      expect(mockFetch).not.toHaveBeenCalled();
+      expect(result.state).toBe("COMPLETE");
+      expect(result.data).toEqual(DEMO_PREFLIGHT_FIXTURE);
+      expect(result.data?.overall).toBe("PARTIAL");
+      expect(result.errorMessage).toBeNull();
+    });
+
     it("respects abort signal when already aborted", async () => {
       const controller = new AbortController();
       controller.abort();
@@ -117,6 +185,9 @@ describe("DiagnosticProvider Abstraction (Phase 1B)", () => {
       const provider = new DemoDiagnosticProvider();
       await expect(
         provider.checkHealth({ signal: controller.signal })
+      ).rejects.toThrow("The operation was aborted.");
+      await expect(
+        provider.getPreflight({ signal: controller.signal })
       ).rejects.toThrow("The operation was aborted.");
     });
   });

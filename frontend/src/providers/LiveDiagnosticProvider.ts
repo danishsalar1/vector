@@ -1,10 +1,12 @@
 import type {
   CheckHealthOptions,
+  CheckPreflightOptions,
   DiagnosticProvider,
   ProviderMode,
 } from "./DiagnosticProvider";
-import type { HealthCheckResult } from "../lib/api/types";
+import type { HealthCheckResult, PreflightResult } from "../lib/api/types";
 import { checkHealth } from "../lib/api/health";
+import { fetchPreflight } from "../lib/api/preflight";
 
 /**
  * Live hardware diagnostic provider.
@@ -15,5 +17,9 @@ export class LiveDiagnosticProvider implements DiagnosticProvider {
 
   async checkHealth(options?: CheckHealthOptions): Promise<HealthCheckResult> {
     return checkHealth(options);
+  }
+
+  async getPreflight(options?: CheckPreflightOptions): Promise<PreflightResult> {
+    return fetchPreflight(options);
   }
 }

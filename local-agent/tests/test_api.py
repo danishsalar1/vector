@@ -56,7 +56,17 @@ class TestPreflightEndpoint:
         for item in items:
             assert "name" in item
             assert "status" in item
-            assert item["status"] in ("READY", "NOT_FOUND", "DEGRADED", "NOT_RUN")
+            assert item["status"] in (
+                "PASS",
+                "WARN",
+                "FAIL",
+                "NOT_INSTALLED",
+                "NOT_APPLICABLE",
+                "READY",
+                "NOT_FOUND",
+                "DEGRADED",
+                "NOT_RUN",
+            )
 
 
 class TestDevicesEndpoint:

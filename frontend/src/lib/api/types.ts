@@ -35,3 +35,95 @@ export function isHealthResponse(data: unknown): data is HealthResponse {
     typeof candidate.mode === "string"
   );
 }
+
+/**
+ * Status of an individual preflight environment check.
+ * Aligned with backend PreflightStatus enum in local-agent/src/vector_agent/models/preflight.py.
+ */
+export type PreflightCheckStatus =
+  | "PASS"
+  | "WARN"
+  | "FAIL"
+  | "NOT_INSTALLED"
+  | "NOT_APPLICABLE";
+
+/**
+ * Overall environment readiness state.
+ * Aligned with backend PreflightOverall enum.
+ */
+export type PreflightOverallStatus = "READY" | "PARTIAL" | "BLOCKED";
+
+/**
+ * Individual check result returned by the backend preflight endpoint.
+ */
+export interface PreflightCheckItem {
+  id: string;
+  name: string;
+  category: string;
+  status: PreflightCheckStatus;
+  message: string;
+  required: boolean;
+  details: string | null;
+  detail?: string | null;
+}
+
+/**
+ * Preflight response payload from GET /api/v1/system/preflight.
+ */
+export interface PreflightResponse {
+  overall: PreflightOverallStatus;
+  overall_status: PreflightOverallStatus;
+  checks: readonly PreflightCheckItem[];
+  items?: readonly PreflightCheckItem[];
+  timestamp: string;
+}
+
+/**
+ * Explicit state of the preflight inspection cycle.
+ */
+export type PreflightState = "IDLE" | "CHECKING" | "COMPLETE" | "ERROR";
+
+/**
+ * Result structure returned by provider.getPreflight().
+ */
+export interface PreflightResult {
+  state: PreflightState;
+  data: PreflightResponse | null;
+  errorMessage: string | null;
+}
+
+/**
+ * Type guard to validate whether an unknown object adheres to PreflightResponse.
+ */
+export function isPreflightResponse(data: unknown): data is PreflightResponse {
+  if (typeof data !== "object" || data === null) {
+    return false;
+  }
+  const candidate = data as Record<string, unknown>;
+  const overall = candidate.overall ?? candidate.overall_status;
+  const checks = candidate.checks ?? candidate.items;
+
+  if (
+    typeof overall !== "string" ||
+    !["READY", "PARTIAL", "BLOCKED"].includes(overall) ||
+    !Array.isArray(checks) ||
+    typeof candidate.timestamp !== "string"
+  ) {
+    return false;
+  }
+
+  return checks.every((check) => {
+    if (typeof check !== "object" || check === null) {
+      return false;
+    }
+    const c = check as Record<string, unknown>;
+    return (
+      typeof c.id === "string" &&
+      typeof c.name === "string" &&
+      typeof c.category === "string" &&
+      typeof c.status === "string" &&
+      typeof c.message === "string" &&
+      typeof c.required === "boolean"
+    );
+  });
+}

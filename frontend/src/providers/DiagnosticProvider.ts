@@ -1,8 +1,13 @@
-import type { HealthCheckResult } from "../lib/api/types";
+import type { HealthCheckResult, PreflightResult } from "../lib/api/types";
 
 export type ProviderMode = "live" | "demo";
 
 export interface CheckHealthOptions {
+  signal?: AbortSignal;
+  timeoutMs?: number;
+}
+
+export interface CheckPreflightOptions {
   signal?: AbortSignal;
   timeoutMs?: number;
 }
@@ -15,4 +20,5 @@ export interface CheckHealthOptions {
 export interface DiagnosticProvider {
   readonly mode: ProviderMode;
   checkHealth(options?: CheckHealthOptions): Promise<HealthCheckResult>;
+  getPreflight(options?: CheckPreflightOptions): Promise<PreflightResult>;
 }

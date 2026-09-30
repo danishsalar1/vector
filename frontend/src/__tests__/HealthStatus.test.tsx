@@ -246,6 +246,7 @@ describe("HealthStatus Component", () => {
           },
           errorMessage: null,
         }),
+        getPreflight: vi.fn(),
       };
 
       render(
