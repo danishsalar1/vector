@@ -15,18 +15,99 @@ Hackathon challenge: Advanced Computational Intelligence â€” Hybrid Evoluti
 
 ## Current Phase
 
-Canonical Phase 4 — Capability Foundation + Runtime Discovery
+Canonical Phase 5 — Diagnostic Registry + Scan Planner + Scan Lifecycle + Diagnostic Events
 Status: VERIFIED and committed
-Baseline before Phase 4: 68f3002
-Last committed green SHA before this phase: 68f3002
-Phase 4 implementation commit: 5f90447
+Baseline before Phase 5: 0a27a80
+Last committed green SHA before this phase: 0a27a80
+Phase 5 implementation commit: 1d168e8
 
 ### Canonical Production Roadmap
 1. Foundation / Production Audit — COMPLETE
 2. Diagnostic Protocol + Battery Migration — COMPLETE
 3. DeviceSession + Platform-Neutral Device API — COMPLETE
 4. Capability Foundation + Runtime Discovery — COMPLETE
-5. Diagnostic Registry + Scan Planner + Scan Lifecycle + Diagnostic Events — NEXT (NOT STARTED)
+5. Diagnostic Registry + Scan Planner + Scan Lifecycle + Diagnostic Events — COMPLETE
+6. Additional Android Standard Diagnostics — NEXT (NOT STARTED)
+7. iOS Discovery / Pairing + Basic iOS Diagnostics — NOT STARTED
+8. VECTOR Probe + Deep Android Diagnostics — NOT STARTED
+9. Cross-Platform Evidence Normalization + Verification Coverage — NOT STARTED
+10. Real Sugeno Trust Engine — NOT STARTED
+11. Benchmarks + NSGA-II + Perturbation Validation — NOT STARTED
+12. Reporting — NOT STARTED
+13. Production UX + Diagnostic Visualization / Motion — NOT STARTED
+14. Windows Packaging — NOT STARTED
+15. Security / Privacy + Compatibility Validation — NOT STARTED
+16. Pilot + Release Candidate — NOT STARTED
+
+### Verified Implementation Completed
+- production DiagnosticDefinition extension: added platform-neutral required verification_level, requires_probe, and prerequisites to DiagnosticDefinition while maintaining backward compatibility with all existing definitions
+- thread-safe DiagnosticRegistry: synchronized with threading.RLock, added typed definition lookups (get_definitions, get_definitions_by_platform, get_definitions_by_category), test-isolation clear(), and create_default_registry() factory
+- platform-neutral scan request modes: supported FULL_VERIFICATION, CATEGORY_VERIFICATION, SELECTED_DIAGNOSTICS, and SINGLE_COMPONENT via ScanMode enum and hardened ScanRequest (extra fields forbidden, duplicate IDs rejected, invalid mode combos rejected)
+- truthful ScanPlanner: derives executable plan from DeviceSession, DeviceCapabilityProfile, DiagnosticRegistry, platform, connection state, and prerequisites
+- truthful applicability classification: categorizes diagnostics as APPLICABLE, NOT_APPLICABLE, UNSUPPORTED, RESTRICTED, UNAVAILABLE, BLOCKED_BY_PREREQUISITE, or UNKNOWN without inventing status systems
+- capability dependency semantics: missing, uninspected, or unsupported capabilities skip diagnostics with explicit reasons; missing capability NEVER creates a diagnostic FAIL
+- actually immutable ScanPlan: frozen Pydantic model using immutable tuples for sequences, frozen planned items, dynamically computed skip_reasons dict, and planning_session_epoch
+- privacy boundary: raw serial numbers completely excluded from ScanPlan, ScanSession, DiagnosticEvent, and API responses
+- formal ScanLifecycleState state machine: CREATED -> PLANNED -> RUNNING -> COMPLETED with explicit terminal failure (FAILED) and cancellation (CANCELLED) paths; invalid transitions rejected with InvalidLifecycleTransitionError
+- lifecycle torn read prevention: timestamps and errors assigned before state publication; state assignment occurs last
+- structured DiagnosticEvent stream: internal event taxonomy (scan.started, diagnostic.started, diagnostic.progress, diagnostic.evidence, diagnostic.completed, diagnostic.failed, diagnostic.inconclusive, scan.completed, scan.failed) carrying normalized safe payloads
+- fixed diagnostic event semantics: PASS, FAIL, DEGRADED, UNSUPPORTED, RESTRICTED, SKIPPED map to diagnostic.completed; execution/infrastructure exceptions and crashes map to diagnostic.failed with status ERROR; inconclusive maps to diagnostic.inconclusive; unhandled statuses raise explicit error rather than silent fallthrough
+- NO fake progress guarantee: progress metadata remains None unless intermediate progress is truthfully measurable; no timers, fake delays, or simulated percentages
+- sequential execution orchestration: ScanOrchestrator drives Plan -> Start -> Diagnostic execution -> Evidence -> Result -> Events -> Finish outside the global session manager lock
+- every PASS requires evidence: orchestrated enforcement converting evidence-less PASS/DEGRADED and non-terminal PENDING/RUNNING to ERROR / execution contract violation; measured hardware FAIL and INCONCLUSIVE preserved
+- per-device scan exclusivity: ScanService under lock enforces one active scan per device; concurrent start attempts on the same device return HTTP 409 Conflict; different devices run concurrently; terminal scans unblock subsequent scans
+- repeated start guard: run_scan requires session to be PLANNED before starting execution; non-PLANNED invocations are rejected immediately without mutating existing state (does not convert RUNNING -> FAILED)
+- worker crash guard: ScanService execution wrapper catches unexpected worker/orchestrator exceptions, transitions session to FAILED with safe message, emits scan.failed once, prevents dangling RUNNING scans in both sync and async paths
+- plan-time session epoch protection: ScanPlan records planning_session_epoch; disconnect/reconnect between planning and execution refuses execution as stale plan / device state changed; pre-diagnostic disconnect invokes 0 diagnostics
+- execution failure separation: subprocess crashes or unhandled execution exceptions map to DiagnosticStatus.ERROR, not fabricated hardware FAIL
+- safe battery error boundary: fixed safe error summary prevents leaking internal exception strings, ADB paths, command lines, or stderr
+- battery telemetry semantics preserved: battery diagnostic PASS confirms valid telemetry was collected, not battery health; trust score remains None and Trust Engine remains NOT_READY
+- safe plan visibility in ScanSummary: tightened public types with state as ScanLifecycleState, plan as ScanPlan | None (no Any), scan_id as consistent str; solves circular import without weakening types; frontend guards strengthened
+- platform-neutral scan API: POST /api/v1/scans/plan, POST /api/v1/scans (supporting async and sync execution), GET /api/v1/scans/{scan_id}, GET /api/v1/scans/{scan_id}/results, and GET /api/v1/scans/{scan_id}/events (JSON polling)
+- frontend TypeScript contract: added complete scan types (ScanMode, DiagnosticApplicability, PlannedDiagnostic, ScanPlan, ScanLifecycleState, DiagnosticEventType, DiagnosticEvent, ScanSummary), type guards, and client API helper functions in frontend/src/lib/api/scans.ts
+
+### Verification Results
+- Focused Phase 5 tests: 57 passed (test_phase5_scan_orchestration.py)
+- Full local-agent: 252 passed across 12 test files
+- Intelligence: 21 passed
+- Frontend: 90 passed across 9 test files
+- scripts/verify.ps1: 15/15 PASS
+- git diff --check: PASS
+- Hardware smoke test: NOT RUN
+- Hardware note: Phase 5 automated verification is fixture-based; no authorized real Android phone was available in this environment. Recorded: 'Phase 5 hardware smoke test NOT RUN.'
+
+### Intentionally Deferred
+- expanded Android standard diagnostics (camera deep test, sensors deep test, storage, connectivity)
+- VECTOR Probe companion application
+- iOS bridge, discovery, and pairing
+- Trust Engine live integration (TrustEngineStatus remains NOT_READY)
+- functional coverage scoring and final reporting
+- final scan UX, animations, and progress UI
+- packaging and cloud backend
+
+### Permanent Guarantees / Do Not Redo
+- stale-device safety and session epoch validation
+- opaque device IDs (never raw serial)
+- raw serial privacy boundary (never in plans, events, logs, or API)
+- no silent false confidence (every PASS requires evidence)
+- LIVE never silently falls back to DEMO
+- Level 1 != Level 2 != Level 3
+- battery telemetry PASS means telemetry collected, not battery health
+- Trust Engine remains NOT_READY (trust_score is None)
+- no fake progress (no timers, no simulated percentage)
+
+### Next Phase
+Phase 6 — Additional Android Standard Diagnostics (NOT STARTED).
+
+
+---
+
+## Historical Phase Record — Phase 4: Capability Foundation + Runtime Discovery
+Status: VERIFIED and committed
+Baseline before Phase 4: 68f3002
+Last committed green SHA before this phase: 68f3002
+Phase 4 implementation commit: 5f90447
+Phase 4 status finalization commit: 0a27a80
 
 ### Verified Implementation Completed
 - platform-neutral capability contracts: DeviceCapabilityProfile, CapabilityEntry, CapabilityEvidenceRecord, CapabilityStatus, VerificationLevel, PlatformCapabilityNamespace
