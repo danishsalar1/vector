@@ -15,11 +15,109 @@ Hackathon challenge: Advanced Computational Intelligence â€” Hybrid Evoluti
 
 ## Current Phase
 
+Canonical Phase 6 — Additional Android Standard Diagnostics
+Status: VERIFIED and committed
+Baseline before Phase 6: 786280a
+Last committed green SHA before this phase: 786280a
+Phase 6 implementation commit: ee53940
+
+### Canonical Production Roadmap
+1. Foundation / Production Audit — COMPLETE
+2. Diagnostic Protocol + Battery Migration — COMPLETE
+3. DeviceSession + Platform-Neutral Device API — COMPLETE
+4. Capability Foundation + Runtime Discovery — COMPLETE
+5. Diagnostic Registry + Scan Planner + Scan Lifecycle + Diagnostic Events — COMPLETE
+6. Additional Android Standard Diagnostics — COMPLETE
+7. iOS Discovery / Pairing + Basic iOS Diagnostics — NEXT (NOT STARTED)
+8. VECTOR Probe + Deep Android Diagnostics — NOT STARTED
+9. Cross-Platform Evidence Normalization + Verification Coverage — NOT STARTED
+10. Real Sugeno Trust Engine — NOT STARTED
+11. Benchmarks + NSGA-II + Perturbation Validation — NOT STARTED
+12. Reporting — NOT STARTED
+13. Production UX + Diagnostic Visualization / Motion — NOT STARTED
+14. Windows Packaging — NOT STARTED
+15. Security / Privacy + Compatibility Validation — NOT STARTED
+16. Pilot + Release Candidate — NOT STARTED
+
+### Verified Implementation Completed
+- added five conservative Android standard diagnostics: storage_telemetry, memory_telemetry, thermal_telemetry, display_metrics, and camera_inventory alongside existing battery_telemetry
+- all five new diagnostics use VerificationLevel.RUNTIME_DETECTION; no Phase 6 telemetry/inventory diagnostic overstates Level 2 functional verification
+- storage telemetry uses fixed read-only `df -k /data`; normalizes total, used, available, and utilization evidence without claiming storage health
+- storage parser enforces total > 0, non-negative used/available, used <= total, and available <= total; impossible values are INCONCLUSIVE and no invalid used+available==total assumption is imposed
+- memory telemetry uses fixed read-only `/proc/meminfo`; requires valid kB units, never fabricates MemAvailable, rejects conflicting duplicate keys, and validates values against MemTotal
+- thermal telemetry uses fixed read-only `dumpsys thermalservice`; rejects NaN/infinite samples, deduplicates cached/HAL readings by logical sensor identity, and prefers current HAL readings where structurally identifiable
+- display metrics use fixed read-only `wm size` and `wm density`; physical and override values remain distinct and partial command failures cannot create PASS
+- camera inventory uses fixed read-only `dumpsys media.camera`; no camera IDs are synthesized, facing is never guessed, count/device mismatches are INCONCLUSIVE, and oversized reported counts are bounded defensively
+- camera parser suppresses client/package/process sections and emits only normalized inventory evidence; raw dumpsys content never becomes result/evidence/event payload
+- real fabricated privacy-marker flow verifies raw serial, package-name, and Wi-Fi-like markers do not leak through bridge -> parser -> diagnostic -> orchestrator -> evidence/events/summary
+- all Android commands continue through the hardened bridge/subprocess policy with fixed argv arrays, shell=False, validated serials, bounded timeouts, safe decoding, return-code handling, and redacted public errors
+- diagnostic timeout budgeting uses monotonic remaining-time accounting; multi-command display diagnostics share one total budget rather than receiving a fresh timeout per command
+- real ADBCommandTimeoutError paths are covered for storage, memory, thermal, camera, and both display commands; timeout becomes ERROR, never hardware FAIL
+- zero/exhausted diagnostic budget executes no blocking command
+- create_default_registry() now registers battery plus the five Phase 6 Android standard diagnostics with unique IDs, Android platform metadata, requires_probe=False, and no fabricated capability prerequisites
+- ScanPlanner remains generic and unchanged; Full, Category, Selected, and Single Component modes derive Phase 6 diagnostics dynamically from registry metadata
+- Phase 5 evidence, lifecycle, event, concurrency, stale-session, privacy, and worker-crash guarantees remain intact
+- TrustEngineStatus remains NOT_READY; Phase 6 computes no health score, trust score, confidence score, penalties, or factory/reference comparisons
+- frontend remains dynamic and unchanged; no diagnostic IDs, counts, progress, or category-to-test lists were hardcoded
+
+### Verification Results
+- Focused Phase 6 tests: 111 passed
+- Full local-agent: 363 passed, 1 existing warning
+- Intelligence: 21 passed
+- Frontend: 90 passed across 9 test files
+- scripts/verify.ps1: 15/15 PASS
+- git diff --check: PASS
+- Phase 6 formal gate: PASS
+- Hardware smoke test: NOT RUN
+- Hardware note: Phase 6 automated verification is fixture-based; no authorized real Android hardware smoke test was run in this environment. Recorded: 'Phase 6 hardware smoke test NOT RUN.'
+
+### Intentionally Deferred
+- iOS discovery, pairing, and basic iOS diagnostics
+- VECTOR Probe and deep Android/interactive diagnostics
+- Wi-Fi and Bluetooth functional verification
+- active camera capture / optical verification
+- microphone, speaker, touchscreen, motion-sensor, biometric, flashlight, and vibration functional tests
+- model/factory reference comparison
+- Cross-Platform Evidence Normalization and Verification Coverage
+- Trust Engine live integration and Sugeno inference
+- benchmark/NSGA-II/perturbation validation
+- final reporting
+- production UX, animations, and diagnostic visualization
+- Windows packaging and release validation
+- subprocess capture buffering hardening remains a later architectural hardening item
+- real-hardware/OEM parser validation remains required before release-level validation
+
+### Permanent Guarantees / Do Not Redo
+- every PASS requires real evidence
+- telemetry/inventory success does not imply hardware health
+- Unsupported != Failed
+- Restricted != Failed
+- Inconclusive != Failed
+- execution ERROR != hardware FAIL
+- stale-device safety and session epoch validation
+- one active nonterminal scan per opaque device
+- opaque device IDs; raw ADB serial is internal/transient only
+- raw serial, raw stderr, exception detail, package/client data, and raw dumps never enter public evidence/events/API
+- LIVE never silently falls back to DEMO
+- Level 1 != Level 2 != Level 3
+- battery telemetry PASS means telemetry collected, not battery health
+- no synthetic camera IDs or guessed camera facing
+- no fake progress, fake timers, or simulated percentage
+- Trust Engine remains NOT_READY and trust_score remains None
+
+### Next Phase
+Phase 7 — iOS Discovery / Pairing + Basic iOS Diagnostics (NOT STARTED).
+
+---
+
+## Historical Phase Record — Phase 5: Diagnostic Registry + Scan Planner + Scan Lifecycle + Diagnostic Events
+
 Canonical Phase 5 — Diagnostic Registry + Scan Planner + Scan Lifecycle + Diagnostic Events
 Status: VERIFIED and committed
 Baseline before Phase 5: 0a27a80
 Last committed green SHA before this phase: 0a27a80
 Phase 5 implementation commit: 1d168e8
+Phase 5 status finalization commit: 786280a
 
 ### Canonical Production Roadmap
 1. Foundation / Production Audit — COMPLETE
@@ -98,6 +196,7 @@ Phase 5 implementation commit: 1d168e8
 
 ### Next Phase
 Phase 6 — Additional Android Standard Diagnostics (NOT STARTED).
+
 
 
 ---
