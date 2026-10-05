@@ -111,6 +111,19 @@ class ScanState(StrEnum):
     DISCONNECTED = "DISCONNECTED"
 
 
+class TrustEngineStatus(StrEnum):
+    """Readiness state of the Trust Intelligence engine.
+
+    While NOT_READY, trust_score must remain None on ScanSummary.
+    This prevents placeholder fuzzy inference from being exposed
+    as a legitimate Trust Score.
+    """
+
+    NOT_READY = "NOT_READY"
+    ACTIVE = "ACTIVE"
+    ERROR = "ERROR"
+
+
 # ============================================================
 # Device models
 # ============================================================
@@ -253,6 +266,8 @@ class ScanSummary(BaseModel):
     started_at: datetime | None = None
     completed_at: datetime | None = None
     diagnostic_results: list[DiagnosticResult] = Field(default_factory=list)
+    trust_engine_status: TrustEngineStatus = TrustEngineStatus.NOT_READY
+    """Trust engine readiness.  While NOT_READY, trust_score MUST be None."""
     trust_score: float | None = None
     trust_confidence: float | None = None
     error: str | None = None
