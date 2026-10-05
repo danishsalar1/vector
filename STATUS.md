@@ -15,7 +15,77 @@ Hackathon challenge: Advanced Computational Intelligence â€” Hybrid Evoluti
 
 ## Current Phase
 
-Phase 2 - DeviceSession + Platform-Neutral Device API Foundation
+Canonical Phase 4 — Capability Foundation + Runtime Discovery
+Status: VERIFIED and committed
+Baseline before Phase 4: 68f3002
+Last committed green SHA before this phase: 68f3002
+Phase 4 implementation commit: 5f90447
+
+### Canonical Production Roadmap
+1. Foundation / Production Audit — COMPLETE
+2. Diagnostic Protocol + Battery Migration — COMPLETE
+3. DeviceSession + Platform-Neutral Device API — COMPLETE
+4. Capability Foundation + Runtime Discovery — COMPLETE
+5. Diagnostic Registry + Scan Planner + Scan Lifecycle + Diagnostic Events — NEXT (NOT STARTED)
+
+### Verified Implementation Completed
+- platform-neutral capability contracts: DeviceCapabilityProfile, CapabilityEntry, CapabilityEvidenceRecord, CapabilityStatus, VerificationLevel, PlatformCapabilityNamespace
+- Android Level 1 runtime capability discovery via AndroidDeviceBridge.discover_capabilities() parsing pm list features
+- PRESENT / NOT_REPORTED / UNKNOWN truth semantics: positive matches are PRESENT, features unlisted in complete output are NOT_REPORTED, uninspected/incomplete features remain UNKNOWN
+- no fabricated battery capability: removed synthetic standard_battery_subsystem inspection; battery remains UNKNOWN until real hardware telemetry is collected
+- evidence/provenance-backed runtime declarations: PRESENT capabilities carry Level 1 runtime-declaration evidence; NOT_REPORTED and UNKNOWN entries do not fabricate per-entry evidence
+- truncated/incomplete output uncertainty handling: incomplete command output marks missing capabilities as UNKNOWN with verification_level=None and no fabricated evidence
+- truncated final-line protection: when subprocess output is flagged truncated, the final potentially partial line is discarded before parsing so a cut feature name cannot create false PRESENT
+- DeviceSession capability snapshot integration: DeviceSession stores the capability_profile and exposes it through to_connected_device() only while the session is CONNECTED; offline/unauthorized states mask stale capability knowledge
+- reconnect and explicit refresh behavior: rediscovery refreshes stale capabilities; refresh=true query parameter forces explicit refresh via DeviceSessionManager.refresh_device_capabilities()
+- 30-second bounded retry for incomplete/failed automatic discovery: prevents rapid repeated ADB discovery storms on failing devices
+- session epoch / stale-result protection: apply-guard verifies session state before updating, preventing stale asynchronous discovery results from overwriting reconnected sessions
+- capability endpoint reconciles physical connection state before returning cached data: GET /api/v1/devices/{device_id}/capabilities verifies connection state first, transitioning disconnected devices to OFFLINE and returning 400
+- blocking ADB work moved off FastAPI event loop: run_in_threadpool offloads discovery and capability execution from the event loop
+- slow ADB work outside manager-wide lock: subprocess execution runs outside the DeviceSessionManager lock, preventing discovery stalls from blocking concurrent session lookups
+- safe raw-serial handling/redaction: raw serial numbers never leak through error messages, validation exceptions, discovery logs, or API responses; validation formatting uses opaque device IDs
+- safe 503 discovery error boundary: GET /api/v1/devices and GET /api/v1/devices/{device_id}/capabilities return fixed 'Device discovery failed.' detail with safe exception type logging and suppressed exception chaining (from None)
+- platform-neutral frontend TypeScript contract: added complete capability types, type guards, and namespaces in frontend/src/lib/api/types.ts
+- unknown compatible Android models work without catalog dependency: runtime discovery functions generically without model catalog or device reference requirements
+
+### Verification Results
+- Focused Phase 4 tests: 73 passed (test_capabilities + test_api + test_security)
+- Full local-agent: 193 passed
+- Intelligence: 21 passed
+- Frontend: 83 passed across 8 files
+- scripts/verify.ps1: 15/15 PASS
+- git diff --check: PASS
+- Hardware smoke test: NOT RUN
+- Hardware note: Phase 4 automated verification is fixture-based and no new real Android hardware regression was run during this phase. Real Android hardware was validated previously in the project and remains part of the project verification baseline.
+
+### Intentionally Deferred
+- ScanPlanner
+- scan lifecycle/orchestration
+- DiagnosticEvent stream
+- broader Android Standard Diagnostics
+- iOS discovery/pairing
+- VECTOR Probe
+- Trust Engine live integration
+- reporting
+- final product UX/motion
+- packaging
+
+### Permanent Guarantees / Do Not Redo
+- stale-device safety
+- opaque device IDs
+- raw serial privacy boundary
+- no silent false confidence
+- LIVE never silently falls back to DEMO
+- Level 1 != Level 2 != Level 3
+- battery telemetry PASS means telemetry collected, not battery health
+- Trust Engine remains NOT_READY
+
+### Next Phase
+Phase 5 — Diagnostic Registry + Scan Planner + Scan Lifecycle + Diagnostic Events (NOT STARTED).
+
+---
+
+## Historical Phase Record — Phase 2: DeviceSession + Platform-Neutral Device API Foundation
 Status: VERIFIED and committed.
 Phase 2 implementation commit: 6e66cf9
 
@@ -119,7 +189,7 @@ Preserve:
 
 ## Last Green Commit SHA
 
-6e66cf9 (Phase 2 implementation commit)
+5f90447 (Canonical Phase 4 implementation commit)
 
 ---
 
