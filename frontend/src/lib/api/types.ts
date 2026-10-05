@@ -359,3 +359,162 @@ export function isDeviceCapabilityProfile(
     typeof d.profile_complete === "boolean"
   );
 }
+
+// ============================================================
+// Platform-neutral scan orchestration types (Phase 5)
+// ============================================================
+
+export type ScanMode =
+  | "FULL_VERIFICATION"
+  | "CATEGORY_VERIFICATION"
+  | "SELECTED_DIAGNOSTICS"
+  | "SINGLE_COMPONENT";
+
+export type DiagnosticApplicability =
+  | "APPLICABLE"
+  | "NOT_APPLICABLE"
+  | "UNSUPPORTED"
+  | "RESTRICTED"
+  | "UNAVAILABLE"
+  | "BLOCKED_BY_PREREQUISITE"
+  | "UNKNOWN";
+
+export interface PlannedDiagnostic {
+  diagnostic_id: string;
+  applicability: DiagnosticApplicability;
+  reason?: string | null;
+}
+
+export interface ScanPlan {
+  plan_id: string;
+  device_id: string;
+  platform: "ANDROID" | "IOS" | "UNKNOWN";
+  mode: ScanMode;
+  diagnostics_requested: readonly string[];
+  diagnostics_planned: readonly string[];
+  diagnostics_skipped: readonly string[];
+  skip_reasons: Record<string, string>;
+  planned_items: readonly PlannedDiagnostic[];
+  planning_session_epoch?: number;
+  capability_profiled_at?: string | null;
+  registry_diagnostic_ids: readonly string[];
+  created_at: string;
+}
+
+export type ScanLifecycleState =
+  | "CREATED"
+  | "PLANNED"
+  | "RUNNING"
+  | "COMPLETED"
+  | "FAILED"
+  | "CANCELLED";
+
+export type DiagnosticEventType =
+  | "scan.started"
+  | "diagnostic.started"
+  | "diagnostic.progress"
+  | "diagnostic.evidence"
+  | "diagnostic.completed"
+  | "diagnostic.failed"
+  | "diagnostic.inconclusive"
+  | "scan.completed"
+  | "scan.failed";
+
+export interface DiagnosticEvent {
+  event_id: string;
+  scan_id: string;
+  device_id: string;
+  event_type: DiagnosticEventType;
+  timestamp: string;
+  diagnostic_id?: string | null;
+  progress?: number | null;
+  evidence?: CapabilityEvidenceRecord | null;
+  result?: Record<string, unknown> | null;
+  message?: string | null;
+}
+
+export interface ScanStartResponse {
+  scan_id: string;
+  state: ScanLifecycleState;
+  plan?: ScanPlan | null;
+}
+
+export interface ScanEventsResponse {
+  scan_id: string;
+  events: readonly DiagnosticEvent[];
+}
+
+export interface ScanSummary {
+  scan_id: string;
+  device_id: string;
+  state: ScanLifecycleState;
+  created_at: string;
+  started_at?: string | null;
+  completed_at?: string | null;
+  plan?: ScanPlan | null;
+  diagnostic_results: readonly Record<string, unknown>[];
+  trust_engine_status: string;
+  trust_score?: number | null;
+  trust_confidence?: number | null;
+  error?: string | null;
+}
+
+export function isScanPlan(data: unknown): data is ScanPlan {
+  if (typeof data !== "object" || data === null) return false;
+  const d = data as Record<string, unknown>;
+  return (
+    typeof d.plan_id === "string" &&
+    typeof d.device_id === "string" &&
+    typeof d.platform === "string" &&
+    typeof d.mode === "string" &&
+    Array.isArray(d.diagnostics_requested) &&
+    Array.isArray(d.diagnostics_planned) &&
+    Array.isArray(d.diagnostics_skipped) &&
+    typeof d.skip_reasons === "object" &&
+    d.skip_reasons !== null &&
+    Array.isArray(d.planned_items) &&
+    d.planned_items.every(
+      (item) =>
+        typeof item === "object" &&
+        item !== null &&
+        typeof (item as Record<string, unknown>).diagnostic_id === "string" &&
+        typeof (item as Record<string, unknown>).applicability === "string"
+    ) &&
+    typeof d.created_at === "string"
+  );
+}
+
+export function isDiagnosticEvent(data: unknown): data is DiagnosticEvent {
+  if (typeof data !== "object" || data === null) return false;
+  const d = data as Record<string, unknown>;
+  return (
+    typeof d.event_id === "string" &&
+    typeof d.scan_id === "string" &&
+    typeof d.device_id === "string" &&
+    typeof d.event_type === "string" &&
+    typeof d.timestamp === "string"
+  );
+}
+
+export function isScanSummary(data: unknown): data is ScanSummary {
+  if (typeof data !== "object" || data === null) return false;
+  const d = data as Record<string, unknown>;
+  return (
+    typeof d.scan_id === "string" &&
+    typeof d.device_id === "string" &&
+    typeof d.state === "string" &&
+    typeof d.created_at === "string" &&
+    Array.isArray(d.diagnostic_results) &&
+    typeof d.trust_engine_status === "string"
+  );
+}
+
+export function isScanEventsResponse(data: unknown): data is ScanEventsResponse {
+  if (typeof data !== "object" || data === null) return false;
+  const d = data as Record<string, unknown>;
+  return (
+    typeof d.scan_id === "string" &&
+    Array.isArray(d.events) &&
+    d.events.every(isDiagnosticEvent)
+  );
+}

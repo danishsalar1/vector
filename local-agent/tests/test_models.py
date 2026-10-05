@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from uuid import UUID
-
 from vector_agent.models.device import (
     AutomationLevel,
     CapabilityStatus,
@@ -16,7 +14,7 @@ from vector_agent.models.device import (
     EvidenceRecord,
     EvidenceSourceType,
     Platform,
-    ScanState,
+    ScanLifecycleState,
     ScanSummary,
 )
 
@@ -59,8 +57,8 @@ class TestDeviceModels:
 
     def test_scan_summary_state_default(self) -> None:
         scan = ScanSummary(device_id="dev-001")
-        assert scan.state == ScanState.IDLE
-        assert isinstance(scan.scan_id, UUID)
+        assert scan.state == ScanLifecycleState.CREATED
+        assert isinstance(scan.scan_id, str)
         assert scan.trust_score is None  # Never fabricate trust scores.
 
     def test_evidence_record_synthetic_labeled(self) -> None:

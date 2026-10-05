@@ -1,6 +1,8 @@
 import type { ApiError } from "./types";
 
 export interface SafeFetchOptions {
+  method?: string;
+  body?: string;
   signal?: AbortSignal;
   timeoutMs?: number;
   headers?: Record<string, string>;
@@ -30,6 +32,8 @@ export async function safeFetchJson<T>(
   options: SafeFetchOptions = {}
 ): Promise<SafeFetchResult<T>> {
   const {
+    method = "GET",
+    body,
     signal: externalSignal,
     timeoutMs = 5000,
     headers = {},
@@ -59,9 +63,11 @@ export async function safeFetchJson<T>(
 
   try {
     const response = await fetch(url, {
-      method: "GET",
+      method,
+      body,
       headers: {
         Accept: "application/json",
+        ...(body ? { "Content-Type": "application/json" } : {}),
         ...headers,
       },
       signal: internalController.signal,

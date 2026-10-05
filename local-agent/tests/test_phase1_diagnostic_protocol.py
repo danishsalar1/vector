@@ -131,16 +131,20 @@ class TestDiagnosticDefinition:
             BATTERY_TELEMETRY_DEFINITION.diagnostic_id = "tampered"
 
     def test_custom_definition_fields(self) -> None:
+        from vector_agent.models.device import VerificationLevel
+
         defn = DiagnosticDefinition(
             diagnostic_id="camera_functional",
             name="Camera Functional Test",
             category="cameras",
+            verification_level=VerificationLevel.FUNCTIONAL_VERIFICATION,
             supported_platforms=frozenset({Platform.ANDROID}),
             required_capabilities=frozenset({"rear_camera"}),
             automation_level=AutomationLevel.AUTOMATIC,
             timeout_seconds=15.0,
         )
         assert defn.diagnostic_id == "camera_functional"
+        assert defn.verification_level == VerificationLevel.FUNCTIONAL_VERIFICATION
         assert Platform.ANDROID in defn.supported_platforms
         assert "rear_camera" in defn.required_capabilities
 

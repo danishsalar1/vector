@@ -14,7 +14,7 @@ from enum import StrEnum
 from typing import Any
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 # ============================================================
 # Enumerations
@@ -124,6 +124,17 @@ class ScanState(StrEnum):
     FAILED = "FAILED"
     CANCELLED = "CANCELLED"
     DISCONNECTED = "DISCONNECTED"
+
+
+class ScanLifecycleState(StrEnum):
+    """Canonical lifecycle state of a VECTOR scan session."""
+
+    CREATED = "CREATED"
+    PLANNED = "PLANNED"
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
 
 
 class TrustEngineStatus(StrEnum):
@@ -298,22 +309,109 @@ class DiagnosticResult(BaseModel):
 # ============================================================
 
 
+class ScanMode(StrEnum):
+    """Scan execution mode."""
+
+    FULL_VERIFICATION = "FULL_VERIFICATION"
+    CATEGORY_VERIFICATION = "CATEGORY_VERIFICATION"
+    SELECTED_DIAGNOSTICS = "SELECTED_DIAGNOSTICS"
+    SINGLE_COMPONENT = "SINGLE_COMPONENT"
+
+
 class ScanRequest(BaseModel):
     """Request to initiate a device scan."""
 
+    model_config = ConfigDict(extra="forbid")
+
     device_id: str
     """Must be a known device_id from /api/v1/devices."""
+    mode: ScanMode = ScanMode.FULL_VERIFICATION
+    """Scan request mode."""
+    category: str | None = None
+    """Category filter when mode is CATEGORY_VERIFICATION."""
+    diagnostic_ids: list[str] = Field(default_factory=list)
+    """Diagnostic IDs when mode is SELECTED_DIAGNOSTICS or SINGLE_COMPONENT."""
+
+
+class DiagnosticApplicability(StrEnum):
+    """Truthful classification of a diagnostic's applicability for a device."""
+
+    APPLICABLE = "APPLICABLE"
+    NOT_APPLICABLE = "NOT_APPLICABLE"
+    UNSUPPORTED = "UNSUPPORTED"
+    RESTRICTED = "RESTRICTED"
+    UNAVAILABLE = "UNAVAILABLE"
+    BLOCKED_BY_PREREQUISITE = "BLOCKED_BY_PREREQUISITE"
+    UNKNOWN = "UNKNOWN"
+
+
+class PlannedDiagnostic(BaseModel):
+    """Planning classification for a single diagnostic."""
+
+    model_config = ConfigDict(frozen=True)
+
+    diagnostic_id: str
+    applicability: DiagnosticApplicability
+    reason: str | None = None
+
+
+class ScanPlan(BaseModel):
+    """Immutable plan derived from device capabilities and diagnostic registry.
+
+    Contains only opaque device_id (never raw serial).
+    Fully immutable once produced (frozen model with immutable tuples).
+    Carries planning_session_epoch to detect reconnects before execution.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    plan_id: str = Field(default_factory=lambda: str(uuid4()))
+    device_id: str
+    platform: Platform
+    mode: ScanMode
+    diagnostics_requested: tuple[str, ...] = Field(default_factory=tuple)
+    diagnostics_planned: tuple[str, ...] = Field(default_factory=tuple)
+    diagnostics_skipped: tuple[str, ...] = Field(default_factory=tuple)
+    planned_items: tuple[PlannedDiagnostic, ...] = Field(default_factory=tuple)
+    planning_session_epoch: int = 0
+    capability_profiled_at: datetime | None = None
+    registry_diagnostic_ids: tuple[str, ...] = Field(default_factory=tuple)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def skip_reasons(self) -> dict[str, str]:
+        """Safe skip reasons dynamically derived from planned items."""
+        return {
+            item.diagnostic_id: item.reason
+            for item in self.planned_items
+            if item.reason is not None and item.applicability != DiagnosticApplicability.APPLICABLE
+        }
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def total_planned(self) -> int:
+        return len(self.diagnostics_planned)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def total_skipped(self) -> int:
+        return len(self.diagnostics_skipped)
+
+    def is_planned(self, diagnostic_id: str) -> bool:
+        return diagnostic_id in self.diagnostics_planned
 
 
 class ScanSummary(BaseModel):
     """Top-level scan record."""
 
-    scan_id: UUID = Field(default_factory=uuid4)
+    scan_id: str = Field(default_factory=lambda: str(uuid4()))
     device_id: str
-    state: ScanState = ScanState.IDLE
+    state: ScanLifecycleState = ScanLifecycleState.CREATED
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     started_at: datetime | None = None
     completed_at: datetime | None = None
+    plan: ScanPlan | None = None
     diagnostic_results: list[DiagnosticResult] = Field(default_factory=list)
     trust_engine_status: TrustEngineStatus = TrustEngineStatus.NOT_READY
     """Trust engine readiness.  While NOT_READY, trust_score MUST be None."""

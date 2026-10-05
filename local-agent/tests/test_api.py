@@ -213,7 +213,15 @@ class TestScansEndpoint:
         assert response.status_code == 404
 
     async def test_start_scan_returns_scan_id(self, client: AsyncClient) -> None:
-        """Phase 0: scan creation returns a scan_id but does not run real diagnostics."""
+        session = DeviceSession(
+            device_id="dev-001",
+            platform=Platform.ANDROID,
+            connection_state=ConnectionState.CONNECTED,
+            last_seen=datetime.now(UTC),
+            raw_serial="SN001",
+        )
+        device_session_manager._sessions["dev-001"] = session
+
         response = await client.post(
             "/api/v1/scans",
             json={"device_id": "dev-001"},
@@ -222,3 +230,26 @@ class TestScansEndpoint:
         data = response.json()
         assert "scan_id" in data
         assert "state" in data
+
+    async def test_start_scan_unknown_device_returns_404(self, client: AsyncClient) -> None:
+        response = await client.post(
+            "/api/v1/scans",
+            json={"device_id": "nonexistent-device"},
+        )
+        assert response.status_code == 404
+
+    async def test_start_scan_offline_device_returns_400(self, client: AsyncClient) -> None:
+        session = DeviceSession(
+            device_id="dev-offline",
+            platform=Platform.ANDROID,
+            connection_state=ConnectionState.OFFLINE,
+            last_seen=datetime.now(UTC),
+            raw_serial="SN_OFFLINE",
+        )
+        device_session_manager._sessions["dev-offline"] = session
+
+        response = await client.post(
+            "/api/v1/scans",
+            json={"device_id": "dev-offline"},
+        )
+        assert response.status_code == 400

@@ -26,6 +26,7 @@ from vector_agent.models.device import (
     EvidenceRecord,
     EvidenceSourceType,
     Platform,
+    VerificationLevel,
 )
 
 logger = get_logger(__name__)
@@ -34,6 +35,7 @@ BATTERY_TELEMETRY_DEFINITION = DiagnosticDefinition(
     diagnostic_id="battery_telemetry",
     name="Battery Telemetry Verification",
     category="battery",
+    verification_level=VerificationLevel.FUNCTIONAL_VERIFICATION,
     supported_platforms=frozenset({Platform.ANDROID}),
     automation_level=AutomationLevel.AUTOMATIC,
     timeout_seconds=20.0,
@@ -81,14 +83,14 @@ class BatteryTelemetryDiagnostic:
         except Exception as exc:
             completed_at = datetime.now(UTC)
             duration = time.monotonic() - start_mono
-            logger.error("Battery telemetry diagnostic failed: %s", exc)
+            logger.error("Battery telemetry diagnostic failed (%s)", type(exc).__name__)
             return DiagnosticResult(
                 diagnostic_id=self.definition.diagnostic_id,
                 diagnostic_name=self.definition.name,
                 category=self.definition.category,
                 status=DiagnosticStatus.ERROR,
                 automation_level=self.definition.automation_level,
-                summary=f"Battery telemetry collection failed: {exc}",
+                summary="Battery telemetry collection failed due to an execution error.",
                 started_at=started_at,
                 completed_at=completed_at,
                 duration_seconds=round(duration, 3),
@@ -153,11 +155,8 @@ def _build_summary(status: DiagnosticStatus, error: str | None) -> str:
             "Battery telemetry was partially collected. "
             "Some key fields were missing or unparseable."
         )
-    # ERROR or unexpected
-    msg = "Battery telemetry collection encountered an error."
-    if error:
-        msg = f"{msg} {error}"
-    return msg
+    # ERROR or unexpected: fixed safe message to prevent leaking internal error details
+    return "Battery telemetry collection encountered an execution error."
 
 
 def _build_evidence_records(

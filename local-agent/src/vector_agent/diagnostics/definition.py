@@ -18,6 +18,7 @@ from vector_agent.models.device import (
     AutomationLevel,
     DiagnosticResult,
     Platform,
+    VerificationLevel,
 )
 
 
@@ -38,6 +39,10 @@ class DiagnosticDefinition:
     category: str
     """Diagnostic category, e.g. 'battery', 'identity', 'sensors'."""
 
+    verification_level: VerificationLevel
+    """Verification level for this diagnostic (Runtime Detection, Functional Verification, Reference Comparison).
+    Required to prevent silently defaulting to false certainty."""
+
     supported_platforms: frozenset[Platform] = field(
         default_factory=lambda: frozenset({Platform.ANDROID, Platform.IOS})
     )
@@ -47,8 +52,7 @@ class DiagnosticDefinition:
     """Capability names the device must expose for this diagnostic to run.
 
     Empty means no capability gate — the diagnostic determines its own
-    applicability.  Capability discovery is not built yet; this field
-    prepares the contract without adding a runtime dependency.
+    applicability.
     """
 
     automation_level: AutomationLevel = AutomationLevel.AUTOMATIC
@@ -56,6 +60,12 @@ class DiagnosticDefinition:
 
     timeout_seconds: float = 30.0
     """Maximum wall-clock time for a single execution."""
+
+    requires_probe: bool = False
+    """Whether this diagnostic requires the VECTOR Probe companion app."""
+
+    prerequisites: frozenset[str] = field(default_factory=frozenset)
+    """Diagnostic IDs that must be structurally available in the plan before this diagnostic can run."""
 
 
 class Diagnostic(Protocol):
