@@ -133,6 +133,11 @@ def create_default_registry(
     registry = DiagnosticRegistry()
     from vector_agent.devices.android.bridge import AndroidDeviceBridge
     from vector_agent.diagnostics.battery.battery_diagnostic import BatteryTelemetryDiagnostic
+    from vector_agent.diagnostics.camera.camera_diagnostic import CameraInventoryDiagnostic
+    from vector_agent.diagnostics.display.display_diagnostic import DisplayMetricsDiagnostic
+    from vector_agent.diagnostics.memory.memory_diagnostic import MemoryTelemetryDiagnostic
+    from vector_agent.diagnostics.storage.storage_diagnostic import StorageTelemetryDiagnostic
+    from vector_agent.diagnostics.thermal.thermal_diagnostic import ThermalTelemetryDiagnostic
 
     if bridge is None:
         from vector_agent.core.config import get_settings
@@ -140,4 +145,9 @@ def create_default_registry(
         bridge = AndroidDeviceBridge(adb_path=get_settings().adb_path)
 
     registry.register(BatteryTelemetryDiagnostic(bridge))
+    registry.register(StorageTelemetryDiagnostic(bridge))
+    registry.register(MemoryTelemetryDiagnostic(bridge))
+    registry.register(ThermalTelemetryDiagnostic(bridge))
+    registry.register(DisplayMetricsDiagnostic(bridge))
+    registry.register(CameraInventoryDiagnostic(bridge))
     return registry

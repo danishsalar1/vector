@@ -11,6 +11,7 @@ Security invariants (enforced throughout):
 from __future__ import annotations
 
 import shutil
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
@@ -18,7 +19,27 @@ from typing import Any
 
 from vector_agent.core.errors import ADBCommandTimeoutError
 from vector_agent.core.logging import get_logger
+from vector_agent.devices.android.camera import (
+    CameraInventoryResult,
+    parse_camera_inventory,
+)
 from vector_agent.devices.android.capabilities import parse_pm_features
+from vector_agent.devices.android.display import (
+    DisplayMetricsResult,
+    parse_display_metrics,
+)
+from vector_agent.devices.android.memory import (
+    MemoryTelemetryResult,
+    parse_proc_meminfo,
+)
+from vector_agent.devices.android.storage import (
+    StorageTelemetryResult,
+    parse_storage_df,
+)
+from vector_agent.devices.android.thermal import (
+    ThermalTelemetryResult,
+    parse_dumpsys_thermal,
+)
 from vector_agent.models.device import DeviceCapabilityProfile
 from vector_agent.security.subprocess_policy import run_command
 from vector_agent.security.validation import validate_device_serial
@@ -354,7 +375,7 @@ class AndroidDeviceBridge:
     # Battery telemetry
     # ----------------------------------------------------------
 
-    def get_battery_telemetry(self, serial: str) -> BatteryTelemetryResult:
+    def get_battery_telemetry(self, serial: str, timeout: float = 15.0) -> BatteryTelemetryResult:
         """Collect battery telemetry from 'adb shell dumpsys battery'.
 
         IMPORTANT: This diagnostic verifies that battery telemetry can be
@@ -363,6 +384,7 @@ class AndroidDeviceBridge:
 
         Args:
             serial: Validated ADB serial number.
+            timeout: Subprocess execution budget in seconds.
 
         Returns:
             BatteryTelemetryResult with telemetry data and evidence metadata.
@@ -371,6 +393,17 @@ class AndroidDeviceBridge:
         collected_at = datetime.now(UTC)
         evidence_source = "ADB / dumpsys battery"
         collection_method = "adb shell dumpsys battery"
+
+        if timeout <= 0:
+            return BatteryTelemetryResult(
+                telemetry=None,
+                status="ERROR",
+                confidence=0.0,
+                evidence_source=evidence_source,
+                collection_method=collection_method,
+                error="Execution budget expired before command execution.",
+                collected_at=collected_at,
+            )
 
         try:
             adb = self._require_adb()
@@ -388,17 +421,27 @@ class AndroidDeviceBridge:
         try:
             result = run_command(
                 [adb, "-s", validated_serial, "shell", "dumpsys", "battery"],
-                timeout=15.0,
+                timeout=timeout,
             )
-        except Exception as exc:
-            logger.error("dumpsys battery command failed: %s", exc)
+        except (ADBCommandTimeoutError, TimeoutError):
             return BatteryTelemetryResult(
                 telemetry=None,
                 status="ERROR",
                 confidence=0.0,
                 evidence_source=evidence_source,
                 collection_method=collection_method,
-                error=f"Battery telemetry command failed: {exc}",
+                error="dumpsys battery command timed out.",
+                collected_at=collected_at,
+            )
+        except Exception as exc:
+            logger.error("dumpsys battery command failed: %s", type(exc).__name__)
+            return BatteryTelemetryResult(
+                telemetry=None,
+                status="ERROR",
+                confidence=0.0,
+                evidence_source=evidence_source,
+                collection_method=collection_method,
+                error=f"Battery telemetry command failed: {type(exc).__name__}",
                 collected_at=collected_at,
             )
 
@@ -428,6 +471,444 @@ class AndroidDeviceBridge:
             evidence_source=evidence_source,
             collection_method=collection_method,
             error=None,
+            collected_at=collected_at,
+        )
+
+    # ----------------------------------------------------------
+    # Storage telemetry
+    # ----------------------------------------------------------
+
+    def get_storage_telemetry(self, serial: str, timeout: float = 15.0) -> StorageTelemetryResult:
+        """Collect live filesystem storage telemetry from 'adb shell df -k /data'.
+
+        Args:
+            serial: Validated ADB serial number.
+            timeout: Subprocess execution budget in seconds.
+
+        Returns:
+            StorageTelemetryResult with normalized storage metrics or safe failure.
+        """
+        validated_serial = validate_device_serial(serial)
+        collected_at = datetime.now(UTC)
+        evidence_source = "ADB / df -k /data"
+        collection_method = "adb shell df -k /data"
+
+        if timeout <= 0:
+            return StorageTelemetryResult(
+                telemetry=None,
+                status="ERROR",
+                confidence=0.0,
+                evidence_source=evidence_source,
+                collection_method=collection_method,
+                error="Execution budget expired before command execution.",
+                collected_at=collected_at,
+            )
+
+        try:
+            adb = self._require_adb()
+        except FileNotFoundError as exc:
+            return StorageTelemetryResult(
+                telemetry=None,
+                status="ERROR",
+                confidence=0.0,
+                evidence_source=evidence_source,
+                collection_method=collection_method,
+                error=str(exc),
+                collected_at=collected_at,
+            )
+
+        try:
+            result = run_command(
+                [adb, "-s", validated_serial, "shell", "df", "-k", "/data"],
+                timeout=timeout,
+            )
+        except (ADBCommandTimeoutError, TimeoutError):
+            return StorageTelemetryResult(
+                telemetry=None,
+                status="ERROR",
+                confidence=0.0,
+                evidence_source=evidence_source,
+                collection_method=collection_method,
+                error="df command timed out.",
+                collected_at=collected_at,
+            )
+        except Exception as exc:
+            logger.error("df command failed: %s", type(exc).__name__)
+            return StorageTelemetryResult(
+                telemetry=None,
+                status="ERROR",
+                confidence=0.0,
+                evidence_source=evidence_source,
+                collection_method=collection_method,
+                error=f"df command failed: {type(exc).__name__}",
+                collected_at=collected_at,
+            )
+
+        return parse_storage_df(
+            stdout=result.stdout,
+            stderr=result.stderr,
+            return_code=result.return_code,
+            truncated=result.truncated,
+            collected_at=collected_at,
+        )
+
+    # ----------------------------------------------------------
+    # Memory telemetry
+    # ----------------------------------------------------------
+
+    def get_memory_telemetry(self, serial: str, timeout: float = 15.0) -> MemoryTelemetryResult:
+        """Collect live memory telemetry from 'adb shell cat /proc/meminfo'.
+
+        Args:
+            serial: Validated ADB serial number.
+            timeout: Subprocess execution budget in seconds.
+
+        Returns:
+            MemoryTelemetryResult with normalized memory metrics or safe failure.
+        """
+        validated_serial = validate_device_serial(serial)
+        collected_at = datetime.now(UTC)
+        evidence_source = "ADB / /proc/meminfo"
+        collection_method = "adb shell cat /proc/meminfo"
+
+        if timeout <= 0:
+            return MemoryTelemetryResult(
+                telemetry=None,
+                status="ERROR",
+                confidence=0.0,
+                evidence_source=evidence_source,
+                collection_method=collection_method,
+                error="Execution budget expired before command execution.",
+                collected_at=collected_at,
+            )
+
+        try:
+            adb = self._require_adb()
+        except FileNotFoundError as exc:
+            return MemoryTelemetryResult(
+                telemetry=None,
+                status="ERROR",
+                confidence=0.0,
+                evidence_source=evidence_source,
+                collection_method=collection_method,
+                error=str(exc),
+                collected_at=collected_at,
+            )
+
+        try:
+            result = run_command(
+                [adb, "-s", validated_serial, "shell", "cat", "/proc/meminfo"],
+                timeout=timeout,
+            )
+        except (ADBCommandTimeoutError, TimeoutError):
+            return MemoryTelemetryResult(
+                telemetry=None,
+                status="ERROR",
+                confidence=0.0,
+                evidence_source=evidence_source,
+                collection_method=collection_method,
+                error="cat /proc/meminfo command timed out.",
+                collected_at=collected_at,
+            )
+        except Exception as exc:
+            logger.error("cat /proc/meminfo command failed: %s", type(exc).__name__)
+            return MemoryTelemetryResult(
+                telemetry=None,
+                status="ERROR",
+                confidence=0.0,
+                evidence_source=evidence_source,
+                collection_method=collection_method,
+                error=f"cat /proc/meminfo command failed: {type(exc).__name__}",
+                collected_at=collected_at,
+            )
+
+        return parse_proc_meminfo(
+            stdout=result.stdout,
+            stderr=result.stderr,
+            return_code=result.return_code,
+            truncated=result.truncated,
+            collected_at=collected_at,
+        )
+
+    # ----------------------------------------------------------
+    # Thermal telemetry
+    # ----------------------------------------------------------
+
+    def get_thermal_telemetry(self, serial: str, timeout: float = 15.0) -> ThermalTelemetryResult:
+        """Collect live thermal telemetry from 'adb shell dumpsys thermalservice'.
+
+        Args:
+            serial: Validated ADB serial number.
+            timeout: Subprocess execution budget in seconds.
+
+        Returns:
+            ThermalTelemetryResult with normalized thermal status or safe failure.
+        """
+        validated_serial = validate_device_serial(serial)
+        collected_at = datetime.now(UTC)
+        evidence_source = "ADB / dumpsys thermalservice"
+        collection_method = "adb shell dumpsys thermalservice"
+
+        if timeout <= 0:
+            return ThermalTelemetryResult(
+                telemetry=None,
+                status="ERROR",
+                confidence=0.0,
+                evidence_source=evidence_source,
+                collection_method=collection_method,
+                error="Execution budget expired before command execution.",
+                collected_at=collected_at,
+            )
+
+        try:
+            adb = self._require_adb()
+        except FileNotFoundError as exc:
+            return ThermalTelemetryResult(
+                telemetry=None,
+                status="ERROR",
+                confidence=0.0,
+                evidence_source=evidence_source,
+                collection_method=collection_method,
+                error=str(exc),
+                collected_at=collected_at,
+            )
+
+        try:
+            result = run_command(
+                [adb, "-s", validated_serial, "shell", "dumpsys", "thermalservice"],
+                timeout=timeout,
+            )
+        except (ADBCommandTimeoutError, TimeoutError):
+            return ThermalTelemetryResult(
+                telemetry=None,
+                status="ERROR",
+                confidence=0.0,
+                evidence_source=evidence_source,
+                collection_method=collection_method,
+                error="dumpsys thermalservice command timed out.",
+                collected_at=collected_at,
+            )
+        except Exception as exc:
+            logger.error("dumpsys thermalservice command failed: %s", type(exc).__name__)
+            return ThermalTelemetryResult(
+                telemetry=None,
+                status="ERROR",
+                confidence=0.0,
+                evidence_source=evidence_source,
+                collection_method=collection_method,
+                error=f"dumpsys thermalservice command failed: {type(exc).__name__}",
+                collected_at=collected_at,
+            )
+
+        return parse_dumpsys_thermal(
+            stdout=result.stdout,
+            stderr=result.stderr,
+            return_code=result.return_code,
+            truncated=result.truncated,
+            collected_at=collected_at,
+        )
+
+    # ----------------------------------------------------------
+    # Display metrics
+    # ----------------------------------------------------------
+
+    def get_display_metrics(self, serial: str, timeout: float = 15.0) -> DisplayMetricsResult:
+        """Collect live display metrics from 'adb shell wm size' and 'wm density'.
+
+        Commands share the remaining execution budget using monotonic time.
+
+        Args:
+            serial: Validated ADB serial number.
+            timeout: Total execution budget in seconds for both commands.
+
+        Returns:
+            DisplayMetricsResult with normalized metrics or safe failure.
+        """
+        validated_serial = validate_device_serial(serial)
+        collected_at = datetime.now(UTC)
+        evidence_source = "ADB / wm size + wm density"
+        collection_method = "adb shell wm size; wm density"
+        start_mono = time.monotonic()
+
+        rem1 = timeout - (time.monotonic() - start_mono)
+        if rem1 <= 0:
+            return DisplayMetricsResult(
+                metrics=None,
+                status="ERROR",
+                confidence=0.0,
+                evidence_source=evidence_source,
+                collection_method=collection_method,
+                error="Execution budget expired before command execution.",
+                collected_at=collected_at,
+            )
+
+        try:
+            adb = self._require_adb()
+        except FileNotFoundError as exc:
+            return DisplayMetricsResult(
+                metrics=None,
+                status="ERROR",
+                confidence=0.0,
+                evidence_source=evidence_source,
+                collection_method=collection_method,
+                error=str(exc),
+                collected_at=collected_at,
+            )
+
+        # Command 1: wm size
+        try:
+            res_size = run_command(
+                [adb, "-s", validated_serial, "shell", "wm", "size"],
+                timeout=rem1,
+            )
+        except (ADBCommandTimeoutError, TimeoutError):
+            return DisplayMetricsResult(
+                metrics=None,
+                status="ERROR",
+                confidence=0.0,
+                evidence_source=evidence_source,
+                collection_method=collection_method,
+                error="wm size command timed out.",
+                collected_at=collected_at,
+            )
+        except Exception as exc:
+            logger.error("wm size command failed: %s", type(exc).__name__)
+            return DisplayMetricsResult(
+                metrics=None,
+                status="ERROR",
+                confidence=0.0,
+                evidence_source=evidence_source,
+                collection_method=collection_method,
+                error=f"wm size command failed: {type(exc).__name__}",
+                collected_at=collected_at,
+            )
+
+        # Command 2: wm density (shares remaining budget)
+        rem2 = timeout - (time.monotonic() - start_mono)
+        if rem2 <= 0:
+            return DisplayMetricsResult(
+                metrics=None,
+                status="ERROR",
+                confidence=0.0,
+                evidence_source=evidence_source,
+                collection_method=collection_method,
+                error="Execution budget expired before wm density command.",
+                collected_at=collected_at,
+            )
+
+        try:
+            res_density = run_command(
+                [adb, "-s", validated_serial, "shell", "wm", "density"],
+                timeout=rem2,
+            )
+        except (ADBCommandTimeoutError, TimeoutError):
+            return DisplayMetricsResult(
+                metrics=None,
+                status="ERROR",
+                confidence=0.0,
+                evidence_source=evidence_source,
+                collection_method=collection_method,
+                error="wm density command timed out.",
+                collected_at=collected_at,
+            )
+        except Exception as exc:
+            logger.error("wm density command failed: %s", type(exc).__name__)
+            return DisplayMetricsResult(
+                metrics=None,
+                status="ERROR",
+                confidence=0.0,
+                evidence_source=evidence_source,
+                collection_method=collection_method,
+                error=f"wm density command failed: {type(exc).__name__}",
+                collected_at=collected_at,
+            )
+
+        return parse_display_metrics(
+            size_stdout=res_size.stdout,
+            density_stdout=res_density.stdout,
+            size_rc=res_size.return_code,
+            density_rc=res_density.return_code,
+            size_stderr=res_size.stderr,
+            density_stderr=res_density.stderr,
+            truncated=res_size.truncated or res_density.truncated,
+            collected_at=collected_at,
+        )
+
+    # ----------------------------------------------------------
+    # Camera inventory
+    # ----------------------------------------------------------
+
+    def get_camera_inventory(self, serial: str, timeout: float = 15.0) -> CameraInventoryResult:
+        """Collect camera inventory from 'adb shell dumpsys media.camera'.
+
+        Args:
+            serial: Validated ADB serial number.
+            timeout: Subprocess execution budget in seconds.
+
+        Returns:
+            CameraInventoryResult with normalized inventory or safe failure.
+        """
+        validated_serial = validate_device_serial(serial)
+        collected_at = datetime.now(UTC)
+        evidence_source = "ADB / dumpsys media.camera"
+        collection_method = "adb shell dumpsys media.camera"
+
+        if timeout <= 0:
+            return CameraInventoryResult(
+                inventory=None,
+                status="ERROR",
+                confidence=0.0,
+                evidence_source=evidence_source,
+                collection_method=collection_method,
+                error="Execution budget expired before command execution.",
+                collected_at=collected_at,
+            )
+
+        try:
+            adb = self._require_adb()
+        except FileNotFoundError as exc:
+            return CameraInventoryResult(
+                inventory=None,
+                status="ERROR",
+                confidence=0.0,
+                evidence_source=evidence_source,
+                collection_method=collection_method,
+                error=str(exc),
+                collected_at=collected_at,
+            )
+
+        try:
+            result = run_command(
+                [adb, "-s", validated_serial, "shell", "dumpsys", "media.camera"],
+                timeout=timeout,
+            )
+        except (ADBCommandTimeoutError, TimeoutError):
+            return CameraInventoryResult(
+                inventory=None,
+                status="ERROR",
+                confidence=0.0,
+                evidence_source=evidence_source,
+                collection_method=collection_method,
+                error="dumpsys media.camera command timed out.",
+                collected_at=collected_at,
+            )
+        except Exception as exc:
+            logger.error("dumpsys media.camera command failed: %s", type(exc).__name__)
+            return CameraInventoryResult(
+                inventory=None,
+                status="ERROR",
+                confidence=0.0,
+                evidence_source=evidence_source,
+                collection_method=collection_method,
+                error=f"dumpsys media.camera command failed: {type(exc).__name__}",
+                collected_at=collected_at,
+            )
+
+        return parse_camera_inventory(
+            stdout=result.stdout,
+            stderr=result.stderr,
+            return_code=result.return_code,
+            truncated=result.truncated,
             collected_at=collected_at,
         )
 

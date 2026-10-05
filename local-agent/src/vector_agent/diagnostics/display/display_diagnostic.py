@@ -1,14 +1,14 @@
-"""Battery Telemetry Diagnostic — VECTOR's first production diagnostic.
+"""Display Metrics Diagnostic — VECTOR production Android standard diagnostic.
 
-Wraps the existing AndroidDeviceBridge.get_battery_telemetry() and produces
+Wraps AndroidDeviceBridge.get_display_metrics() and produces
 structured DiagnosticResult + EvidenceRecord(s) through the production
 Diagnostic contract.
 
-Battery semantics (permanent):
-- PASS  = battery telemetry was successfully collected.
-- PASS != battery is healthy / battery capacity is good.
-- Battery charge percentage != battery health.
-- Missing evidence → INCONCLUSIVE, never a false PASS/FAIL.
+Display semantics (permanent):
+- PASS  = valid display dimensions and density metrics were retrieved from the window manager.
+- PASS != screen has no dead pixels, burn-in, cracks, or touch defects.
+- Does not confuse override/logical metrics with physical metrics.
+- Missing or malformed evidence -> INCONCLUSIVE, never false PASS or hardware FAIL.
 """
 
 from __future__ import annotations
@@ -17,7 +17,8 @@ import time
 from datetime import UTC, datetime
 
 from vector_agent.core.logging import get_logger
-from vector_agent.devices.android.bridge import AndroidDeviceBridge, BatteryTelemetry
+from vector_agent.devices.android.bridge import AndroidDeviceBridge
+from vector_agent.devices.android.display import DisplayMetrics
 from vector_agent.diagnostics.definition import DiagnosticDefinition
 from vector_agent.models.device import (
     AutomationLevel,
@@ -31,36 +32,34 @@ from vector_agent.models.device import (
 
 logger = get_logger(__name__)
 
-BATTERY_TELEMETRY_DEFINITION = DiagnosticDefinition(
-    diagnostic_id="battery_telemetry",
-    name="Battery Telemetry Verification",
-    category="battery",
-    verification_level=VerificationLevel.FUNCTIONAL_VERIFICATION,
+DISPLAY_METRICS_DEFINITION = DiagnosticDefinition(
+    diagnostic_id="display_metrics",
+    name="Display Metrics Verification",
+    category="display",
+    verification_level=VerificationLevel.RUNTIME_DETECTION,
     supported_platforms=frozenset({Platform.ANDROID}),
     automation_level=AutomationLevel.AUTOMATIC,
-    timeout_seconds=20.0,
+    timeout_seconds=15.0,
+    requires_probe=False,
+    required_capabilities=frozenset(),
+    prerequisites=frozenset(),
 )
 
-# Status note — always included to prevent misinterpretation.
 _STATUS_NOTE = (
-    "PASS confirms successful battery telemetry collection. "
-    "It does not represent full battery-health assessment."
+    "PASS confirms successful display metrics retrieval. "
+    "It does not verify pixel integrity, touch, burn-in, or screen defects."
 )
 
 
-class BatteryTelemetryDiagnostic:
-    """Production diagnostic for Android battery telemetry.
-
-    Delegates platform communication to AndroidDeviceBridge.
-    Owns diagnostic interpretation and evidence production.
-    """
+class DisplayMetricsDiagnostic:
+    """Production diagnostic for Android display metrics."""
 
     def __init__(self, bridge: AndroidDeviceBridge) -> None:
         self._bridge = bridge
 
     @property
     def definition(self) -> DiagnosticDefinition:
-        return BATTERY_TELEMETRY_DEFINITION
+        return DISPLAY_METRICS_DEFINITION
 
     def is_supported(self, platform: Platform) -> bool:
         return platform in self.definition.supported_platforms
@@ -72,7 +71,7 @@ class BatteryTelemetryDiagnostic:
         serial: str,
         timeout: float | None = None,
     ) -> DiagnosticResult:
-        """Run battery telemetry collection and return a structured result.
+        """Run display metrics collection and return a structured result.
 
         Args:
             device_id: Opaque VECTOR device identifier.
@@ -98,41 +97,38 @@ class BatteryTelemetryDiagnostic:
                 category=self.definition.category,
                 status=DiagnosticStatus.ERROR,
                 automation_level=self.definition.automation_level,
-                summary="Battery telemetry collection timed out within allocated budget.",
+                summary="Display metrics collection timed out within allocated budget.",
                 started_at=started_at,
                 completed_at=datetime.now(UTC),
                 duration_seconds=round(time.monotonic() - start_mono, 3),
             )
 
         try:
-            bridge_result = self._bridge.get_battery_telemetry(serial, timeout=remaining)
+            bridge_result = self._bridge.get_display_metrics(serial, timeout=remaining)
         except Exception as exc:
-            completed_at = datetime.now(UTC)
             duration = time.monotonic() - start_mono
-            logger.error("Battery telemetry diagnostic failed (%s)", type(exc).__name__)
+            logger.error("Display metrics diagnostic failed (%s)", type(exc).__name__)
             return DiagnosticResult(
                 diagnostic_id=self.definition.diagnostic_id,
                 diagnostic_name=self.definition.name,
                 category=self.definition.category,
                 status=DiagnosticStatus.ERROR,
                 automation_level=self.definition.automation_level,
-                summary="Battery telemetry collection failed due to an execution error.",
+                summary="Display metrics collection failed due to an execution error.",
                 started_at=started_at,
-                completed_at=completed_at,
+                completed_at=datetime.now(UTC),
                 duration_seconds=round(duration, 3),
             )
 
         completed_at = datetime.now(UTC)
         duration = time.monotonic() - start_mono
 
-        # Map bridge status string to DiagnosticStatus enum.
         status = _map_status(bridge_result.status)
 
-        # Build evidence records from the collected telemetry.
         evidence: list[EvidenceRecord] = []
-        if bridge_result.telemetry is not None:
+        if bridge_result.metrics is not None:
             evidence = _build_evidence_records(
-                telemetry=bridge_result.telemetry,
+                metrics=bridge_result.metrics,
                 device_id=device_id,
                 diagnostic_id=self.definition.diagnostic_id,
                 evidence_source=bridge_result.evidence_source,
@@ -141,7 +137,7 @@ class BatteryTelemetryDiagnostic:
                 collected_at=bridge_result.collected_at,
             )
 
-        summary = _build_summary(status, bridge_result.error)
+        summary = _build_summary(status)
 
         return DiagnosticResult(
             diagnostic_id=self.definition.diagnostic_id,
@@ -157,37 +153,32 @@ class BatteryTelemetryDiagnostic:
         )
 
 
-# ============================================================
-# Private helpers
-# ============================================================
-
-
 def _map_status(bridge_status: str) -> DiagnosticStatus:
-    """Map the bridge's string status to DiagnosticStatus enum."""
     mapping = {
         "PASS": DiagnosticStatus.PASS,
         "INCONCLUSIVE": DiagnosticStatus.INCONCLUSIVE,
+        "RESTRICTED": DiagnosticStatus.RESTRICTED,
+        "UNSUPPORTED": DiagnosticStatus.UNSUPPORTED,
         "ERROR": DiagnosticStatus.ERROR,
     }
     return mapping.get(bridge_status, DiagnosticStatus.ERROR)
 
 
-def _build_summary(status: DiagnosticStatus, error: str | None) -> str:
-    """Produce a human-readable summary for the diagnostic result."""
+def _build_summary(status: DiagnosticStatus) -> str:
     if status == DiagnosticStatus.PASS:
         return _STATUS_NOTE
     if status == DiagnosticStatus.INCONCLUSIVE:
-        return (
-            "Battery telemetry was partially collected. "
-            "Some key fields were missing or unparseable."
-        )
-    # ERROR or unexpected: fixed safe message to prevent leaking internal error details
-    return "Battery telemetry collection encountered an execution error."
+        return "Display metrics were partially collected or unparseable."
+    if status == DiagnosticStatus.RESTRICTED:
+        return "Window manager access restricted by platform permissions."
+    if status == DiagnosticStatus.UNSUPPORTED:
+        return "Display metrics interface is not available on this device."
+    return "Display metrics collection encountered an execution error."
 
 
 def _build_evidence_records(
     *,
-    telemetry: BatteryTelemetry,
+    metrics: DisplayMetrics,
     device_id: str,
     diagnostic_id: str,
     evidence_source: str,
@@ -195,91 +186,66 @@ def _build_evidence_records(
     confidence: float,
     collected_at: datetime,
 ) -> list[EvidenceRecord]:
-    """Convert BatteryTelemetry fields into structured EvidenceRecords.
-
-    Each key telemetry field becomes a separate evidence record so that
-    provenance is traceable per measurement.
-
-    Normalized values are NOT fabricated.  Battery percentage is NOT
-    mapped to a health score.  Fields retain their literal meaning.
-
-    raw_output from the bridge is NOT included here; it stays in the bridge
-    for transient debugging only and must never surface through the evidence
-    pipeline or API responses.
-    """
     records: list[EvidenceRecord] = []
 
     def _add(
         field_name: str,
-        raw_value: str | None,
+        raw_val: str,
         *,
+        normalized_val: float | None = None,
         unit: str | None = None,
-        normalized_value: float | None = None,
-        reliability: float = 1.0,
+        metadata: dict[str, str | int] | None = None,
     ) -> None:
-        if raw_value is None:
-            return
+        meta: dict[str, str | int] = {"field": field_name}
+        if metadata:
+            meta.update(metadata)
         records.append(
             EvidenceRecord(
                 diagnostic_id=diagnostic_id,
                 device_id=device_id,
-                source_type=EvidenceSourceType.ADB_DUMPSYS,
+                source_type=EvidenceSourceType.ADB_SHELL,
                 source_name=evidence_source,
                 collection_method=collection_method,
                 timestamp=collected_at,
-                raw_value=raw_value,
-                normalized_value=normalized_value,
+                raw_value=raw_val,
+                normalized_value=normalized_val,
                 unit=unit,
-                reliability=reliability,
+                reliability=1.0,
                 confidence=confidence,
-                metadata={"field": field_name},
+                metadata=meta,
             )
         )
 
-    # Battery level — raw percentage, NOT a health score.
-    if telemetry.level is not None:
+    # Physical resolution
+    _add(
+        "display_physical_resolution",
+        f"{metrics.physical_width}x{metrics.physical_height}",
+        metadata={"width": metrics.physical_width, "height": metrics.physical_height},
+    )
+
+    # Physical density
+    _add(
+        "display_physical_density_dpi",
+        str(metrics.physical_density),
+        normalized_val=float(metrics.physical_density),
+        unit="dpi",
+    )
+
+    # Override resolution if reported
+    if metrics.override_width is not None and metrics.override_height is not None:
         _add(
-            "battery_level",
-            str(telemetry.level),
-            unit="percent",
-            # normalized_value intentionally omitted.
-            # Battery level is NOT battery health.
+            "display_override_resolution",
+            f"{metrics.override_width}x{metrics.override_height}",
+            metadata={"width": metrics.override_width, "height": metrics.override_height},
         )
 
-    # Voltage
-    if telemetry.voltage_mv is not None:
+    # Override density if reported
+    if metrics.override_density is not None:
         _add(
-            "battery_voltage",
-            str(telemetry.voltage_mv),
-            unit="mV",
+            "display_override_density_dpi",
+            str(metrics.override_density),
+            normalized_val=float(metrics.override_density),
+            unit="dpi",
         )
-
-    # Temperature
-    if telemetry.temperature_tenths_c is not None:
-        _add(
-            "battery_temperature",
-            str(telemetry.temperature_tenths_c),
-            unit="tenths_celsius",
-        )
-
-    # OS-reported battery health classification (e.g. "Good", "Overheat").
-    if telemetry.health is not None:
-        _add("battery_health_classification", telemetry.health)
-
-    # Charging status
-    if telemetry.status is not None:
-        _add("battery_charging_status", telemetry.status)
-
-    # Plugged state
-    if telemetry.plugged is not None:
-        _add("battery_plugged", telemetry.plugged)
-
-    # Technology
-    if telemetry.technology is not None:
-        _add("battery_technology", telemetry.technology)
-
-    # Battery present
-    if telemetry.present is not None:
-        _add("battery_present", str(telemetry.present))
 
     return records
