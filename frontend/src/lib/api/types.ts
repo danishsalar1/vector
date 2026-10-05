@@ -172,8 +172,8 @@ export type AndroidConnectionState =
 export interface AndroidDevice {
   device_id: string;
   connection_state: AndroidConnectionState;
-  adb_available: boolean;
-  message: string;
+  adb_available?: boolean | null;
+  message?: string;
 
   // Identity — only present when state is DEVICE
   manufacturer: string | null;
@@ -183,18 +183,18 @@ export interface AndroidDevice {
   sdk_level: number | null;
   brand: string | null;
 
-  discovered_at: string;
+  discovered_at?: string | null;
 }
 
 /**
- * Response from GET /api/v1/devices/android.
+ * Response from GET /api/v1/devices/android or adapted from platform-neutral API.
  */
 export interface AndroidDeviceListResponse {
   devices: AndroidDevice[];
   count: number;
   state: AndroidConnectionState;
   message: string;
-  adb_available: boolean;
+  adb_available?: boolean | null;
 }
 
 /**

@@ -25,6 +25,13 @@ def client() -> TestClient:
     return TestClient(app)
 
 
+@pytest.fixture(autouse=True)
+def clear_sessions() -> None:
+    from vector_agent.devices.session import device_session_manager
+
+    device_session_manager.clear()
+
+
 _FAKE_SERIAL = "FABRICATED001"
 _NOW = datetime.now(UTC)
 
@@ -178,7 +185,7 @@ class TestAndroidBatteryEndpoint:
         assert resp.status_code == 200
         devices = resp.json()["devices"]
         assert len(devices) == 1
-        return devices[0]["device_id"]
+        return str(devices[0]["device_id"])
 
     def test_battery_telemetry_pass(self, client: TestClient) -> None:
         device_id = self._discover_and_get_device_id(client)
@@ -293,6 +300,32 @@ class TestAndroidBatteryEndpoint:
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "INCONCLUSIVE"
+
+    def test_battery_unauthorized_device_returns_403(self, client: TestClient) -> None:
+        with patch(
+            "vector_agent.api.android.AndroidDeviceBridge.discover_devices",
+            return_value=_unauthorized_discovery(),
+        ):
+            resp = client.get("/api/v1/devices/android")
+        assert resp.status_code == 200
+        device_id = str(resp.json()["devices"][0]["device_id"])
+
+        battery_resp = client.get(f"/api/v1/devices/android/{device_id}/battery")
+        assert battery_resp.status_code == 403
+        assert "unauthorized" in battery_resp.json()["detail"].lower()
+
+    def test_battery_offline_device_returns_404(self, client: TestClient) -> None:
+        device_id = self._discover_and_get_device_id(client)
+        # Device disconnects / rediscovery returns empty
+        with patch(
+            "vector_agent.api.android.AndroidDeviceBridge.discover_devices",
+            return_value=_no_device_discovery(),
+        ):
+            client.get("/api/v1/devices/android")
+
+        battery_resp = client.get(f"/api/v1/devices/android/{device_id}/battery")
+        assert battery_resp.status_code == 404
+        assert "not connected" in battery_resp.json()["detail"].lower()
 
 
 def _fake_identity_for(serial: str) -> AndroidIdentity:

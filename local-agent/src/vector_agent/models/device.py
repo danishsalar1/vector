@@ -141,6 +141,8 @@ class DeviceIdentity(BaseModel):
     android_version: str | None = None
     android_sdk_level: int | None = None
     build_fingerprint: str | None = None
+    brand: str | None = None
+    device_codename: str | None = None
 
     # iOS-specific
     ios_version: str | None = None
@@ -185,10 +187,10 @@ class ConnectedDevice(BaseModel):
     """A device as seen by the VECTOR agent at connection time."""
 
     device_id: str = Field(default_factory=lambda: str(uuid4()))
+    platform: Platform = Platform.UNKNOWN
     connection_state: ConnectionState
     identity: DeviceIdentity | None = None
     capability_profile: DeviceCapabilityProfile | None = None
-    raw_serial: str | None = None  # NEVER exposed via API; internal use only.
 
 
 # ============================================================

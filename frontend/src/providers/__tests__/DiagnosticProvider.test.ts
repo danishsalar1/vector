@@ -10,6 +10,7 @@ import {
   DEMO_PREFLIGHT_FIXTURE,
 } from "../demo/fixtures";
 import type { HealthResponse, PreflightResponse } from "../../lib/api/types";
+import type { DeviceListResponse } from "../../lib/api/devices";
 
 describe("DiagnosticProvider Abstraction (Phase 1B)", () => {
   const originalFetch = globalThis.fetch;
@@ -134,6 +135,111 @@ describe("DiagnosticProvider Abstraction (Phase 1B)", () => {
       expect(result.state).toBe("ERROR");
       expect(result.data).toBeNull();
       expect(result.errorMessage).toContain("VECTOR could not complete the system check");
+    });
+
+    it("delegates discoverAndroidDevices to canonical platform-neutral /api/v1/devices endpoint", async () => {
+      const mockDevicesResponse: DeviceListResponse = {
+        count: 2,
+        devices: [
+          {
+            device_id: "android-hash1",
+            platform: "ANDROID",
+            connection_state: "CONNECTED",
+            identity: {
+              platform: "ANDROID",
+              manufacturer: "Google",
+              model: "Pixel 7",
+              marketing_name: null,
+              android_version: "14",
+              android_sdk_level: 34,
+              build_fingerprint: null,
+              brand: "google",
+              device_codename: "panther",
+              ios_version: null,
+              product_type: null,
+              serial: null,
+              udid: null,
+              discovered_at: "2026-10-05T12:00:00Z",
+            },
+          },
+          {
+            device_id: "ios-hash2",
+            platform: "IOS",
+            connection_state: "CONNECTED",
+            identity: null,
+          },
+        ],
+      };
+
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => mockDevicesResponse,
+      });
+      globalThis.fetch = mockFetch;
+
+      const provider = new LiveDiagnosticProvider();
+      const result = await provider.discoverAndroidDevices();
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/devices",
+        expect.objectContaining({ method: "GET" })
+      );
+
+      expect(result.state).toBe("COMPLETE");
+      expect(result.data).not.toBeNull();
+      // Only Android device is retained based on explicit platform
+      expect(result.data?.devices).toHaveLength(1);
+      expect(result.data?.count).toBe(1);
+      const dev = result.data?.devices[0];
+      expect(dev?.device_id).toBe("android-hash1");
+      expect(dev?.connection_state).toBe("DEVICE");
+      expect(dev?.model).toBe("Pixel 7");
+      expect(dev?.discovered_at).toBe("2026-10-05T12:00:00Z");
+      // Must not fabricate facts
+      expect(dev?.adb_available).toBeNull();
+      expect(result.data?.adb_available).toBeNull();
+    });
+
+    it("propagates discoverAndroidDevices failure as ERROR without falling back to demo", async () => {
+      globalThis.fetch = vi.fn().mockRejectedValue(new TypeError("Network error"));
+
+      const provider = new LiveDiagnosticProvider();
+      const result = await provider.discoverAndroidDevices();
+
+      expect(result.state).toBe("ERROR");
+      expect(result.data).toBeNull();
+      expect(result.errorMessage).toBeDefined();
+    });
+
+    it("handles unauthorized Android device without fabricating discovered_at timestamp", async () => {
+      const mockDevicesResponse: DeviceListResponse = {
+        count: 1,
+        devices: [
+          {
+            device_id: "android-unauth-1",
+            platform: "ANDROID",
+            connection_state: "UNAUTHORIZED",
+            identity: null,
+          },
+        ],
+      };
+
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => mockDevicesResponse,
+      });
+
+      const provider = new LiveDiagnosticProvider();
+      const result = await provider.discoverAndroidDevices();
+
+      expect(result.state).toBe("COMPLETE");
+      expect(result.data?.state).toBe("UNAUTHORIZED");
+      expect(result.data?.devices[0].connection_state).toBe("UNAUTHORIZED");
+      expect(result.data?.devices[0].discovered_at).toBeNull();
+      expect(result.data?.devices[0].adb_available).toBeNull();
     });
   });
 

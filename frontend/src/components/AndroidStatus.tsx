@@ -148,7 +148,7 @@ export const AndroidStatus: FC<AndroidStatusProps> = ({ provider }) => {
       return (
         <div className="offline-message" data-testid="android-no-device">
           <p>
-            {!discoveryData.adb_available
+            {discoveryData.adb_available === false
               ? "Android Platform Tools are required before VECTOR can discover an Android device. Install ADB and ensure it is on PATH."
               : "No Android device detected. Connect a phone with USB Debugging enabled and click Detect."}
           </p>

@@ -15,48 +15,57 @@ Hackathon challenge: Advanced Computational Intelligence â€” Hybrid Evoluti
 
 ## Current Phase
 
-Phase 1 - Diagnostic Protocol + Battery Migration
-VERIFIED
+Phase 2 - DeviceSession + Platform-Neutral Device API Foundation
+Status: VERIFIED, awaiting commit (changes are VERIFIED BUT UNCOMMITTED).
 
 ### Baseline
-c3312a4
+770663c
 
-### What Was Implemented
-- platform-neutral DiagnosticDefinition
-- Diagnostic protocol/abstraction
-- DiagnosticRegistry
-- BatteryTelemetryDiagnostic
-- structured EvidenceRecord generation
-- DiagnosticResult production
-- battery semantic safeguards
-- TrustEngineStatus safety guard
-- trust score remains unavailable while NOT_READY
+### Implementation Completed
+- platform-neutral DeviceSession model
+- DeviceSessionManager
+- opaque device IDs
+- raw ADB serial retained only inside internal DeviceSession
+- public ConnectedDevice DTO contains NO raw_serial
+- raw serial excluded from repr/serialization
+- stale device IDs fail safely and never retarget another phone
+- disappeared devices transition OFFLINE
+- unauthorized/offline devices cannot execute privileged diagnostics
+- canonical platform-neutral:
+  GET /api/v1/devices
+  GET /api/v1/devices/{device_id}
+- frontend LIVE discovery now uses GET /api/v1/devices
+- frontend does NOT infer platform from opaque device_id
+- frontend does NOT fabricate adb_available or discovered_at
+- legacy Android route remains compatibility adapter
+- Android battery diagnostic remains available through legacy compatibility path
+- discovery failure does not silently return stale CONNECTED sessions
+- discovery failure marks affected platform sessions OFFLINE and returns HTTP 503
+- capabilities endpoint:
+    unknown device -> 404
+    known device but capability discovery not implemented -> 501
+- capability discovery remains deferred
+- iOS remains deferred
+- no Live -> Demo silent fallback
 
 ### Verification
-- focused tests: 48/48 PASS
-- local-agent tests: 133/133 PASS
-- Ruff lint: PASS
-- Ruff format: PASS
-- mypy: PASS
+- Focused backend: 34 passed
+- Full local-agent: 148 passed
+- Intelligence: 21 passed
+- Focused frontend: 28 passed
+- Full frontend: 83 passed
 - scripts/verify.ps1: 15/15 PASS
-- Hardware testing: Hardware testing was not required for this refactor phase (VECTOR Phase 2A had previously been tested successfully against a real authorized Android device; VECTOR has established real hardware verification)
+- git diff --check: PASS, zero real whitespace errors
+- Hardware note: Real Android hardware was validated previously in the project, but this Phase 2 refactor verification was automated. Phase 2 did not receive a new hardware regression run.
 
 ### Intentionally Deferred
-- DeviceSessionManager
-- platform-neutral devices API migration
-- capability discovery
-- ScanPlanner / scan lifecycle
-- DiagnosticEvent system
-- VECTOR Probe
-- additional diagnostics
-- iOS
-- TrustInput
-- Sugeno inference
-- NSGA-II
-- benchmarks
-- reports
-- premium UI/motion
-- packaging
+- capability discovery (runtime capability snapshot, deeper resolution)
+- iOS bridge implementation
+- ScanPlanner / scan lifecycle orchestration
+- DiagnosticEvent streaming
+- VECTOR Probe companion app
+- additional diagnostics beyond battery
+- Trust Intelligence inference on live scans
 
 ### Permanent Semantic Notes
 - Battery telemetry PASS means sufficient telemetry was collected.
@@ -64,20 +73,34 @@ c3312a4
 - Battery percentage is not battery health.
 - Every PASS requires evidence.
 - Trust Engine remains NOT_READY.
+- No silent false confidence: stale sessions must never be presented as connected.
+- LIVE must never silently fall back to DEMO.
 
 ### Next Recommended Phase
-DeviceSession + platform-neutral device API foundation.
+Capability Foundation + Runtime Discovery.
+Do NOT jump directly to deep diagnostics or intelligence optimization.
+The next phase should establish:
+- lightweight runtime capability snapshot
+- deeper/lazy capability resolution
+- refreshable capability state
+- capability evidence semantics
+iOS remains important and should follow the shared platform-neutral contracts rather than creating Android-specific architecture.
 
 ### Do Not Redo
-- Preserve the Phase 1 diagnostic contract unless a concrete defect is found.
-- Preserve existing ADB/battery parsing from Phase 2A.
-- Do not connect placeholder fuzzy inference to scans.
+Preserve:
+- Phase 1 Diagnostic Protocol + Battery Migration
+- Phase 2 DeviceSession architecture
+- canonical platform-neutral device API
+- stale-device safety
+- raw-serial privacy boundary
+- no silent false confidence
+- LIVE/Demo separation
 
 ### Risks and Limitations
-- DeviceSession not implemented yet.
-- Full capability discovery not implemented.
-- Trust Intelligence remains intentionally disconnected.
-- Hardware regression is deferred to a hardware-relevant phase.
+- Full capability discovery not implemented (endpoint returns 501 for connected devices).
+- iOS device discovery not implemented yet.
+- Device sessions are in-memory and transient.
+- Trust Intelligence remains intentionally disconnected from scan lifecycle.
 
 ---
 
@@ -89,13 +112,13 @@ DeviceSession + platform-neutral device API foundation.
 
 ## Last Updated
 
-2026-09-30
+2026-10-05
 
 ---
 
 ## Last Green Commit SHA
 
-1ae24fa
+770663c (Phase 2 changes are VERIFIED BUT UNCOMMITTED)
 
 ---
 

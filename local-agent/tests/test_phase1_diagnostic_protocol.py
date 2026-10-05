@@ -128,7 +128,7 @@ class TestDiagnosticDefinition:
     def test_definition_is_immutable(self) -> None:
         """DiagnosticDefinition is a frozen dataclass."""
         with pytest.raises((AttributeError, TypeError)):
-            BATTERY_TELEMETRY_DEFINITION.diagnostic_id = "tampered"  # type: ignore[misc]
+            BATTERY_TELEMETRY_DEFINITION.diagnostic_id = "tampered"
 
     def test_custom_definition_fields(self) -> None:
         defn = DiagnosticDefinition(

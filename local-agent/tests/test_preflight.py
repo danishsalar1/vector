@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import typing
 from unittest.mock import patch
 
 import pytest
@@ -14,12 +15,12 @@ from vector_agent.services.preflight import SystemPreflightService
 
 
 @pytest.fixture
-def app():
+def app() -> typing.Any:
     return create_app()
 
 
 @pytest.fixture
-async def client(app):
+async def client(app: typing.Any) -> typing.AsyncGenerator[AsyncClient, None]:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
 
@@ -184,7 +185,7 @@ class TestSystemPreflightService:
         service = SystemPreflightService()
         executed_commands: list[list[str]] = []
 
-        def spy_run_command(cmd, **kwargs):
+        def spy_run_command(cmd: typing.Any, **kwargs: typing.Any) -> CommandResult:
             executed_commands.append(list(cmd))
             return CommandResult(
                 command=list(cmd),
