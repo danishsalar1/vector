@@ -104,3 +104,7 @@ local-agent/scans/
 
 # Local Antigravity/Impeccable runtime
 .agent/
+
+# Claude Code personal/local settings (shared .claude/ config stays tracked)
+.claude/settings.local.json
+CLAUDE.local.md

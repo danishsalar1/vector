@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git rev-parse *)",
+      "Bash(git grep *)",
+      "Bash(git show *)",
+      "Bash(git ls-files *)",
+      "Bash(git branch --show-current)",
+      "Bash(uv run pytest *)",
+      "Bash(uv run ruff check *)",
+      "Bash(uv run ruff format --check *)",
+      "Bash(uv run mypy *)",
+      "Bash(python -m pytest *)",
+      "Bash(python -m ruff check *)",
+      "Bash(python -m ruff format --check *)",
+      "Bash(python -m mypy *)",
+      "Bash(pytest *)",
+      "Bash(ruff check *)",
+      "Bash(ruff format --check *)",
+      "Bash(mypy *)",
+      "Bash(npm run lint *)",
+      "Bash(npm run typecheck *)",
+      "Bash(npm run test:run *)",
+      "Bash(npm run build *)",
+      "Bash(npx vitest run *)",
+      "Bash(npx tsc --noEmit *)",
+      "Bash(npx eslint *)",
+      "Bash(powershell -File ./scripts/verify.ps1 *)",
+      "Bash(powershell -File scripts/verify.ps1 *)",
+      "PowerShell(git status *)",
+      "PowerShell(git diff *)",
+      "PowerShell(git log *)",
+      "PowerShell(git rev-parse *)",
+      "PowerShell(git grep *)",
+      "PowerShell(git show *)",
+      "PowerShell(git ls-files *)",
+      "PowerShell(git branch --show-current)",
+      "PowerShell(uv run pytest *)",
+      "PowerShell(uv run ruff check *)",
+      "PowerShell(uv run ruff format --check *)",
+      "PowerShell(uv run mypy *)",
+      "PowerShell(python -m pytest *)",
+      "PowerShell(python -m ruff check *)",
+      "PowerShell(python -m ruff format --check *)",
+      "PowerShell(python -m mypy *)",
+      "PowerShell(pytest *)",
+      "PowerShell(ruff check *)",
+      "PowerShell(ruff format --check *)",
+      "PowerShell(mypy *)",
+      "PowerShell(npm run lint *)",
+      "PowerShell(npm run typecheck *)",
+      "PowerShell(npm run test:run *)",
+      "PowerShell(npm run build *)",
+      "PowerShell(npx vitest run *)",
+      "PowerShell(npx tsc --noEmit *)",
+      "PowerShell(npx eslint *)",
+      "PowerShell(./scripts/verify.ps1 *)",
+      "PowerShell(.\\scripts\\verify.ps1 *)"
+    ],
+    "ask": [
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git checkout *)",
+      "Bash(git switch *)",
+      "Bash(git merge *)",
+      "Bash(git rebase *)",
+      "Bash(git restore *)",
+      "Bash(git worktree *)",
+      "Bash(git reset *)",
+      "Bash(git stash *)",
+      "Bash(git clean *)",
+      "Bash(git cherry-pick *)",
+      "Bash(git revert *)",
+      "Bash(git pull *)",
+      "Bash(*--fix*)",
+      "PowerShell(git add *)",
+      "PowerShell(git commit *)",
+      "PowerShell(git push *)",
+      "PowerShell(git checkout *)",
+      "PowerShell(git switch *)",
+      "PowerShell(git merge *)",
+      "PowerShell(git rebase *)",
+      "PowerShell(git restore *)",
+      "PowerShell(git worktree *)",
+      "PowerShell(git reset *)",
+      "PowerShell(git stash *)",
+      "PowerShell(git clean *)",
+      "PowerShell(git cherry-pick *)",
+      "PowerShell(git revert *)",
+      "PowerShell(git pull *)",
+      "PowerShell(*--fix*)"
+    ],
+    "deny": [
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(!.env.example)",
+      "Bash(git reset --hard *)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(git push --force-with-lease *)",
+      "Bash(git branch -D *)",
+      "Bash(git clean -f*)",
+      "PowerShell(git reset --hard *)",
+      "PowerShell(git push --force *)",
+      "PowerShell(git push -f *)",
+      "PowerShell(git push --force-with-lease *)",
+      "PowerShell(git branch -D *)",
+      "PowerShell(git clean -f*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell",
+            "args": [
+              "-NoProfile",
+              "-NonInteractive",
+              "-ExecutionPolicy",
+              "Bypass",
+              "-File",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/block-destructive-git.ps1"
+            ],
+            "timeout": 15,
+            "statusMessage": "VECTOR git guard"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell",
+            "args": [
+              "-NoProfile",
+              "-NonInteractive",
+              "-ExecutionPolicy",
+              "Bypass",
+              "-File",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/session-context.ps1"
+            ],
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}
