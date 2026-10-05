@@ -4,17 +4,38 @@ from __future__ import annotations
 
 import hashlib
 import threading
+import time
 import typing
 from datetime import UTC, datetime
 
 from pydantic import BaseModel, Field
 
+from vector_agent.core.logging import get_logger
 from vector_agent.models.device import (
     ConnectedDevice,
     ConnectionState,
+    DeviceCapabilityProfile,
     DeviceIdentity,
     Platform,
 )
+
+logger = get_logger(__name__)
+
+
+class DeviceSessionError(Exception):
+    """Base error for device session operations."""
+
+
+class DeviceNotFoundError(DeviceSessionError, KeyError, ValueError):
+    """Device session does not exist."""
+
+
+class DeviceUnauthorizedError(DeviceSessionError, PermissionError, ValueError):
+    """Device session is not authorized for operations."""
+
+
+class DeviceNotConnectedError(DeviceSessionError, ConnectionError, ValueError):
+    """Device session is not connected or disconnected during an operation."""
 
 
 class DeviceSession(BaseModel):
@@ -25,15 +46,26 @@ class DeviceSession(BaseModel):
     connection_state: ConnectionState
     last_seen: datetime
     identity: DeviceIdentity | None = None
+    capability_profile: DeviceCapabilityProfile | None = None
     raw_serial: str | None = Field(default=None, exclude=True, repr=False)
+    last_capability_attempt_mono: float | None = Field(default=None, exclude=True, repr=False)
+    session_epoch: int = Field(default=0, exclude=True, repr=False)
 
     def to_connected_device(self) -> ConnectedDevice:
-        """Convert to the API-facing model, masking raw_serial."""
+        """Convert to the API-facing model, masking raw_serial.
+
+        An offline or unauthorized device must not masquerade as having
+        active connected capability knowledge.
+        """
+        active_capability_profile = (
+            self.capability_profile if self.connection_state == ConnectionState.CONNECTED else None
+        )
         return ConnectedDevice(
             device_id=self.device_id,
             platform=self.platform,
             connection_state=self.connection_state,
             identity=self.identity,
+            capability_profile=active_capability_profile,
         )
 
     def get_serial_for_diagnostic(self) -> str | None:
@@ -61,16 +93,35 @@ class DeviceSessionManager:
             self._sessions.clear()
 
     def reconcile_android_discovery(
-        self, adb_devices: list[typing.Any], adb_identity_fetcher: typing.Any = None
+        self,
+        adb_devices: list[typing.Any],
+        adb_identity_fetcher: typing.Any = None,
+        adb_capability_fetcher: typing.Any = None,
+        capability_retry_interval_seconds: float = 30.0,
     ) -> None:
         """Update sessions from an Android ADB discovery run.
+
+        Safe concurrency design:
+        1. Under lock: update states, clear stale profiles on reconnect, snapshot devices needing fetch
+        2. Release lock
+        3. Perform slow ADB identity and capability discovery calls outside lock
+        4. Re-acquire lock: apply results only if session still exists, is CONNECTED, and has matching serial
 
         Args:
             adb_devices: List of AdbDeviceEntry objects.
             adb_identity_fetcher: Function that takes a serial and returns AndroidIdentity.
+            adb_capability_fetcher: Function that takes (serial, device_id) and returns DeviceCapabilityProfile.
+            capability_retry_interval_seconds: Minimum interval in seconds between discovery attempts for incomplete/failed profiles.
         """
         now = datetime.now(UTC)
-        discovered_ids = set()
+        now_mono = time.monotonic()
+        discovered_ids: set[str] = set()
+        needs_identity: list[
+            tuple[str, DeviceSession, str, int]
+        ] = []  # (device_id, session, serial, epoch)
+        needs_capabilities: list[
+            tuple[str, DeviceSession, str, int]
+        ] = []  # (device_id, session, serial, epoch)
 
         with self._lock:
             for entry in adb_devices:
@@ -89,43 +140,87 @@ class DeviceSessionManager:
 
                 if device_id in self._sessions:
                     session = self._sessions[device_id]
-                    # Update state and last_seen
+                    prev_state = session.connection_state
+                    if prev_state != conn_state:
+                        session.session_epoch += 1
                     session.connection_state = conn_state
                     session.last_seen = now
 
-                    # Fetch identity if we transitioned to CONNECTED and don't have it
+                    # Clear capability profile and reset attempt tracker if reconnecting from non-CONNECTED state
                     if (
-                        conn_state == ConnectionState.CONNECTED
-                        and session.identity is None
-                        and adb_identity_fetcher
+                        prev_state != ConnectionState.CONNECTED
+                        and conn_state == ConnectionState.CONNECTED
                     ):
-                        try:
-                            identity = adb_identity_fetcher(entry.serial)
-                            session.identity = DeviceIdentity(
-                                platform=Platform.ANDROID,
-                                manufacturer=identity.manufacturer,
-                                model=identity.model,
-                                marketing_name=None,
-                                android_version=identity.android_version,
-                                android_sdk_level=identity.sdk_level,
-                                build_fingerprint=None,
-                                brand=identity.brand,
-                                device_codename=identity.device_codename,
-                                ios_version=None,
-                                product_type=None,
-                                serial=None,  # Never raw serial here
-                                udid=None,
-                                discovered_at=identity.retrieved_at,
+                        session.capability_profile = None
+                        session.last_capability_attempt_mono = None
+
+                    if conn_state == ConnectionState.CONNECTED:
+                        if session.identity is None and adb_identity_fetcher:
+                            needs_identity.append(
+                                (device_id, session, entry.serial, session.session_epoch)
                             )
-                        except Exception:
-                            pass
+                        if adb_capability_fetcher:
+                            is_incomplete = (
+                                session.capability_profile is None
+                                or not session.capability_profile.profile_complete
+                            )
+                            if is_incomplete:
+                                can_attempt = (
+                                    session.last_capability_attempt_mono is None
+                                    or (now_mono - session.last_capability_attempt_mono)
+                                    >= capability_retry_interval_seconds
+                                )
+                                if can_attempt:
+                                    session.last_capability_attempt_mono = now_mono
+                                    needs_capabilities.append(
+                                        (device_id, session, entry.serial, session.session_epoch)
+                                    )
                 else:
-                    # New session
-                    identity = None
-                    if conn_state == ConnectionState.CONNECTED and adb_identity_fetcher:
-                        try:
-                            ident = adb_identity_fetcher(entry.serial)
-                            identity = DeviceIdentity(
+                    new_session = DeviceSession(
+                        device_id=device_id,
+                        platform=Platform.ANDROID,
+                        connection_state=conn_state,
+                        last_seen=now,
+                        identity=None,
+                        capability_profile=None,
+                        raw_serial=entry.serial,
+                        last_capability_attempt_mono=now_mono
+                        if (conn_state == ConnectionState.CONNECTED and adb_capability_fetcher)
+                        else None,
+                        session_epoch=0,
+                    )
+                    self._sessions[device_id] = new_session
+                    if conn_state == ConnectionState.CONNECTED:
+                        if adb_identity_fetcher:
+                            needs_identity.append(
+                                (device_id, new_session, entry.serial, new_session.session_epoch)
+                            )
+                        if adb_capability_fetcher:
+                            needs_capabilities.append(
+                                (device_id, new_session, entry.serial, new_session.session_epoch)
+                            )
+
+            # Mark devices not seen in this discovery cycle as OFFLINE
+            for dev_id, session in self._sessions.items():
+                if session.platform == Platform.ANDROID and dev_id not in discovered_ids:
+                    if session.connection_state != ConnectionState.OFFLINE:
+                        session.session_epoch += 1
+                    session.connection_state = ConnectionState.OFFLINE
+                    session.last_capability_attempt_mono = None
+
+        # Step 2 & 3: Execute blocking discovery calls OUTSIDE global lock
+        fetched_identities: list[tuple[str, DeviceSession, str, int, DeviceIdentity]] = []
+        for dev_id, expected_session, serial, expected_epoch in needs_identity:
+            try:
+                ident = adb_identity_fetcher(serial)
+                if ident:
+                    fetched_identities.append(
+                        (
+                            dev_id,
+                            expected_session,
+                            serial,
+                            expected_epoch,
+                            DeviceIdentity(
                                 platform=Platform.ANDROID,
                                 manufacturer=ident.manufacturer,
                                 model=ident.model,
@@ -140,23 +235,138 @@ class DeviceSessionManager:
                                 serial=None,
                                 udid=None,
                                 discovered_at=ident.retrieved_at,
-                            )
-                        except Exception:
-                            pass
-
-                    self._sessions[device_id] = DeviceSession(
-                        device_id=device_id,
-                        platform=Platform.ANDROID,
-                        connection_state=conn_state,
-                        last_seen=now,
-                        identity=identity,
-                        raw_serial=entry.serial,
+                            ),
+                        )
                     )
+            except (RuntimeError, ValueError, TimeoutError, OSError) as exc:
+                logger.warning(
+                    "Identity fetch failed for device %s (%s)",
+                    dev_id,
+                    type(exc).__name__,
+                )
 
-            # Mark devices not seen in this discovery cycle as OFFLINE
-            for device_id, session in self._sessions.items():
-                if session.platform == Platform.ANDROID and device_id not in discovered_ids:
-                    session.connection_state = ConnectionState.OFFLINE
+        fetched_capabilities: list[
+            tuple[str, DeviceSession, str, int, DeviceCapabilityProfile]
+        ] = []
+        for dev_id, expected_session, serial, expected_epoch in needs_capabilities:
+            try:
+                cap = adb_capability_fetcher(serial, dev_id)
+                if cap:
+                    fetched_capabilities.append(
+                        (
+                            dev_id,
+                            expected_session,
+                            serial,
+                            expected_epoch,
+                            cap,
+                        )
+                    )
+            except (RuntimeError, ValueError, TimeoutError, OSError) as exc:
+                logger.warning(
+                    "Capability discovery failed for device %s (%s)",
+                    dev_id,
+                    type(exc).__name__,
+                )
+
+        # Step 4 & 5: Re-acquire lock and apply results safely (guard against stale/concurrent transitions)
+        with self._lock:
+            for (
+                dev_id,
+                expected_session,
+                expected_serial,
+                expected_epoch,
+                ident_dto,
+            ) in fetched_identities:
+                current_session = self._sessions.get(dev_id)
+                if (
+                    current_session is expected_session
+                    and current_session.session_epoch == expected_epoch
+                    and current_session.connection_state == ConnectionState.CONNECTED
+                    and current_session.get_serial_for_diagnostic() == expected_serial
+                ):
+                    current_session.identity = ident_dto
+
+            for (
+                dev_id,
+                expected_session,
+                expected_serial,
+                expected_epoch,
+                cap_prof,
+            ) in fetched_capabilities:
+                current_session = self._sessions.get(dev_id)
+                if (
+                    current_session is expected_session
+                    and current_session.session_epoch == expected_epoch
+                    and current_session.connection_state == ConnectionState.CONNECTED
+                    and current_session.get_serial_for_diagnostic() == expected_serial
+                ):
+                    current_session.capability_profile = cap_prof
+
+    def refresh_device_capabilities(
+        self,
+        device_id: str,
+        fetcher: typing.Callable[[str, str], DeviceCapabilityProfile],
+    ) -> DeviceCapabilityProfile:
+        """Refresh capability knowledge for an active, connected session.
+
+        Does NOT hold global session lock during the blocking discovery call.
+
+        Args:
+            device_id: Opaque device ID.
+            fetcher: Callable taking (raw_serial, device_id) and returning DeviceCapabilityProfile.
+
+        Returns:
+            Updated DeviceCapabilityProfile.
+
+        Raises:
+            DeviceNotFoundError: If device is not found.
+            DeviceUnauthorizedError: If device is unauthorized.
+            DeviceNotConnectedError: If device is not connected or disconnected.
+        """
+        # Step 1: Under lock: validate session and snapshot state
+        with self._lock:
+            session = self._sessions.get(device_id)
+            if not session:
+                raise DeviceNotFoundError(f"Device '{device_id}' not found.")
+            if session.connection_state == ConnectionState.UNAUTHORIZED:
+                raise DeviceUnauthorizedError(f"Device '{device_id}' is unauthorized.")
+            if session.connection_state != ConnectionState.CONNECTED:
+                raise DeviceNotConnectedError(
+                    f"Device '{device_id}' is not connected (state: {session.connection_state.value})."
+                )
+            serial = session.get_serial_for_diagnostic()
+            if not serial:
+                raise DeviceNotConnectedError(
+                    f"Device '{device_id}' has no active serial for diagnostics."
+                )
+
+            # Clear capability profile while refreshing so stale data is not visible
+            session.capability_profile = None
+            session.last_capability_attempt_mono = time.monotonic()
+            expected_session = session
+            expected_serial = serial
+            expected_epoch = session.session_epoch
+
+        # Step 2 & 3: Perform blocking capability discovery outside lock
+        # Any exception here propagates to caller, leaving profile as None (unavailable)
+        profile = fetcher(expected_serial, device_id)
+
+        # Step 4 & 5: Re-acquire lock and apply result only if session identity and state are unchanged
+        with self._lock:
+            current_session = self._sessions.get(device_id)
+            if (
+                current_session is expected_session
+                and current_session.session_epoch == expected_epoch
+                and current_session.connection_state == ConnectionState.CONNECTED
+                and current_session.get_serial_for_diagnostic() == expected_serial
+            ):
+                current_session.capability_profile = profile
+                current_session.last_seen = datetime.now(UTC)
+                return profile
+            else:
+                raise DeviceNotConnectedError(
+                    f"Device '{device_id}' disconnected or changed state during capability discovery."
+                )
 
     def mark_platform_offline(self, platform: Platform) -> None:
         """Mark all active sessions for a platform as OFFLINE when discovery fails."""
@@ -166,7 +376,9 @@ class DeviceSessionManager:
                     session.platform == platform
                     and session.connection_state == ConnectionState.CONNECTED
                 ):
+                    session.session_epoch += 1
                     session.connection_state = ConnectionState.OFFLINE
+                    session.last_capability_attempt_mono = None
 
     def get_session(self, device_id: str) -> DeviceSession | None:
         """Retrieve a session by its opaque device_id."""

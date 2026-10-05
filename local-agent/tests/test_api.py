@@ -11,7 +11,7 @@ from httpx import ASGITransport, AsyncClient
 
 from vector_agent.devices.session import DeviceSession, device_session_manager
 from vector_agent.main import create_app
-from vector_agent.models.device import ConnectionState, Platform
+from vector_agent.models.device import ConnectionState, DeviceCapabilityProfile, Platform
 
 
 @pytest.fixture
@@ -99,20 +99,73 @@ class TestDevicesEndpoint:
         response = await client.get("/api/v1/devices/nonexistent-id/capabilities")
         assert response.status_code == 404
 
-    async def test_get_capabilities_existing_device_returns_501(self, client: AsyncClient) -> None:
+    async def test_get_capabilities_ios_device_returns_501(self, client: AsyncClient) -> None:
+        session = DeviceSession(
+            device_id="ios-dev-01",
+            platform=Platform.IOS,
+            connection_state=ConnectionState.CONNECTED,
+            last_seen=datetime.now(UTC),
+            raw_serial="IOS_DUMMY_SERIAL",
+        )
+        device_session_manager._sessions["ios-dev-01"] = session
+
+        response = await client.get("/api/v1/devices/ios-dev-01/capabilities")
+        assert response.status_code == 501
+        assert "not yet implemented" in response.json()["detail"].lower()
+
+    async def test_get_capabilities_connected_android_device(self, client: AsyncClient) -> None:
+        profile = DeviceCapabilityProfile(
+            device_id="dev-existing",
+            platform=Platform.ANDROID,
+            profile_complete=True,
+        )
         session = DeviceSession(
             device_id="dev-existing",
             platform=Platform.ANDROID,
             connection_state=ConnectionState.CONNECTED,
             last_seen=datetime.now(UTC),
+            capability_profile=profile,
             raw_serial="DUMMY_SERIAL",
         )
         device_session_manager._sessions["dev-existing"] = session
 
         with patch("vector_agent.api.devices._trigger_discovery"):
             response = await client.get("/api/v1/devices/dev-existing/capabilities")
-        assert response.status_code == 501
-        assert "not yet implemented" in response.json()["detail"].lower()
+        assert response.status_code == 200
+        assert response.json()["device_id"] == "dev-existing"
+        assert response.json()["platform"] == "ANDROID"
+        assert "raw_serial" not in response.json()
+
+    async def test_get_capabilities_unauthorized_device_returns_403(
+        self, client: AsyncClient
+    ) -> None:
+        session = DeviceSession(
+            device_id="dev-unauth",
+            platform=Platform.ANDROID,
+            connection_state=ConnectionState.UNAUTHORIZED,
+            last_seen=datetime.now(UTC),
+            raw_serial="DUMMY_SERIAL",
+        )
+        device_session_manager._sessions["dev-unauth"] = session
+
+        with patch("vector_agent.api.devices._trigger_discovery"):
+            response = await client.get("/api/v1/devices/dev-unauth/capabilities")
+        assert response.status_code == 403
+        assert "unauthorized" in response.json()["detail"].lower()
+
+    async def test_get_capabilities_offline_device_returns_400(self, client: AsyncClient) -> None:
+        session = DeviceSession(
+            device_id="dev-offline",
+            platform=Platform.ANDROID,
+            connection_state=ConnectionState.OFFLINE,
+            last_seen=datetime.now(UTC),
+            raw_serial="DUMMY_SERIAL",
+        )
+        device_session_manager._sessions["dev-offline"] = session
+
+        response = await client.get("/api/v1/devices/dev-offline/capabilities")
+        assert response.status_code == 400
+        assert "not connected" in response.json()["detail"].lower()
 
     async def test_discovery_failure_returns_503_and_marks_offline(
         self, client: AsyncClient
@@ -131,7 +184,8 @@ class TestDevicesEndpoint:
         ):
             response = await client.get("/api/v1/devices")
         assert response.status_code == 503
-        assert "Device discovery failed" in response.json()["detail"]
+        assert response.json()["detail"] == "Device discovery failed."
+        assert "ADB crash" not in response.text
         assert session.connection_state == ConnectionState.OFFLINE
 
     async def test_devices_includes_explicit_platform(self, client: AsyncClient) -> None:

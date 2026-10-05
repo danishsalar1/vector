@@ -37,6 +37,38 @@ class CommandResult:
     truncated: bool = False
 
 
+def format_command_for_display(args: Sequence[str]) -> str:
+    """Format command arguments for safe display and logging without leaking sensitive values.
+
+    Specifically redacts the serial argument following '-s' in ADB command invocations.
+    Does NOT modify the original argument sequence.
+    """
+    if not args:
+        return ""
+
+    first_arg = str(args[0]).lower()
+    is_adb = "adb" in first_arg
+
+    display_tokens: list[str] = []
+    i = 0
+    n = len(args)
+    while i < n:
+        token = str(args[i])
+        if is_adb and token == "-s":
+            display_tokens.append("-s")
+            if i + 1 < n:
+                display_tokens.append("<SERIAL_REDACTED>")
+                i += 2
+                continue
+        elif is_adb and token.startswith("-s") and len(token) > 2:
+            display_tokens.append("-s<SERIAL_REDACTED>")
+            i += 1
+            continue
+        display_tokens.append(token)
+        i += 1
+    return " ".join(display_tokens)
+
+
 def run_command(
     args: Sequence[str],
     *,
@@ -68,7 +100,7 @@ def run_command(
         raise ValueError("Command args must not be empty.")
 
     cmd_list = list(args)
-    cmd_display = " ".join(cmd_list)
+    cmd_display = format_command_for_display(cmd_list)
 
     start = time.monotonic()
     truncated = False

@@ -29,7 +29,7 @@ def validate_device_serial(serial: str) -> str:
         raise ValidationError("Device serial must not be empty.")
     if not _SAFE_SERIAL_RE.match(serial):
         raise ValidationError(
-            f"Device serial contains unexpected characters: {serial!r}. "
+            "Device serial contains unexpected characters. "
             "Expected alphanumeric, dash, dot, colon, or underscore (max 64 chars)."
         )
     return serial

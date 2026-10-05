@@ -16,7 +16,10 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 
+from vector_agent.core.errors import ADBCommandTimeoutError
 from vector_agent.core.logging import get_logger
+from vector_agent.devices.android.capabilities import parse_pm_features
+from vector_agent.models.device import DeviceCapabilityProfile
 from vector_agent.security.subprocess_policy import run_command
 from vector_agent.security.validation import validate_device_serial
 
@@ -299,6 +302,53 @@ class AndroidDeviceBridge:
         except Exception as exc:
             logger.warning("getprop %s failed: %s", prop, exc)
             return None
+
+    # ----------------------------------------------------------
+    # Capability discovery
+    # ----------------------------------------------------------
+
+    def discover_capabilities(self, serial: str, device_id: str) -> DeviceCapabilityProfile:
+        """Discover runtime hardware capabilities from an authorized Android device.
+
+        Uses 'adb shell pm list features' with strict subprocess safety:
+        - fixed argument list, shell=False
+        - bounded timeout (10.0s) and bounded output
+        - validated internal serial (never returned in profile, logs, or error text)
+
+        Level 1 Runtime Detection only.
+        """
+        try:
+            validated_serial = validate_device_serial(serial)
+        except Exception:
+            raise ValueError(f"Invalid internal device serial for device {device_id}") from None
+
+        adb = self._require_adb()
+
+        try:
+            result = run_command(
+                [adb, "-s", validated_serial, "shell", "pm", "list", "features"],
+                timeout=10.0,
+            )
+        except (ADBCommandTimeoutError, TimeoutError) as exc:
+            logger.warning("pm list features timed out for device %s", device_id)
+            raise TimeoutError(
+                f"ADB capability discovery timed out for device {device_id}"
+            ) from exc
+        except Exception as exc:
+            logger.warning("pm list features failed for device %s", device_id)
+            raise RuntimeError(f"ADB capability discovery failed for device {device_id}") from exc
+
+        if result.return_code != 0:
+            safe_stderr = result.stderr.replace(validated_serial, "<SERIAL_REDACTED>")
+            logger.warning(
+                "pm list features returned exit code %d for device %s (stderr: %s)",
+                result.return_code,
+                device_id,
+                safe_stderr[:100],
+            )
+            raise RuntimeError(f"pm list features failed with exit code {result.return_code}")
+
+        return parse_pm_features(result.stdout, device_id=device_id, truncated=result.truncated)
 
     # ----------------------------------------------------------
     # Battery telemetry

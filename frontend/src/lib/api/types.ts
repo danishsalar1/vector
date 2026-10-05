@@ -290,3 +290,72 @@ export function isBatteryTelemetryResponse(
     typeof d.evidence_source === "string"
   );
 }
+
+// ============================================================
+// Platform-neutral capability types (Phase 4)
+// ============================================================
+
+export type CapabilityStatus =
+  | "PRESENT"
+  | "ABSENT"
+  | "UNKNOWN"
+  | "RESTRICTED"
+  | "NOT_REPORTED"
+  | "UNSUPPORTED";
+
+export type VerificationLevel =
+  | "RUNTIME_DETECTION"
+  | "FUNCTIONAL_VERIFICATION"
+  | "REFERENCE_COMPARISON";
+
+export interface CapabilityEvidenceRecord {
+  evidence_id: string;
+  diagnostic_id: string;
+  device_id: string;
+  source_type: string;
+  source_name: string;
+  collection_method: string;
+  timestamp: string;
+  raw_value?: string | null;
+  normalized_value?: number | null;
+  unit?: string | null;
+  reliability: number;
+  confidence: number;
+  metadata?: Record<string, unknown>;
+  redacted?: boolean;
+  error?: string | null;
+}
+
+export interface CapabilityEntry {
+  name: string;
+  status: CapabilityStatus;
+  verification_level: VerificationLevel | null;
+  source?: string | null;
+  note?: string | null;
+  evidence?: readonly CapabilityEvidenceRecord[];
+}
+
+export interface DeviceCapabilityProfile {
+  device_id: string;
+  platform: "ANDROID" | "IOS" | "UNKNOWN";
+  capabilities: Record<string, CapabilityEntry>;
+  profiled_at: string;
+  profile_complete: boolean;
+  evidence?: readonly CapabilityEvidenceRecord[];
+  metadata?: Record<string, unknown>;
+}
+
+export function isDeviceCapabilityProfile(
+  data: unknown
+): data is DeviceCapabilityProfile {
+  if (typeof data !== "object" || data === null) return false;
+  const d = data as Record<string, unknown>;
+  return (
+    typeof d.device_id === "string" &&
+    typeof d.platform === "string" &&
+    typeof d.capabilities === "object" &&
+    d.capabilities !== null &&
+    typeof d.profiled_at === "string" &&
+    typeof d.profile_complete === "boolean"
+  );
+}

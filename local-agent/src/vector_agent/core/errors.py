@@ -7,6 +7,7 @@ Stack traces are never exposed to the user.
 
 from __future__ import annotations
 
+import re
 from enum import StrEnum
 
 
@@ -141,19 +142,21 @@ class ADBOfflineError(VectorError):
 
 class ADBCommandTimeoutError(VectorError):
     def __init__(self, command: str, timeout: float) -> None:
+        safe_cmd = re.sub(r"(-s\s+)[^\s]+", r"\1<SERIAL_REDACTED>", command)
         super().__init__(
             VectorErrorCode.ADB_COMMAND_TIMEOUT,
             f"ADB command timed out after {timeout}s.",
-            detail=f"Command: {command}",
+            detail=f"Command: {safe_cmd}",
         )
 
 
 class ADBCommandFailedError(VectorError):
     def __init__(self, command: str, return_code: int, stderr: str) -> None:
+        safe_cmd = re.sub(r"(-s\s+)[^\s]+", r"\1<SERIAL_REDACTED>", command)
         super().__init__(
             VectorErrorCode.ADB_COMMAND_FAILED,
             f"ADB command failed with exit code {return_code}.",
-            detail=f"Command: {command} | stderr: {stderr[:200]}",
+            detail=f"Command: {safe_cmd} | stderr: {stderr[:200]}",
         )
 
 

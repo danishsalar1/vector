@@ -52,6 +52,21 @@ class CapabilityStatus(StrEnum):
     ABSENT = "ABSENT"
     UNKNOWN = "UNKNOWN"
     RESTRICTED = "RESTRICTED"
+    NOT_REPORTED = "NOT_REPORTED"
+    UNSUPPORTED = "UNSUPPORTED"
+
+
+class VerificationLevel(StrEnum):
+    """Verification level for capability knowledge or diagnostic observations.
+
+    LEVEL 1 - RUNTIME_DETECTION: Feature declared/observed at runtime via OS or system services.
+    LEVEL 2 - FUNCTIONAL_VERIFICATION: Component produced valid operational samples or responses.
+    LEVEL 3 - REFERENCE_COMPARISON: Hardware presence evaluated against trusted factory specification.
+    """
+
+    RUNTIME_DETECTION = "RUNTIME_DETECTION"
+    FUNCTIONAL_VERIFICATION = "FUNCTIONAL_VERIFICATION"
+    REFERENCE_COMPARISON = "REFERENCE_COMPARISON"
 
 
 class DiagnosticStatus(StrEnum):
@@ -156,43 +171,6 @@ class DeviceIdentity(BaseModel):
     discovered_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
-class CapabilityEntry(BaseModel):
-    """A single capability entry in a device's capability profile."""
-
-    name: str
-    status: CapabilityStatus
-    source: str | None = None
-    """Where we determined this capability status from."""
-    note: str | None = None
-
-
-class DeviceCapabilityProfile(BaseModel):
-    """Full capability profile for a connected device.
-
-    Built automatically from device discovery before the test plan is created.
-    """
-
-    device_id: str
-    platform: Platform
-    capabilities: dict[str, CapabilityEntry] = Field(default_factory=dict)
-    profiled_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    profile_complete: bool = False
-
-    def get(self, capability_name: str) -> CapabilityStatus:
-        entry = self.capabilities.get(capability_name)
-        return entry.status if entry else CapabilityStatus.UNKNOWN
-
-
-class ConnectedDevice(BaseModel):
-    """A device as seen by the VECTOR agent at connection time."""
-
-    device_id: str = Field(default_factory=lambda: str(uuid4()))
-    platform: Platform = Platform.UNKNOWN
-    connection_state: ConnectionState
-    identity: DeviceIdentity | None = None
-    capability_profile: DeviceCapabilityProfile | None = None
-
-
 # ============================================================
 # Evidence model
 # ============================================================
@@ -223,6 +201,75 @@ class EvidenceRecord(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
     redacted: bool = False
     error: str | None = None
+
+
+# ============================================================
+# Capability and Device models
+# ============================================================
+
+
+class CapabilityEntry(BaseModel):
+    """A single capability entry in a device's capability profile."""
+
+    name: str
+    status: CapabilityStatus
+    verification_level: VerificationLevel | None = None
+    """Level 1 (Runtime Detection), Level 2 (Functional Verification), or Level 3 (Reference Comparison).
+    None when status is NOT_REPORTED or UNKNOWN (no verification performed)."""
+    source: str | None = None
+    """Where we determined this capability status from."""
+    note: str | None = None
+    evidence: list[EvidenceRecord] = Field(default_factory=list)
+
+
+class DeviceCapabilityProfile(BaseModel):
+    """Full capability profile for a connected device.
+
+    Built automatically from device discovery before the test plan is created.
+    """
+
+    device_id: str
+    platform: Platform
+    capabilities: dict[str, CapabilityEntry] = Field(default_factory=dict)
+    profiled_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    profile_complete: bool = False
+    """True if runtime capability discovery completed without truncation,
+    timeout, or empty/unparseable output. Skips unparseable lines gracefully
+    if valid features are extracted. False indicates an incomplete or truncated
+    snapshot that may be retried."""
+    evidence: list[EvidenceRecord] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    def get(self, capability_name: str) -> CapabilityStatus:
+        """Return status for a canonical capability name.
+
+        Platform-neutral lookup only; does not inspect platform-specific metadata.
+        """
+        entry = self.capabilities.get(capability_name)
+        if entry:
+            return entry.status
+        return CapabilityStatus.UNKNOWN
+
+    def get_entry(self, capability_name: str) -> CapabilityEntry | None:
+        return self.capabilities.get(capability_name)
+
+    def is_present(self, capability_name: str) -> bool:
+        """Check if capability was declared PRESENT by the OS/runtime.
+
+        Note: Level 1 Runtime Detection only. Declares observation from the OS,
+        NOT functional hardware verification (Level 2).
+        """
+        return self.get(capability_name) == CapabilityStatus.PRESENT
+
+
+class ConnectedDevice(BaseModel):
+    """A device as seen by the VECTOR agent at connection time."""
+
+    device_id: str = Field(default_factory=lambda: str(uuid4()))
+    platform: Platform = Platform.UNKNOWN
+    connection_state: ConnectionState
+    identity: DeviceIdentity | None = None
+    capability_profile: DeviceCapabilityProfile | None = None
 
 
 # ============================================================
