@@ -221,6 +221,11 @@ class ScanService:
                 return None
             return list(session.events)
 
+    def has_active_scan(self, device_id: str) -> bool:
+        """Check whether there is an active (non-terminal) scan for a device."""
+        with self._lock:
+            return any(s.device_id == device_id and not s.is_terminal for s in self._scans.values())
+
     def list_scans(self) -> list[ScanSession]:
         """List all scan sessions."""
         with self._lock:

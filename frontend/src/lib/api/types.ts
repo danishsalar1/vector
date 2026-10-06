@@ -319,8 +319,8 @@ export interface CapabilityEvidenceRecord {
   raw_value?: string | null;
   normalized_value?: number | null;
   unit?: string | null;
-  reliability: number;
-  confidence: number;
+  reliability?: number | null;
+  confidence?: number | null;
   metadata?: Record<string, unknown>;
   redacted?: boolean;
   error?: string | null;
@@ -516,5 +516,68 @@ export function isScanEventsResponse(data: unknown): data is ScanEventsResponse 
     typeof d.scan_id === "string" &&
     Array.isArray(d.events) &&
     d.events.every(isDiagnosticEvent)
+  );
+}
+
+// ============================================================
+// Platform-neutral authorization and pairing types (Phase 7)
+// ============================================================
+
+export type DeviceAuthorizationState =
+  | "UNKNOWN"
+  | "AUTHORIZED"
+  | "AUTHORIZATION_REQUIRED"
+  | "RESTRICTED";
+
+export type PairingState =
+  | "PAIRED"
+  | "ALREADY_PAIRED"
+  | "USER_ACTION_REQUIRED"
+  | "RESTRICTED"
+  | "DEVICE_DISCONNECTED"
+  | "INCONCLUSIVE"
+  | "ERROR";
+
+export interface DevicePairResponse {
+  device_id: string;
+  status: PairingState;
+  message: string;
+}
+
+export function isDeviceAuthorizationState(
+  data: unknown
+): data is DeviceAuthorizationState {
+  return (
+    typeof data === "string" &&
+    ["UNKNOWN", "AUTHORIZED", "AUTHORIZATION_REQUIRED", "RESTRICTED"].includes(
+      data
+    )
+  );
+}
+
+export function isPairingState(data: unknown): data is PairingState {
+  return (
+    typeof data === "string" &&
+    [
+      "PAIRED",
+      "ALREADY_PAIRED",
+      "USER_ACTION_REQUIRED",
+      "RESTRICTED",
+      "DEVICE_DISCONNECTED",
+      "INCONCLUSIVE",
+      "ERROR",
+    ].includes(data)
+  );
+}
+
+export function isDevicePairResponse(
+  data: unknown
+): data is DevicePairResponse {
+  if (typeof data !== "object" || data === null) return false;
+  const d = data as Record<string, unknown>;
+  return (
+    typeof d.device_id === "string" &&
+    isPairingState(d.status) &&
+    typeof d.message === "string"
   );
 }

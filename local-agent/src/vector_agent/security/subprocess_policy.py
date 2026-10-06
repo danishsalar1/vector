@@ -40,28 +40,40 @@ class CommandResult:
 def format_command_for_display(args: Sequence[str]) -> str:
     """Format command arguments for safe display and logging without leaking sensitive values.
 
-    Specifically redacts the serial argument following '-s' in ADB command invocations.
+    Specifically redacts the serial argument following '-s' in device command invocations
+    and the UDID argument following '-u' in iOS command invocations, regardless of binary name.
     Does NOT modify the original argument sequence.
     """
     if not args:
         return ""
-
-    first_arg = str(args[0]).lower()
-    is_adb = "adb" in first_arg
 
     display_tokens: list[str] = []
     i = 0
     n = len(args)
     while i < n:
         token = str(args[i])
-        if is_adb and token == "-s":
+        if token == "-s":
             display_tokens.append("-s")
             if i + 1 < n:
                 display_tokens.append("<SERIAL_REDACTED>")
                 i += 2
-                continue
-        elif is_adb and token.startswith("-s") and len(token) > 2:
+            else:
+                i += 1
+            continue
+        elif token.startswith("-s") and len(token) > 2:
             display_tokens.append("-s<SERIAL_REDACTED>")
+            i += 1
+            continue
+        elif token == "-u":
+            display_tokens.append("-u")
+            if i + 1 < n:
+                display_tokens.append("<UDID_REDACTED>")
+                i += 2
+            else:
+                i += 1
+            continue
+        elif token.startswith("-u") and len(token) > 2:
+            display_tokens.append("-u<UDID_REDACTED>")
             i += 1
             continue
         display_tokens.append(token)

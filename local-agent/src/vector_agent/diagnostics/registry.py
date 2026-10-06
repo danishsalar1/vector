@@ -15,6 +15,7 @@ from vector_agent.models.device import Platform
 
 if TYPE_CHECKING:
     from vector_agent.devices.android.bridge import AndroidDeviceBridge
+    from vector_agent.devices.ios.bridge import IOSDeviceBridge
 
 logger = get_logger(__name__)
 
@@ -128,17 +129,28 @@ class DiagnosticRegistry:
 
 def create_default_registry(
     bridge: AndroidDeviceBridge | None = None,
+    ios_bridge: IOSDeviceBridge | None = None,
+    *,
+    include_ios: bool | None = None,
 ) -> DiagnosticRegistry:
-    """Create and return a DiagnosticRegistry pre-populated with standard diagnostics."""
+    """Create and return a DiagnosticRegistry pre-populated with standard diagnostics.
+
+    By default, registers Android standard diagnostics. If ios_bridge is provided or
+    both bridges are defaulted (production), registers iOS standard diagnostics as well.
+    """
     registry = DiagnosticRegistry()
     from vector_agent.devices.android.bridge import AndroidDeviceBridge
+    from vector_agent.devices.ios.bridge import IOSDeviceBridge
     from vector_agent.diagnostics.battery.battery_diagnostic import BatteryTelemetryDiagnostic
+    from vector_agent.diagnostics.battery.ios_battery_diagnostic import IOSBatteryChargeDiagnostic
     from vector_agent.diagnostics.camera.camera_diagnostic import CameraInventoryDiagnostic
     from vector_agent.diagnostics.display.display_diagnostic import DisplayMetricsDiagnostic
     from vector_agent.diagnostics.memory.memory_diagnostic import MemoryTelemetryDiagnostic
     from vector_agent.diagnostics.storage.storage_diagnostic import StorageTelemetryDiagnostic
+    from vector_agent.diagnostics.system.software_inventory import SoftwareInventoryDiagnostic
     from vector_agent.diagnostics.thermal.thermal_diagnostic import ThermalTelemetryDiagnostic
 
+    had_no_bridge = bridge is None
     if bridge is None:
         from vector_agent.core.config import get_settings
 
@@ -150,4 +162,40 @@ def create_default_registry(
     registry.register(ThermalTelemetryDiagnostic(bridge))
     registry.register(DisplayMetricsDiagnostic(bridge))
     registry.register(CameraInventoryDiagnostic(bridge))
+
+    # Determine whether to include iOS diagnostics
+    should_include_ios: bool
+    if include_ios is not None:
+        should_include_ios = include_ios
+    elif ios_bridge is not None or had_no_bridge:
+        should_include_ios = True
+    else:
+        should_include_ios = False
+
+    if should_include_ios:
+        if ios_bridge is None:
+            from vector_agent.core.config import get_settings
+
+            ios_bridge = IOSDeviceBridge(get_settings())
+
+        from vector_agent.diagnostics.battery.battery_extended_telemetry import (
+            IOSBatteryExtendedDiagnostic,
+        )
+        from vector_agent.diagnostics.battery.charging_power_diagnostic import (
+            IOSChargingPowerDiagnostic,
+        )
+        from vector_agent.diagnostics.storage.ios_storage_accounting import (
+            IOSStorageAccountingDiagnostic,
+        )
+        from vector_agent.diagnostics.system.developer_mode_diagnostic import (
+            IOSDeveloperModeDiagnostic,
+        )
+
+        registry.register(SoftwareInventoryDiagnostic(ios_bridge))
+        registry.register(IOSBatteryChargeDiagnostic(ios_bridge))
+        registry.register(IOSBatteryExtendedDiagnostic(ios_bridge))
+        registry.register(IOSChargingPowerDiagnostic(ios_bridge))
+        registry.register(IOSStorageAccountingDiagnostic(ios_bridge))
+        registry.register(IOSDeveloperModeDiagnostic(ios_bridge))
+
     return registry

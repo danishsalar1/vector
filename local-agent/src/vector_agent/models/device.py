@@ -45,6 +45,35 @@ class ConnectionState(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
+class DeviceAuthorizationState(StrEnum):
+    """Platform-neutral authorization state for a detected device."""
+
+    UNKNOWN = "UNKNOWN"
+    AUTHORIZED = "AUTHORIZED"
+    AUTHORIZATION_REQUIRED = "AUTHORIZATION_REQUIRED"
+    RESTRICTED = "RESTRICTED"
+
+
+class PairingState(StrEnum):
+    """Result state for explicit device pairing operation."""
+
+    PAIRED = "PAIRED"
+    ALREADY_PAIRED = "ALREADY_PAIRED"
+    USER_ACTION_REQUIRED = "USER_ACTION_REQUIRED"
+    RESTRICTED = "RESTRICTED"
+    DEVICE_DISCONNECTED = "DEVICE_DISCONNECTED"
+    INCONCLUSIVE = "INCONCLUSIVE"
+    ERROR = "ERROR"
+
+
+class DevicePairResponse(BaseModel):
+    """Response returned by explicit device pairing action."""
+
+    device_id: str
+    status: PairingState
+    message: str
+
+
 class CapabilityStatus(StrEnum):
     """Whether a hardware capability is present on a device."""
 
@@ -173,6 +202,10 @@ class DeviceIdentity(BaseModel):
     # iOS-specific
     ios_version: str | None = None
     product_type: str | None = None
+    build_version: str | None = None
+    device_class: str | None = None
+    hardware_model: str | None = None
+    cpu_architecture: str | None = None
 
     # Connection
     serial: str | None = None  # Masked/hashed in logs; never exposed raw in API.
@@ -205,10 +238,10 @@ class EvidenceRecord(BaseModel):
     raw_value: str | None = None
     normalized_value: float | None = None
     unit: str | None = None
-    reliability: float = Field(ge=0.0, le=1.0, default=1.0)
-    """Estimated reliability of this evidence source (0.0 = unreliable, 1.0 = fully trusted)."""
-    confidence: float = Field(ge=0.0, le=1.0, default=1.0)
-    """Confidence in the interpretation of this evidence."""
+    reliability: float | None = Field(default=None, ge=0.0, le=1.0)
+    """Estimated reliability of this evidence source (0.0 = unreliable, 1.0 = fully trusted). None when unmodeled."""
+    confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+    """Confidence in the interpretation of this evidence. None when unmodeled."""
     metadata: dict[str, Any] = Field(default_factory=dict)
     redacted: bool = False
     error: str | None = None
@@ -279,6 +312,7 @@ class ConnectedDevice(BaseModel):
     device_id: str = Field(default_factory=lambda: str(uuid4()))
     platform: Platform = Platform.UNKNOWN
     connection_state: ConnectionState
+    authorization_state: DeviceAuthorizationState = DeviceAuthorizationState.UNKNOWN
     identity: DeviceIdentity | None = None
     capability_profile: DeviceCapabilityProfile | None = None
 

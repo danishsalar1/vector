@@ -47,7 +47,9 @@ class AgentSettings(BaseSettings):
     # ---- iOS tools ----
     ideviceinfo_path: str = "ideviceinfo"
     idevicediagnostics_path: str = "idevicediagnostics"
+    idevicedevmodectl_path: str = "idevicedevmodectl"
     idevice_id_path: str = "idevice_id"
+    idevicepair_path: str = "idevicepair"
     ios_timeout_seconds: float = 15.0
 
     # ---- Subprocess security ----

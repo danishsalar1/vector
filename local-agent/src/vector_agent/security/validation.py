@@ -11,8 +11,10 @@ import re
 # ADB serial numbers are typically hex strings or IP:port addresses.
 _SAFE_SERIAL_RE = re.compile(r"^[A-Za-z0-9._:\-]{1,64}$")
 
-# iOS UDID: 25-char or 40-char hex.
-_SAFE_UDID_RE = re.compile(r"^[A-Fa-f0-9\-]{20,50}$")
+# iOS UDID: modern and legacy forms (hex or alphanumeric with optional hyphens, 16-64 chars).
+# Must start and end with alphanumeric character (no option-like prefixes or trailing hyphens).
+# Uses \Z to prohibit trailing newline characters.
+_SAFE_UDID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9\-]{14,62}[A-Za-z0-9]\Z")
 
 
 class ValidationError(ValueError):
@@ -36,15 +38,24 @@ def validate_device_serial(serial: str) -> str:
 
 
 def validate_ios_udid(udid: str) -> str:
-    """Validate and return an iOS UDID."""
+    """Validate and return an iOS UDID.
+
+    Enforces safe identifier characters and bounded length for command arguments.
+    Never exposes raw input in error messages.
+    """
     if not udid:
         raise ValidationError("iOS UDID must not be empty.")
-    # Strip hyphens for length check.
+    if any(c in udid for c in "\r\n\0\t "):
+        raise ValidationError("iOS UDID contains invalid control or whitespace characters.")
+    if udid.startswith("-") or udid.endswith("-") or "--" in udid:
+        raise ValidationError("iOS UDID contains invalid hyphen placement or option prefix.")
     stripped = udid.replace("-", "")
-    if not (20 <= len(stripped) <= 50):
+    if not (16 <= len(stripped) <= 64):
         raise ValidationError(f"iOS UDID length is unexpected: {len(stripped)} chars.")
+    if not stripped.isalnum():
+        raise ValidationError("iOS UDID must contain alphanumeric characters.")
     if not _SAFE_UDID_RE.match(udid):
-        raise ValidationError(f"iOS UDID contains unexpected characters: {udid!r}.")
+        raise ValidationError("iOS UDID contains unexpected characters.")
     return udid
 
 

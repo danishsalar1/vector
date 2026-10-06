@@ -14,10 +14,12 @@ from vector_agent.core.logging import get_logger
 from vector_agent.models.device import (
     ConnectedDevice,
     ConnectionState,
+    DeviceAuthorizationState,
     DeviceCapabilityProfile,
     DeviceIdentity,
     Platform,
 )
+from vector_agent.security.validation import validate_ios_udid
 
 logger = get_logger(__name__)
 
@@ -44,12 +46,14 @@ class DeviceSession(BaseModel):
     device_id: str
     platform: Platform
     connection_state: ConnectionState
+    authorization_state: DeviceAuthorizationState = DeviceAuthorizationState.UNKNOWN
     last_seen: datetime
     identity: DeviceIdentity | None = None
     capability_profile: DeviceCapabilityProfile | None = None
     raw_serial: str | None = Field(default=None, exclude=True, repr=False)
     last_capability_attempt_mono: float | None = Field(default=None, exclude=True, repr=False)
     session_epoch: int = Field(default=0, exclude=True, repr=False)
+    last_identity_epoch: int | None = Field(default=None, exclude=True, repr=False)
 
     def to_connected_device(self) -> ConnectedDevice:
         """Convert to the API-facing model, masking raw_serial.
@@ -64,6 +68,7 @@ class DeviceSession(BaseModel):
             device_id=self.device_id,
             platform=self.platform,
             connection_state=self.connection_state,
+            authorization_state=self.authorization_state,
             identity=self.identity,
             capability_profile=active_capability_profile,
         )
@@ -137,6 +142,13 @@ class DeviceSessionManager:
                     if state_val in [e.value for e in ConnectionState]
                     else ConnectionState.UNKNOWN
                 )
+                auth_state = (
+                    DeviceAuthorizationState.AUTHORIZED
+                    if conn_state == ConnectionState.CONNECTED
+                    else DeviceAuthorizationState.AUTHORIZATION_REQUIRED
+                    if conn_state == ConnectionState.UNAUTHORIZED
+                    else DeviceAuthorizationState.UNKNOWN
+                )
 
                 if device_id in self._sessions:
                     session = self._sessions[device_id]
@@ -144,6 +156,7 @@ class DeviceSessionManager:
                     if prev_state != conn_state:
                         session.session_epoch += 1
                     session.connection_state = conn_state
+                    session.authorization_state = auth_state
                     session.last_seen = now
 
                     # Clear capability profile and reset attempt tracker if reconnecting from non-CONNECTED state
@@ -180,6 +193,7 @@ class DeviceSessionManager:
                         device_id=device_id,
                         platform=Platform.ANDROID,
                         connection_state=conn_state,
+                        authorization_state=auth_state,
                         last_seen=now,
                         identity=None,
                         capability_profile=None,
@@ -206,6 +220,7 @@ class DeviceSessionManager:
                     if session.connection_state != ConnectionState.OFFLINE:
                         session.session_epoch += 1
                     session.connection_state = ConnectionState.OFFLINE
+                    session.authorization_state = DeviceAuthorizationState.UNKNOWN
                     session.last_capability_attempt_mono = None
 
         # Step 2 & 3: Execute blocking discovery calls OUTSIDE global lock
@@ -368,6 +383,191 @@ class DeviceSessionManager:
                     f"Device '{device_id}' disconnected or changed state during capability discovery."
                 )
 
+    def reconcile_ios_discovery(
+        self,
+        discovered_udids: list[str],
+        pair_state_fetcher: typing.Callable[
+            [str], tuple[ConnectionState, DeviceAuthorizationState, str]
+        ],
+        identity_fetcher: typing.Callable[[str], DeviceIdentity | None] | None = None,
+    ) -> None:
+        """Update sessions from an iOS USB discovery run.
+
+        Safe concurrency design:
+        1. Under lock: update last_seen, snapshot devices needing pairing/identity checks.
+        2. Release lock.
+        3. Perform idevicepair validate and allowlisted ideviceinfo calls outside lock.
+        4. Re-acquire lock: apply results safely (guarding against stale epochs / disconnects).
+        """
+        now = datetime.now(UTC)
+        discovered_ids: set[str] = set()
+        needs_check: list[
+            tuple[str, DeviceSession, str, int]
+        ] = []  # (device_id, session, udid, epoch)
+
+        # Defensively revalidate IDs (F6)
+        valid_udids: list[str] = []
+        for raw_u in discovered_udids:
+            try:
+                valid_udids.append(validate_ios_udid(raw_u))
+            except Exception:
+                continue
+
+        with self._lock:
+            for udid in valid_udids:
+                device_id = self._make_device_id(Platform.IOS, udid)
+                discovered_ids.add(device_id)
+
+                if device_id in self._sessions:
+                    session = self._sessions[device_id]
+                    session.last_seen = now
+                    needs_check.append((device_id, session, udid, session.session_epoch))
+                else:
+                    new_session = DeviceSession(
+                        device_id=device_id,
+                        platform=Platform.IOS,
+                        connection_state=ConnectionState.UNAUTHORIZED,
+                        authorization_state=DeviceAuthorizationState.AUTHORIZATION_REQUIRED,
+                        last_seen=now,
+                        identity=None,
+                        capability_profile=None,
+                        raw_serial=udid,
+                        session_epoch=0,
+                    )
+                    self._sessions[device_id] = new_session
+                    needs_check.append((device_id, new_session, udid, new_session.session_epoch))
+
+            # Mark iOS devices not seen in this discovery cycle as OFFLINE
+            for dev_id, session in self._sessions.items():
+                if session.platform == Platform.IOS and dev_id not in discovered_ids:
+                    if session.connection_state != ConnectionState.OFFLINE:
+                        session.session_epoch += 1
+                    session.connection_state = ConnectionState.OFFLINE
+                    session.authorization_state = DeviceAuthorizationState.UNKNOWN
+                    session.last_capability_attempt_mono = None
+
+        # Step 2 & 3: Execute slow pairing validation and identity queries OUTSIDE lock
+        checked_pairs: list[
+            tuple[str, DeviceSession, str, int, ConnectionState, DeviceAuthorizationState]
+        ] = []
+        for dev_id, expected_session, udid, expected_epoch in needs_check:
+            try:
+                conn_state, auth_state, _ = pair_state_fetcher(udid)
+                checked_pairs.append(
+                    (dev_id, expected_session, udid, expected_epoch, conn_state, auth_state)
+                )
+            except Exception as exc:
+                logger.warning(
+                    "iOS pairing validation failed for device %s (%s)",
+                    dev_id,
+                    type(exc).__name__,
+                )
+
+        needs_identity: list[tuple[str, DeviceSession, str, int]] = []
+        for (
+            dev_id,
+            expected_session,
+            udid,
+            expected_epoch,
+            conn_state,
+            auth_state,
+        ) in checked_pairs:
+            needs_refresh = (
+                expected_session.identity is None
+                or expected_session.connection_state == ConnectionState.OFFLINE
+                or expected_session.last_identity_epoch != expected_session.session_epoch
+            )
+            if (
+                conn_state == ConnectionState.CONNECTED
+                and auth_state == DeviceAuthorizationState.AUTHORIZED
+                and identity_fetcher
+                and needs_refresh
+            ):
+                needs_identity.append((dev_id, expected_session, udid, expected_epoch))
+
+        fetched_identities: list[tuple[str, DeviceSession, str, int, DeviceIdentity]] = []
+        if identity_fetcher is not None:
+            for dev_id, expected_session, udid, expected_epoch in needs_identity:
+                try:
+                    ident = identity_fetcher(udid)
+                    if ident:
+                        fetched_identities.append(
+                            (dev_id, expected_session, udid, expected_epoch, ident)
+                        )
+                except Exception as exc:
+                    logger.warning(
+                        "iOS identity fetch failed for device %s (%s)",
+                        dev_id,
+                        type(exc).__name__,
+                    )
+
+        # Step 4: Re-acquire lock and apply results safely
+        with self._lock:
+            ident_by_dev_id = {
+                dev_id: ident_dto for dev_id, _, _, _, ident_dto in fetched_identities
+            }
+
+            for (
+                dev_id,
+                expected_session,
+                expected_udid,
+                expected_epoch,
+                conn_state,
+                auth_state,
+            ) in checked_pairs:
+                current_session = self._sessions.get(dev_id)
+                if (
+                    current_session is expected_session
+                    and current_session.session_epoch == expected_epoch
+                    and current_session.raw_serial == expected_udid
+                ):
+                    prev_state = current_session.connection_state
+                    if prev_state != conn_state:
+                        current_session.session_epoch += 1
+                    current_session.connection_state = conn_state
+                    current_session.authorization_state = auth_state
+                    if auth_state == DeviceAuthorizationState.AUTHORIZED:
+                        if dev_id in ident_by_dev_id:
+                            current_session.identity = ident_by_dev_id[dev_id]
+                            current_session.last_identity_epoch = current_session.session_epoch
+                        elif any(item[0] == dev_id for item in needs_identity):
+                            # Identity refresh was attempted on reconnect/epoch advance but failed:
+                            # Do not present stale identity
+                            current_session.identity = None
+                            current_session.last_identity_epoch = None
+                    else:
+                        current_session.identity = None
+                        current_session.last_identity_epoch = None
+
+    def apply_device_pair_success(
+        self,
+        device_id: str,
+        expected_epoch: int,
+        expected_serial: str | None = None,
+        identity: DeviceIdentity | None = None,
+    ) -> bool:
+        """Apply successful pairing to a session under lock.
+
+        Validates that session still matches expected device_id, epoch, and serial.
+        Increments session_epoch to invalidate any pre-pairing scan plans.
+        Returns True if applied, False if session epoch/state changed (stale).
+        """
+        with self._lock:
+            session = self._sessions.get(device_id)
+            if (
+                session is not None
+                and session.session_epoch == expected_epoch
+                and (expected_serial is None or session.raw_serial == expected_serial)
+            ):
+                session.connection_state = ConnectionState.CONNECTED
+                session.authorization_state = DeviceAuthorizationState.AUTHORIZED
+                session.session_epoch += 1
+                session.identity = identity
+                session.last_identity_epoch = session.session_epoch if identity else None
+                session.last_seen = datetime.now(UTC)
+                return True
+            return False
+
     def mark_platform_offline(self, platform: Platform) -> None:
         """Mark all active sessions for a platform as OFFLINE when discovery fails."""
         with self._lock:
@@ -378,6 +578,7 @@ class DeviceSessionManager:
                 ):
                     session.session_epoch += 1
                     session.connection_state = ConnectionState.OFFLINE
+                    session.authorization_state = DeviceAuthorizationState.UNKNOWN
                     session.last_capability_attempt_mono = None
 
     def get_session(self, device_id: str) -> DeviceSession | None:

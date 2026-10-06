@@ -32,6 +32,7 @@ from vector_agent.models.device import (
     ConnectionState,
     DiagnosticApplicability,
     PlannedDiagnostic,
+    Platform,
     ScanMode,
     ScanPlan,
     ScanRequest,
@@ -209,9 +210,14 @@ class ScanPlanner:
 
         # 2. Connection and authorization check
         if session.connection_state == ConnectionState.UNAUTHORIZED:
+            msg = (
+                "Device is unauthorized. Approve USB debugging on the device."
+                if session.platform == Platform.ANDROID
+                else "Device is unauthorized. Pairing and trust authorization required on the device."
+            )
             return (
                 DiagnosticApplicability.RESTRICTED,
-                "Device is unauthorized. Approve USB debugging on the device.",
+                msg,
             )
 
         if session.connection_state != ConnectionState.CONNECTED:

@@ -253,8 +253,16 @@ class AndroidDeviceBridge:
             return AndroidDiscoveryResult(
                 state=AdbDeviceState.ERROR,
                 devices=[],
-                message=f"ADB device enumeration failed: {exc}",
+                message="ADB device enumeration failed.",
                 adb_available=True,
+            )
+
+        if result.return_code != 0:
+            return AndroidDiscoveryResult(
+                state=AdbDeviceState.ERROR,
+                devices=[],
+                adb_available=True,
+                message="Failed to execute ADB discovery command.",
             )
 
         return _parse_devices_output(result.stdout)
