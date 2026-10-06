@@ -15,11 +15,133 @@ Hackathon challenge: Advanced Computational Intelligence â€” Hybrid Evoluti
 
 ## Current Phase
 
+Canonical Phase 7 — iOS Discovery, Pairing + Advanced / Version-Aware iOS Diagnostics
+Status: COMPLETE / VERIFIED and committed
+Baseline before Phase 7: 059cdce
+Implementation commit: 4859ba8
+Formal Phase Gate: PASSED
+Hardware qualification: NOT RUN
+
+### Canonical Production Roadmap
+1. Foundation / Production Audit — COMPLETE
+2. Diagnostic Protocol + Battery Migration — COMPLETE
+3. DeviceSession + Platform-Neutral Device API — COMPLETE
+4. Capability Foundation + Runtime Discovery — COMPLETE
+5. Diagnostic Registry + Scan Planner + Scan Lifecycle + Diagnostic Events — COMPLETE
+6. Additional Android Standard Diagnostics — COMPLETE
+7. iOS Discovery, Pairing + Advanced / Version-Aware iOS Diagnostics — COMPLETE
+8. VECTOR Probe + Deep Android Diagnostics — NEXT (NOT STARTED)
+9. Cross-Platform Evidence Normalization + Verification Coverage — NOT STARTED
+10. Explainable Verification / Trust Engine — NOT STARTED
+11. Real-Device Validation + Calibration — NOT STARTED
+12. B2B SaaS Foundation — NOT STARTED
+13. B2B Workflow + Reporting — NOT STARTED
+14. SaaS Commercial Layer — NOT STARTED
+15. Production UX + Windows Distribution — NOT STARTED
+16. Security / Privacy + Enterprise Readiness — NOT STARTED
+17. Pilot — NOT STARTED
+18. Commercial Release Candidate — NOT STARTED
+
+*(Note: Sugeno fuzzy inference and NSGA-II evolutionary optimization are optional R&D / research / paper / competition tracks, not mandatory production gating phases.)*
+
+### Verified Implementation Completed
+- implemented safe, typed libimobiledevice subprocess bridge (IOSDeviceBridge) with toolchain detection, discovery, validation, and user-initiated pairing
+- hardened subprocess policy for iOS tooling (idevice_id, idevicepair, ideviceinfo, idevicediagnostics, idevicedevmodectl) with shell=False, strict argv allowlists, bounded timeouts, and raw UDID redaction in logs/exceptions
+- pure, deterministic parsers with zero side-effects: parse_idevice_id_output, parse_pairing_validate_output, parse_pairing_pair_output, parse_ideviceinfo_key_value, parse_battery_telemetry, parse_gasgauge_plist, parse_disk_usage_output, and parse_developer_mode_output
+- pair output parser (parse_pairing_pair_output) uses strict positive full-match grammar (re.fullmatch), eliminating substring/blocklist guessing and ensuring non-zero exit codes never return PAIRED
+- battery telemetry parsing strictly enforces ASCII decimal integers (re.ASCII), with strict ASCII decimal parsing rejecting non-ASCII digits, underscores, plus-prefixed values, and out-of-range battery percentages
+- developer mode parser enforces row-level targeting against target UDID, eliminating global error text guessing on rc!=0
+- semantic Apple OS version parsing via AppleOSVersion with structured major/minor/patch components, build strings, and semantic comparisons
+- version and model compatibility matrix (IOSCompatibilityResolver) mapping OS versions to strategy statuses: SUPPORTED, KNOWN_UNSUPPORTED, KNOWN_BROKEN, RESTRICTED, and RUNTIME_PROBE_REQUIRED
+- all iOS diagnostic strategies remain explicitly CODE_TESTED only; no unverified claims of hardware validation (do not claim HARDWARE_VALIDATED)
+- developer mode diagnostic strictly respects all resolver statuses: bails out before subprocess execution for KNOWN_BROKEN (UNSUPPORTED) and RESTRICTED (RESTRICTED), resulting in zero idevicedevmodectl calls
+- GasGauge XML plist parser handles raw cycle counts and capacity fields neutrally without magnitude-based unit inference; FullChargeCapacity=100 does not create a 100mAh PASS; never fabricates health percentages; battery telemetry PASS means telemetry was successfully collected, not that battery health passed
+- storage accounting diagnostic distinguishes AmountDataAvailable, TotalDataAvailable, and TotalDataCapacity without conflating free vs purgeable disk storage
+- registered Phase 7 diagnostics use canonical IDs at VerificationLevel.RUNTIME_DETECTION: software_inventory, battery_charge_telemetry, battery_extended_telemetry, charging_power_telemetry, storage_accounting, and developer_mode_state (no Level 2 functional verification or Level 3 factory comparison implied)
+- confidence and reliability for Phase 7 iOS evidence remain None
+- multi-provider discovery truthfulness: Android bridge inspects non-zero return codes (mapping to ERROR instead of NO_DEVICE), preserving device isolation so single-provider failures return HTTP 200 with truthful statuses
+- pairing endpoint (POST /api/v1/devices/{device_id}/pair) enforces upfront UDID syntax validation (returning HTTP 400 on malformed input) and inspects typed IOSCommandStatus.TIMEOUT; message text is not used as timeout authority
+- pairing security: no automatic pairing; pairing only via explicit POST pair action; UNKNOWN, TIMEOUT, TOOL_UNAVAILABLE, and OFFLINE validation never trigger pair; non-zero pair command result never becomes PAIRED
+- malformed UDIDs cannot create sessions or pair targets; session reconciliation defensively drops malformed or injection-like UDIDs (validate_ios_udid); raw UDID remains internal/transient; public DTOs, evidence, and logs do not expose raw UDID
+- ScanPlanner and ScanService fully integrate iOS diagnostics with capability discovery, platform filtering, and heterogeneous multi-device scanning
+- frontend TypeScript models and API client methods fully synchronized with iOS device discovery and pairing endpoints
+- unwired companion_spec.py was intentionally excluded from the Phase 7 implementation commit
+- Trust Engine remains NOT_READY and trust_score remains None; Phase 7 computes no trust score, health score, or factory comparisons
+
+### Verification Results
+- Local-agent pytest: 695 passed
+- Intelligence pytest: 21 passed
+- Frontend: 96 passed across 10 test files
+- Root verify.ps1: 15 / 15 passed
+- Ruff: PASS
+- Ruff format: PASS
+- Mypy: PASS
+- ESLint: PASS
+- TypeScript: PASS
+- Frontend production build: PASS
+- Formal Phase Gate: PASSED
+- Hardware qualification: NOT RUN (Phase 7 automated verification is fixture-based; no real iPhone hardware smoke test was run in this environment. Recorded: 'Phase 7 hardware smoke test NOT RUN.')
+
+### Known Non-Blocking Technical Debt
+- **N16 (Session Provider Offline State Reconciler):** On provider failure, mark_platform_offline currently forces CONNECTED sessions OFFLINE. An UNAUTHORIZED session can remain UNAUTHORIZED until the next healthy discovery.
+  - Formal gate judged this non-blocking because:
+    - such sessions cannot execute diagnostics
+    - planner treats them as restricted
+    - provider_statuses exposes provider failure
+    - pairing re-validates live
+    - next healthy discovery reconciles the state
+- **Accepted LOW Observations:**
+  1. iOS pairing regex uses IGNORECASE without re.ASCII.
+  2. A canonical pair-success line can theoretically coexist with contradictory secondary output.
+  3. AppleOSVersion currently accepts Unicode decimal digits via \d.
+  4. adb rc=0 with completely empty stdout maps to NO_DEVICE / AVAILABLE.
+
+### Intentionally Deferred
+- VECTOR Probe + Deep Android Diagnostics — Phase 8
+- Cross-Platform Evidence Normalization + Verification Coverage — Phase 9
+- Explainable Verification / Trust Engine — Phase 10
+- Real-Device Validation + Calibration — Phase 11
+- B2B SaaS Foundation — Phase 12
+- B2B Workflow + Reporting — Phase 13
+- SaaS Commercial Layer — Phase 14
+- Production UX + Windows Distribution — Phase 15
+- Security / Privacy + Enterprise Readiness — Phase 16
+- Pilot — Phase 17
+- Commercial Release Candidate — Phase 18
+- iOS ActivationState diagnostic
+- real iPhone hardware qualification
+- optional Sugeno / NSGA-II R&D
+
+### Permanent Guarantees / Do Not Redo
+- every PASS requires real evidence
+- telemetry/inventory success does not imply hardware health
+- Unsupported != Failed
+- Restricted != Failed
+- Inconclusive != Failed
+- execution ERROR != hardware FAIL
+- stale-device safety and session epoch validation
+- one active nonterminal scan per opaque device
+- opaque device IDs; raw serial/UDID is internal/transient only
+- raw serial, raw UDID, raw stderr, exception detail, and raw dumps never enter public evidence/events/API
+- LIVE never silently falls back to DEMO
+- Level 1 != Level 2 != Level 3
+- battery telemetry PASS means telemetry collected, not battery health
+- Trust Engine remains NOT_READY and trust_score remains None
+- all iOS compatibility strategies remain CODE_TESTED only; never claim HARDWARE_VALIDATED without live hardware smoke tests
+
+### Next Phase
+Phase 8 — VECTOR Probe + Deep Android Diagnostics (NOT STARTED).
+
+---
+
+## Historical Phase Record — Phase 6: Additional Android Standard Diagnostics
+
 Canonical Phase 6 — Additional Android Standard Diagnostics
 Status: VERIFIED and committed
 Baseline before Phase 6: 786280a
 Last committed green SHA before this phase: 786280a
 Phase 6 implementation commit: ee53940
+Phase 6 status finalization commit: 059cdce
 
 ### Canonical Production Roadmap
 1. Foundation / Production Audit — COMPLETE
