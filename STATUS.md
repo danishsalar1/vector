@@ -15,12 +15,17 @@ Hackathon challenge: Advanced Computational Intelligence â€” Hybrid Evoluti
 
 ## Current Phase
 
-Canonical Phase 7 — iOS Discovery, Pairing + Advanced / Version-Aware iOS Diagnostics
-Status: COMPLETE / VERIFIED and committed
-Baseline before Phase 7: 059cdce
-Implementation commit: 4859ba8
-Formal Phase Gate: PASSED
+Canonical Phase 8 — VECTOR Probe + Deep Android Diagnostics
+Phase 8 overall: IN PROGRESS
+Current completed slice: Phase 8A — VECTOR Probe Protocol, Evidence Boundary + Security Foundation
+Phase 8A status: COMPLETE / VERIFIED / FORMAL GATE PASSED / IMPLEMENTATION COMMITTED
+Baseline before Phase 8A: 638955c
+Codex instructions commit: 638955c
+Phase 8A implementation commit: 4f073da
+Formal Phase 8A Gate: PASSED
+Final staged-boundary review: APPROVED
 Hardware qualification: NOT RUN
+Next implementation slice: 8D — Platform-Neutral Component Authenticity / Provenance Domain (NOT STARTED)
 
 ### Canonical Production Roadmap
 1. Foundation / Production Audit — COMPLETE
@@ -30,7 +35,7 @@ Hardware qualification: NOT RUN
 5. Diagnostic Registry + Scan Planner + Scan Lifecycle + Diagnostic Events — COMPLETE
 6. Additional Android Standard Diagnostics — COMPLETE
 7. iOS Discovery, Pairing + Advanced / Version-Aware iOS Diagnostics — COMPLETE
-8. VECTOR Probe + Deep Android Diagnostics — NEXT (NOT STARTED)
+8. VECTOR Probe + Deep Android Diagnostics — IN PROGRESS (8A complete; 8D next)
 9. Cross-Platform Evidence Normalization + Verification Coverage — NOT STARTED
 10. Explainable Verification / Trust Engine — NOT STARTED
 11. Real-Device Validation + Calibration — NOT STARTED
@@ -43,6 +48,72 @@ Hardware qualification: NOT RUN
 18. Commercial Release Candidate — NOT STARTED
 
 *(Note: Sugeno fuzzy inference and NSGA-II evolutionary optimization are optional R&D / research / paper / competition tracks, not mandatory production gating phases.)*
+
+### Approved Phase 8 Implementation Order
+- 8A — Probe Protocol + Evidence Boundary + Security Foundation — COMPLETE
+- 8D — Platform-Neutral Component Authenticity / Provenance Domain — NEXT (NOT STARTED)
+- 8B — Signed Android Probe + Discovery / Consent / Lifecycle — NOT STARTED
+- 8C — Deep Android Functional Diagnostics — NOT STARTED
+- 8E — Android Provenance / Anomaly Signals — NOT STARTED
+- 8F — Planner / Evidence / Coverage / Frontend Integration — NOT STARTED
+- 8G — Adversarial Regression + Hardware Qualification — NOT STARTED
+
+### Verified Phase 8A Implementation
+- versioned Probe protocol v1 with strict typed contracts and six allowlisted operations: HELLO, GET_CAPABILITIES, START_CHALLENGE, CANCEL_CHALLENGE, FETCH_OBSERVATIONS, HEARTBEAT
+- strict bounded JSON ingestion with duplicate-key rejection, finite-number enforcement, and strict identifier validation
+- bounded replay protection, secure random nonces, sequence handling, and exact request/response ownership binding to device-session epoch and scan / diagnostic / attempt / challenge context
+- UTC expiry and monotonic deadlines; expired-pending-request replacement, exact scoped abandonment, synchronized pending-request timing lifecycle, and concurrency-safe dispatch ownership
+- abstract Probe transport with typed outcomes; validated, attributed Probe observation boundary and additive VECTOR_PROBE evidence source
+- process-local authorization foundation using a secure random token and constant-time comparison; no arbitrary shell / command / path / URL / intent / code support
+- this layer generates no hardware PASS, authenticity verdict, Trust Score, confidence, or reliability; confidence and reliability remain None
+- Probe responsiveness != hardware PASS. Authenticated/correlated Probe data != truthful physical measurement.
+- Phase 8A contains no real Android Probe app and no physical diagnostics. Hardware qualification was NOT RUN.
+
+### Phase 8A Verification Results
+- Phase 8A focused: 254 passed
+- Full local-agent: 949 passed
+- Intelligence: 21 passed
+- Frontend: 96 passed across 10 test files
+- Root verify.ps1: 15 / 15 passed
+- Ruff: PASS; Ruff format: PASS; Mypy: PASS
+- ESLint: PASS; TypeScript: PASS; Frontend production build: PASS
+- Independent review and correction re-review completed; Formal Phase 8A Gate: PASSED
+- Final staged-boundary review: APPROVED
+- Hardware qualification: NOT RUN
+
+### Phase 8A Accepted Non-Blocking Debt
+- R-01 LOW: production sequence and operation request-binding checks are correct and were directly verified during review, but two comparisons do not each have a dedicated isolated negative unit test.
+- R-02 INFO: two existing assertions could be stronger.
+- R-03 INFO: two negative tests reach owner mismatch before the nominal comparison; other tests still cover those production clauses.
+- G-01 INFO: current_device_epoch() is called while the transport lock is held. No current deadlock exists; lock ordering is a future 8B/8D integration consideration.
+- G-02 INFO: injected clock test seams do not explicitly finiteness-check values; these seams are not peer-controlled.
+- G-03 INFO: EXPIRED maps to TIMEOUT, including a request that was never dispatched.
+- G-04 INFO: protocol documentation mentions wall-clock rollback; implementation also fails closed on monotonic rollback.
+- Inherited debt: subprocess capture_output buffering remains potentially unbounded before post-read truncation. Phase 8A added no subprocess commands and did not worsen this debt.
+
+### Component Authenticity and Permanent Guarantees
+- Functionality and authenticity/provenance are independent dimensions. A component may function correctly while being aftermarket, replaced, manipulated, or of unknown origin. Never infer genuine/original from successful function; use UNKNOWN / INCONCLUSIVE when origin cannot be defensibly established. 8D will introduce the platform-neutral provenance domain.
+- Every PASS requires evidence; certainty never exceeds evidence.
+- Unsupported != Failed; Restricted != Failed; Inconclusive != Failed; execution ERROR != hardware FAIL.
+- LIVE never silently falls back to DEMO; Level 1 != Level 2 != Level 3.
+- Raw serial / UDID / IMEI and private data remain protected; no automatic iOS pairing.
+- Physical claims remain CODE_TESTED; never claim HARDWARE_VALIDATED without physical qualification.
+- Trust Engine remains NOT_READY and trust_score remains None.
+
+### Next Implementation Slice
+8D — Platform-Neutral Component Authenticity / Provenance Domain — NEXT (NOT STARTED). Phase 8 remains IN PROGRESS; this status update does not start later work.
+
+---
+
+## Historical Phase Record — Phase 7: iOS Discovery, Pairing + Advanced / Version-Aware iOS Diagnostics
+
+Canonical Phase 7 — iOS Discovery, Pairing + Advanced / Version-Aware iOS Diagnostics
+Status: COMPLETE / VERIFIED and committed
+Baseline before Phase 7: 059cdce
+Implementation commit: 4859ba8
+Phase 7 status finalization commit: 0b44dc6
+Formal Phase Gate: PASSED
+Hardware qualification: NOT RUN
 
 ### Verified Implementation Completed
 - implemented safe, typed libimobiledevice subprocess bridge (IOSDeviceBridge) with toolchain detection, discovery, validation, and user-initiated pairing
