@@ -17,15 +17,21 @@ Hackathon challenge: Advanced Computational Intelligence â€” Hybrid Evoluti
 
 Canonical Phase 8 — VECTOR Probe + Deep Android Diagnostics
 Phase 8 overall: IN PROGRESS
-Current completed slice: Phase 8A — VECTOR Probe Protocol, Evidence Boundary + Security Foundation
-Phase 8A status: COMPLETE / VERIFIED / FORMAL GATE PASSED / IMPLEMENTATION COMMITTED
+Current completed slices:
+- Phase 8A — VECTOR Probe Protocol, Evidence Boundary + Security Foundation (COMPLETE / VERIFIED / FORMAL GATE PASSED / IMPLEMENTATION COMMITTED: 4f073da)
+- Phase 8D — Platform-Neutral Component Authenticity / Provenance Domain (COMPLETE / VERIFIED / FORMAL GATE PASSED / IMPLEMENTATION COMMITTED: 03d80b4)
 Baseline before Phase 8A: 638955c
 Codex instructions commit: 638955c
 Phase 8A implementation commit: 4f073da
+Baseline before Phase 8D: acc5b56
+Phase 8D implementation commit: 03d80b45f717ac3671232b1824f492d0fdd3be19 (03d80b4)
 Formal Phase 8A Gate: PASSED
-Final staged-boundary review: APPROVED
+Final staged-boundary review (8A): APPROVED
+Formal Phase 8D Gate: PASSED
 Hardware qualification: NOT RUN
-Next implementation slice: 8D — Platform-Neutral Component Authenticity / Provenance Domain (NOT STARTED)
+Trust Engine: NOT_READY
+trust_score: None
+Next implementation slice: 8B — Signed Android Probe + Discovery / Consent / Lifecycle (NEXT / NOT STARTED)
 
 ### Canonical Production Roadmap
 1. Foundation / Production Audit — COMPLETE
@@ -35,7 +41,7 @@ Next implementation slice: 8D — Platform-Neutral Component Authenticity / Prov
 5. Diagnostic Registry + Scan Planner + Scan Lifecycle + Diagnostic Events — COMPLETE
 6. Additional Android Standard Diagnostics — COMPLETE
 7. iOS Discovery, Pairing + Advanced / Version-Aware iOS Diagnostics — COMPLETE
-8. VECTOR Probe + Deep Android Diagnostics — IN PROGRESS (8A complete; 8D next)
+8. VECTOR Probe + Deep Android Diagnostics — IN PROGRESS (8A & 8D complete; 8B next)
 9. Cross-Platform Evidence Normalization + Verification Coverage — NOT STARTED
 10. Explainable Verification / Trust Engine — NOT STARTED
 11. Real-Device Validation + Calibration — NOT STARTED
@@ -51,8 +57,8 @@ Next implementation slice: 8D — Platform-Neutral Component Authenticity / Prov
 
 ### Approved Phase 8 Implementation Order
 - 8A — Probe Protocol + Evidence Boundary + Security Foundation — COMPLETE
-- 8D — Platform-Neutral Component Authenticity / Provenance Domain — NEXT (NOT STARTED)
-- 8B — Signed Android Probe + Discovery / Consent / Lifecycle — NOT STARTED
+- 8D — Platform-Neutral Component Authenticity / Provenance Domain — COMPLETE
+- 8B — Signed Android Probe + Discovery / Consent / Lifecycle — NEXT (NOT STARTED)
 - 8C — Deep Android Functional Diagnostics — NOT STARTED
 - 8E — Android Provenance / Anomaly Signals — NOT STARTED
 - 8F — Planner / Evidence / Coverage / Frontend Integration — NOT STARTED
@@ -91,17 +97,72 @@ Next implementation slice: 8D — Platform-Neutral Component Authenticity / Prov
 - G-04 INFO: protocol documentation mentions wall-clock rollback; implementation also fails closed on monotonic rollback.
 - Inherited debt: subprocess capture_output buffering remains potentially unbounded before post-read truncation. Phase 8A added no subprocess commands and did not worsen this debt.
 
+### Verified Phase 8D Implementation
+- Platform-Neutral Component Authenticity / Provenance Domain candidate fully implemented and committed in `03d80b45f717ac3671232b1824f492d0fdd3be19` (`03d80b4`).
+- Session-scoped component identity: `cmp-<128-bit SHA-256>` derived from version tag (`vector-component-v1`), opaque `device_id`, desktop-owned `session_scope_id` (UUIDv4), `device_session_epoch`, `component_kind`, `component_role`, and `ordinal`. Delimiter-separated to resist field boundary collapse. Golden vector pinned independently: `cmp-4a9cdaa1d85350c8a6679540a1431969`.
+- Strict separation of functionality and provenance: `DiagnosticStatus` (PASS/FAIL/ERROR/RESTRICTED/UNSUPPORTED/INCONCLUSIVE) and functionality references are retained solely as opaque references; never read to infer provenance. Successful function never implies OEM/genuine, and functional failure never implies aftermarket.
+- Discrete, independent provenance dimensions: manufacturing origin (`VERIFIED_OEM`, `NON_OEM_INDICATED`, `UNKNOWN`), installation history (`ORIGINAL_VERIFIED`, `REPLACEMENT_VERIFIED`, `UNKNOWN`), prior use (`USED_VERIFIED`, `NOT_ESTABLISHED`), manipulation (`INDICATED`, `UNKNOWN`), and anomaly (`INDICATED`, `NO_ANOMALY_OBSERVED`, `UNKNOWN`).
+- Cross-dimension conflict resolution:
+  - `NON_OEM_INDICATED` + `ORIGINAL_INSTALLATION_ASSERTED`: origin `NON_OEM_INDICATED`, installation `UNKNOWN`, sufficiency `INCONCLUSIVE`, label `NON_OEM_INDICATED`, reason `CONFLICTING_ORIGIN_INSTALLATION_EVIDENCE`.
+  - `ORIGINAL_VERIFIED` + `USED_VERIFIED`: installation `UNKNOWN`, prior use `USED_VERIFIED`, sufficiency `INCONCLUSIVE`, label `SUSPICIOUS`, reason `CONFLICTING_ORIGINAL_USED_EVIDENCE`.
+  - Both opposing evidence sets preserved in `contradicting_evidence_ids`.
+- Derived authenticity label precedence: origin conflict → `SUSPICIOUS`; resolved non-OEM origin → `NON_OEM_INDICATED`; other conflict / manipulation / anomaly → `SUSPICIOUS`; verified OEM + installation/use → `VERIFIED_OEM_ORIGINAL`, `VERIFIED_OEM_REPLACEMENT`, `VERIFIED_OEM_USED_REPLACEMENT`, `VERIFIED_OEM_ORIGIN_ONLY`; otherwise `UNKNOWN`.
+- Strict `ComponentAssessment` validation rejecting forged claims: verifies policy version (`vector-provenance-v1`), matching reasons for all facts, non-empty supporting evidence if and only if facts exist, prohibition of negative manipulation assertions in v1, impossibility of coexisting original + non-OEM or original + used, and matching derived summary label.
+- Platform-neutrality: zero Android or iOS adapter/collector imports in Phase 8D modules; enforced by AST lint checks.
+- Pure and deterministic evaluation: no I/O, no network, no database, no wall-clock reads (`assessed_at` is caller-supplied UTC).
+
+### Phase 8D Verification Results
+- Focused Phase 8D tests: 884 passed
+- Full local-agent: 1833 passed (1 known pre-existing Starlette/httpx testclient warning)
+- Intelligence: 21 passed
+- Frontend: 96 passed across 10 test files
+- Root `scripts/verify.ps1`: 15 / 15 PASS
+- Ruff lint: PASS (src/ and tests/)
+- Ruff format: PASS (120 files)
+- Mypy: PASS (81 source files)
+- Frontend lint (ESLint): PASS
+- TypeScript (`npx tsc --noEmit`): PASS
+- Frontend production build (`vite build`): PASS
+- Formal gate totals: 0 BLOCKER, 0 HIGH, 0 MEDIUM, 3 LOW, 8 INFO
+- Formal Phase 8D Gate: PASSED
+- Hardware qualification: NOT RUN (`CODE_TESTED` only; synthetic fixtures)
+- Trust Engine: NOT_READY; trust_score: None
+
+### Phase 8D Formal Gate Findings and Technical Debt
+
+#### Accepted Low Debt
+- **F-01 — Aggregate sufficiency limitation:** `AssessmentSufficiency` remains aggregate rather than per-dimension. An eligible observation (such as `NO_ANOMALY_OBSERVED`) may cause aggregate sufficiency to be `SUPPORTED` while `origin`, `installation`, and `manipulation` remain `UNKNOWN`. Consumers must NOT interpret aggregate `SUPPORTED` as meaning every provenance dimension is established. Refinement deferred to Phase 8F / Phase 9.
+- **N-1 — ComponentAssessment defense-in-depth parity:** A hand-built / externally forged `ComponentAssessment` can represent `origin = UNKNOWN` and `installation = ORIGINAL_VERIFIED` with an origin-conflict reason, even though the production provenance policy itself cannot emit that shape. It remains conservative (cannot produce a positive `VERIFIED_OEM_*` label), and no external API/persistence boundary currently exposes it. Required future action: before `ComponentAssessment` is exposed through an API, persistence boundary, or untrusted deserialization path, tighten the validator so origin conflict cannot coexist with `ORIGINAL_VERIFIED` installation.
+- **N-2 — Cross-conflict regression test depth:** Production behavior for cross-dimensional conflicts is correct and was independently stress-tested across counts, timestamps, authority classes, dependency keys, and input ordering, but repository regression tests do not yet directly pin all of those no-winner variants. This is accepted LOW test debt. When provenance policy tests are next materially touched, add parameterized count/time/authority/dependency-key no-winner tests for `NON_OEM + ORIGINAL` and `ORIGINAL + USED`.
+
+#### Deferred Items & Gate Observations
+- **F-06 (INFO):** Real source authentication, evidence ownership, session binding, freshness, cryptographic validation, and adapter-boundary trust deferred to future adapter phases.
+- **F-07 (INFO):** `COMPONENT_BOUND` vs `DEVICE_SLOT_BOUND` refinement deferred.
+- **F-08 (INFO):** Persistent opaque device-ID / `ComponentReference` privacy and persistence design deferred.
+- **F-09 (INFO):** Relative-import / `# ruff: noqa: TID252` cleanup and minor syntax polish deferred.
+- **G-1 (INFO):** Stale provenance lifecycle wording in documentation — resolved in this documentation finalization pass.
+- **G-2 (INFO):** Working-tree CRLF normalized to LF in Git index; no defect.
+- **G-3 (INFO):** Positive derived labels can coexist with additional dimensions such as `USED_VERIFIED` or `INCONCLUSIVE` weak counterclaims; future UI/reporting must show the underlying dimensions and sufficiency, not only the derived label.
+- **G-4 (INFO):** `OpaqueDeviceId` currently recognizes `android|ios` prefixes; revisit only when a new platform or F-08 work requires it.
+
 ### Component Authenticity and Permanent Guarantees
-- Functionality and authenticity/provenance are independent dimensions. A component may function correctly while being aftermarket, replaced, manipulated, or of unknown origin. Never infer genuine/original from successful function; use UNKNOWN / INCONCLUSIVE when origin cannot be defensibly established. 8D will introduce the platform-neutral provenance domain.
+- Functionality and authenticity/provenance are strictly independent dimensions. A component may function correctly while being aftermarket, replaced, manipulated, or of unknown origin. Never infer genuine/original from successful function; use UNKNOWN / INCONCLUSIVE when origin cannot be defensibly established.
+- Future phases will gather evidence for as many device components as technically defensible: battery / BMS, display, cameras, biometric modules, logic board, charging components, audio components, haptics, sensors, storage, wireless modules, and other replaceable / identity-bearing parts.
+- Phase 8D provides the platform-neutral domain foundation only. No actual component authenticity detection has yet been hardware-implemented or qualified.
 - Every PASS requires evidence; certainty never exceeds evidence.
 - Unsupported != Failed; Restricted != Failed; Inconclusive != Failed; execution ERROR != hardware FAIL.
 - LIVE never silently falls back to DEMO; Level 1 != Level 2 != Level 3.
 - Raw serial / UDID / IMEI and private data remain protected; no automatic iOS pairing.
 - Physical claims remain CODE_TESTED; never claim HARDWARE_VALIDATED without physical qualification.
 - Trust Engine remains NOT_READY and trust_score remains None.
+- No real Android OEM collector yet.
+- No Apple Parts & Service History collector yet.
+- No battery-manipulation detector yet.
+- No display-authenticity detector yet.
+- No hardware genuineness claim yet.
 
 ### Next Implementation Slice
-8D — Platform-Neutral Component Authenticity / Provenance Domain — NEXT (NOT STARTED). Phase 8 remains IN PROGRESS; this status update does not start later work.
+8B — Signed Android Probe + Discovery / Consent / Lifecycle — NEXT (NOT STARTED). Phase 8 remains IN PROGRESS; this status update does not start later work.
 
 ---
 

@@ -169,14 +169,27 @@ timestamps. Functionality references use bounded lowercase identifier syntax;
 the current DiagnosticResult has no separate result UUID, so future integration
 must resolve them within report/scan context.
 
-## Deferred
+## Status and Deferred Findings
 
+Phase 8D implementation: COMPLETE
+Implementation commit: `03d80b45f717ac3671232b1824f492d0fdd3be19` (03d80b4)
+Independent narrow re-review: PASSED
+Formal Phase 8D gate: PASSED (0 BLOCKER, 0 HIGH, 0 MEDIUM, 3 LOW, 8 INFO)
+Hardware qualification: NOT RUN (CODE_TESTED only; synthetic fixtures)
+Trust Engine: NOT_READY; trust_score: None
+
+### Accepted Low Debt
+- **F-01 (Aggregate sufficiency limitation):** `AssessmentSufficiency` remains aggregate rather than per-dimension; consumers must not infer every dimension is established from `SUPPORTED`. Refinement deferred to Phase 8F / Phase 9.
+- **N-1 (ComponentAssessment defense-in-depth parity):** Direct model deserialization allows `origin=UNKNOWN` + `installation=ORIGINAL_VERIFIED` with origin conflict; policy engine cannot emit this and any accepted forged shape remains conservative (`SUSPICIOUS` / never a positive `VERIFIED_OEM_*` label). Tighten the validator before any public API, persistence, or other untrusted deserialization boundary.
+- **N-2 (Cross-conflict regression test depth):** Production conflict behavior is correct across permutations; additional multi-dimensional no-winner parametrized tests for `NON_OEM + ORIGINAL` and `ORIGINAL + USED` to be added on next test pass.
+
+### Deferred Items
 No real provenance collector, Android OEM strategy, iOS parts-history strategy,
 battery manipulation detector, display authenticity detector, component serial
 verification, OEM service integration or hardware validation exists in 8D.
 No component is hardware-verified genuine. Hardware qualification NOT RUN.
-8B, 8C, 8E, 8F and 8G remain NOT STARTED. The initial independent Claude review
-completed; F-02–F-05 corrections require narrow re-review and the formal Phase 8D
-gate remains pending. F-06 adapter authentication/ownership/freshness, F-07 tighter
-installation binding, F-08 persistent device-ID redesign and F-09 import/naming
-cleanup remain deferred. This document does not approve the phase.
+8B, 8C, 8E, 8F and 8G remain NOT STARTED.
+- F-06: real source authentication, ownership, freshness, cryptographic validation, and adapter-boundary trust
+- F-07: COMPONENT_BOUND vs DEVICE_SLOT_BOUND refinement
+- F-08: persistent opaque device-ID / ComponentReference privacy and persistence design
+- F-09: relative-import / noqa cleanup and minor syntax polish
