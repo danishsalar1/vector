@@ -146,6 +146,31 @@ class ProbeCapabilityDescriptor(ProbeModel):
         return value
 
 
+class ProbeHello(ProbeModel):
+    """8B optional v1 HELLO metadata. Identity still requires adapter verification."""
+
+    application_version: Annotated[
+        str,
+        StringConstraints(
+            strict=True, pattern=r"^[0-9]{1,5}\.[0-9]{1,5}\.[0-9]{1,5}$", max_length=17
+        ),
+    ]
+    version_code: Annotated[int, Field(strict=True, ge=1, le=MAX_SEQUENCE_NUMBER)]
+    protocol_versions: Annotated[
+        tuple[Annotated[int, Field(strict=True, ge=1)], ...], Field(min_length=1, max_length=16)
+    ]
+    supported_operations: Annotated[tuple[ProbeOperation, ...], Field(min_length=1, max_length=6)]
+    api_level: Annotated[int, Field(strict=True, ge=26, le=1000)]
+
+    @model_validator(mode="after")
+    def unique_metadata(self) -> Self:
+        if len(set(self.protocol_versions)) != len(self.protocol_versions) or len(
+            set(self.supported_operations)
+        ) != len(self.supported_operations):
+            raise ValueError("Duplicate HELLO metadata is forbidden.")
+        return self
+
+
 class ProbeObservationCandidate(ProbeModel):
     observation_id: ProbeIdentifier
     observation_type: ProbeObservationType
@@ -219,6 +244,7 @@ class ProbeResponseEnvelope(ProbeEnvelope):
     """Echoes request identity/nonce/sequence; timestamps describe this response."""
 
     status: ProbeCommandStatus
+    hello: ProbeHello | None = None
     probe_build: ProbeBuildIdentity | None
     capabilities: Annotated[
         tuple[ProbeCapabilityDescriptor, ...], Field(max_length=MAX_COLLECTION_ITEMS)
@@ -229,6 +255,10 @@ class ProbeResponseEnvelope(ProbeEnvelope):
 
     @model_validator(mode="after")
     def validate_payload(self) -> Self:
+        if self.hello is not None and (
+            self.operation != ProbeOperation.HELLO or self.status != ProbeCommandStatus.OK
+        ):
+            raise ValueError("HELLO metadata requires a successful HELLO response.")
         if self.status != ProbeCommandStatus.OK and (self.capabilities or self.observations):
             raise ValueError("Unsuccessful responses cannot supply accepted payloads.")
         if self.capabilities and self.operation != ProbeOperation.GET_CAPABILITIES:

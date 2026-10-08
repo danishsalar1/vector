@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">VECTOR Probe</string>
+    <string name="purpose">Allow this USB-authorized computer to connect to VECTOR Probe while this screen stays open. This checks the control connection only. No hardware test or personal data collection is performed.</string>
+    <string name="allow">Allow connection</string>
+    <string name="deny">Decline / stop</string>
+    <string name="required">Waiting for your consent.</string>
+    <string name="listening">Consent granted. Waiting for VECTOR Desktop.</string>
+    <string name="connected">VECTOR Desktop connected. No hardware tests are running.</string>
+    <string name="stopped">Connection stopped. Allow again to reconnect.</string>
+    <string name="denied">Consent declined.</string>
+    <string name="restricted">This build cannot use the development connection.</string>
+</resources>

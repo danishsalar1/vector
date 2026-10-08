@@ -15,6 +15,7 @@ from vector_agent.models.probe import (
     ProbeCapabilityDescriptor,
     ProbeChallengeBinding,
     ProbeCommandStatus,
+    ProbeHello,
     ProbeLimitation,
     ProbeObservationType,
     ProbeOperation,
@@ -61,6 +62,7 @@ class ValidatedProbeResponse:
     capabilities: tuple[ProbeCapabilityDescriptor, ...]
     observations: tuple[ValidatedProbeObservation, ...]
     probe_build: ProbeBuildIdentity | None
+    hello: ProbeHello | None = None
 
 
 def ingest_probe_response(
@@ -106,4 +108,5 @@ def ingest_probe_response(
         capabilities=response.capabilities,
         observations=tuple(observations),
         probe_build=response.probe_build,
+        hello=response.hello,
     )

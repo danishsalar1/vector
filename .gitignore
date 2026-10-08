@@ -108,3 +108,11 @@ local-agent/scans/
 # Claude Code personal/local settings (shared .claude/ config stays tracked)
 .claude/settings.local.json
 CLAUDE.local.md
+
+# Android tooling and development signing material
+.gradle/
+local.properties
+*.jks
+*.keystore
+*.apk
+*.aab

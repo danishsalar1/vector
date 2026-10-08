@@ -15,10 +15,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from vector_agent import __version__
-from vector_agent.api import android, devices, health, scans, system
+from vector_agent.api import android, devices, health, probe, scans, system
 from vector_agent.core.config import get_settings
 from vector_agent.core.errors import VectorError
 from vector_agent.core.logging import configure_logging, get_logger
+from vector_agent.devices.session import device_session_manager
+from vector_agent.probe.lifecycle import ProbeService
+from vector_agent.probe.trust_build import load_trusted_artifact
 
 logger = get_logger(__name__)
 
@@ -35,7 +38,10 @@ def create_app() -> FastAPI:
             __version__,
             "DEMO" if settings.demo_mode else "LIVE",
         )
-        yield
+        try:
+            yield
+        finally:
+            application.state.probe_service.close()
         logger.info("VECTOR agent shutting down.")
 
     app = FastAPI(
@@ -51,6 +57,13 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    # ---- Probe control lifecycle (explicit actions only) ----
+    app.state.probe_service = ProbeService(
+        device_session_manager,
+        adb_path=settings.adb_path,
+        artifact=load_trusted_artifact(settings.data_path / "probe-trust.json"),
+        enabled=not settings.demo_mode,
+    )
     # ---- CORS ----
     # Only allow the Vite dev server. In production the React build is served
     # from the same origin so CORS is not needed.
@@ -91,6 +104,7 @@ def create_app() -> FastAPI:
     app.include_router(android.router, prefix=prefix)
     app.include_router(devices.router, prefix=prefix)
     app.include_router(scans.router, prefix=prefix)
+    app.include_router(probe.router, prefix=prefix)
 
     return app
 

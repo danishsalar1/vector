@@ -586,6 +586,19 @@ class DeviceSessionManager:
         with self._lock:
             return self._sessions.get(device_id)
 
+    def probe_owner_epoch(self, owner: DeviceSession) -> int:
+        """Atomic live ownership check, including replacement after clear/restart."""
+        with self._lock:
+            current = self._sessions.get(owner.device_id)
+            if (
+                current is not owner
+                or current.platform != Platform.ANDROID
+                or current.connection_state != ConnectionState.CONNECTED
+                or current.authorization_state != DeviceAuthorizationState.AUTHORIZED
+            ):
+                return -1
+            return current.session_epoch
+
     def list_sessions(self) -> list[DeviceSession]:
         """List all current device sessions."""
         with self._lock:
