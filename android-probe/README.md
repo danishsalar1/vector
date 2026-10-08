@@ -46,11 +46,18 @@ make the current development bootstrap suitable for a production release.
    desktop install/update/uninstall endpoint exists. Do not replace or uninstall
    an unknown signer automatically. A rebuild/update requires explicit enrollment
    again, even when signed by the same development key.
-5. Discover the device through the existing device API. Use the protected Probe
-   `discover`, then `launch` control actions. The app asks for on-device consent.
-6. Tap **Allow connection**, then invoke `connect`. Closing/backgrounding the
-   app, pressing **Decline / stop**, expiry, or transport loss revokes consent.
-   Reconnect requires a new Allow action; there is no persistent permission grant.
+5. Discover the device through the existing device API. Note that the Probe HTTP
+   control endpoints (`GET /api/v1/devices/{id}/probe` and POST `discover`, `launch`,
+   `connect`, `heartbeat`, `stop`) require the process-local authorization header
+   (`X-Vector-Local-Auth`). In Phase 8B, this token is held exclusively in-process by the
+   desktop local agent with no public/unauthenticated distribution mechanism or UI exposure
+   (Phase 8F will design the authenticated frontend integration). Therefore, an external
+   operator cannot invoke these endpoints directly from tools like curl without in-process
+   test harnesses or internal integration.
+6. When launched via authenticated control, the app asks for on-device consent. Tap
+   **Allow connection**, then invoke `connect`. Closing/backgrounding the app, pressing
+   **Decline / stop**, expiry, or transport loss revokes consent. Reconnect requires a new
+   Allow action; there is no persistent permission grant.
 
 The development path supports the Android owner profile (user 0), provisional
 API 26+, normal non-root ADB, readable installed APK hashing, and permitted

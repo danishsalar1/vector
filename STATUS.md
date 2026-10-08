@@ -18,20 +18,25 @@ Hackathon challenge: Advanced Computational Intelligence â€” Hybrid Evoluti
 Canonical Phase 8 — VECTOR Probe + Deep Android Diagnostics
 Phase 8 overall: IN PROGRESS
 Current completed slices:
-- Phase 8A — VECTOR Probe Protocol, Evidence Boundary + Security Foundation (COMPLETE / VERIFIED / FORMAL GATE PASSED / IMPLEMENTATION COMMITTED: 4f073da)
-- Phase 8D — Platform-Neutral Component Authenticity / Provenance Domain (COMPLETE / VERIFIED / FORMAL GATE PASSED / IMPLEMENTATION COMMITTED: 03d80b4)
+- Phase 8A - VECTOR Probe Protocol, Evidence Boundary + Security Foundation (COMPLETE / VERIFIED / FORMAL GATE PASSED / IMPLEMENTATION COMMITTED: 4f073da)
+- Phase 8D - Platform-Neutral Component Authenticity / Provenance Domain (COMPLETE / VERIFIED / FORMAL GATE PASSED / IMPLEMENTATION COMMITTED: 03d80b4)
+- Phase 8B - Signed Android Probe + Discovery / Consent / Lifecycle (COMPLETE / VERIFIED / FORMAL GATE PASSED / IMPLEMENTATION COMMITTED: 365f0e8)
 Baseline before Phase 8A: 638955c
 Codex instructions commit: 638955c
 Phase 8A implementation commit: 4f073da
 Baseline before Phase 8D: acc5b56
 Phase 8D implementation commit: 03d80b45f717ac3671232b1824f492d0fdd3be19 (03d80b4)
+Baseline before Phase 8B: 8456e352053a802a7cff85eff4ad1751ef14878e
+Phase 8B implementation commit: 365f0e88a3da172b27e5021a9ff95257aa83eb25 (365f0e8)
 Formal Phase 8A Gate: PASSED
 Final staged-boundary review (8A): APPROVED
 Formal Phase 8D Gate: PASSED
+Formal Phase 8B Gate: PASSED
+Final staged-boundary review (8B): APPROVED
 Hardware qualification: NOT RUN
 Trust Engine: NOT_READY
 trust_score: None
-Next implementation slice: 8B — Signed Android Probe + Discovery / Consent / Lifecycle (NEXT / NOT STARTED)
+Next implementation slice: 8C - Deep Android Functional Diagnostics (NEXT / NOT STARTED)
 
 ### Canonical Production Roadmap
 1. Foundation / Production Audit — COMPLETE
@@ -41,7 +46,7 @@ Next implementation slice: 8B — Signed Android Probe + Discovery / Consent / L
 5. Diagnostic Registry + Scan Planner + Scan Lifecycle + Diagnostic Events — COMPLETE
 6. Additional Android Standard Diagnostics — COMPLETE
 7. iOS Discovery, Pairing + Advanced / Version-Aware iOS Diagnostics — COMPLETE
-8. VECTOR Probe + Deep Android Diagnostics — IN PROGRESS (8A & 8D complete; 8B next)
+8. VECTOR Probe + Deep Android Diagnostics - IN PROGRESS (8A, 8D & 8B complete; 8C next)
 9. Cross-Platform Evidence Normalization + Verification Coverage — NOT STARTED
 10. Explainable Verification / Trust Engine — NOT STARTED
 11. Real-Device Validation + Calibration — NOT STARTED
@@ -56,13 +61,13 @@ Next implementation slice: 8B — Signed Android Probe + Discovery / Consent / L
 *(Note: Sugeno fuzzy inference and NSGA-II evolutionary optimization are optional R&D / research / paper / competition tracks, not mandatory production gating phases.)*
 
 ### Approved Phase 8 Implementation Order
-- 8A — Probe Protocol + Evidence Boundary + Security Foundation — COMPLETE
-- 8D — Platform-Neutral Component Authenticity / Provenance Domain — COMPLETE
-- 8B — Signed Android Probe + Discovery / Consent / Lifecycle — NEXT (NOT STARTED)
-- 8C — Deep Android Functional Diagnostics — NOT STARTED
-- 8E — Android Provenance / Anomaly Signals — NOT STARTED
-- 8F — Planner / Evidence / Coverage / Frontend Integration — NOT STARTED
-- 8G — Adversarial Regression + Hardware Qualification — NOT STARTED
+- 8A - Probe Protocol + Evidence Boundary + Security Foundation - COMPLETE
+- 8D - Platform-Neutral Component Authenticity / Provenance Domain - COMPLETE
+- 8B - Signed Android Probe + Discovery / Consent / Lifecycle - COMPLETE (development-foundation scope; physical hardware qualification NOT RUN)
+- 8C - Deep Android Functional Diagnostics - NEXT (NOT STARTED)
+- 8E - Android Provenance / Anomaly Signals - NOT STARTED
+- 8F - Planner / Evidence / Coverage / Frontend Integration - NOT STARTED
+- 8G - Adversarial Regression + Hardware Qualification - NOT STARTED
 
 ### Verified Phase 8A Implementation
 - versioned Probe protocol v1 with strict typed contracts and six allowlisted operations: HELLO, GET_CAPABILITIES, START_CHALLENGE, CANCEL_CHALLENGE, FETCH_OBSERVATIONS, HEARTBEAT
@@ -161,8 +166,109 @@ Next implementation slice: 8B — Signed Android Probe + Discovery / Consent / L
 - No display-authenticity detector yet.
 - No hardware genuineness claim yet.
 
+### Verified Phase 8B Implementation
+- **Signed Android Probe companion application (`org.vector.probe`)**:
+  - Target Android SDK Platform 35, compileSdk 35, minSdk 26.
+  - Clean manifest declaring **0 permissions** (no network, storage, location, camera, phone, or privileged permissions).
+  - Complete data extraction and backup policy fail-closed: `android:allowBackup="false"`, `dataExtractionRules` (Android 12+) and `fullBackupContent` (pre-Android 12) explicitly excluding all storage domains (`root`, `file`, `database`, `sharedpref`, `external`) via `<exclude path="." />`.
+  - Normal orientation and multi-window support: fixed portrait orientation lock removed, runtime configuration changes handled via `android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"` without Activity teardown.
+- **Explicit foreground-only on-device consent (`ProbeActivity`)**:
+  - Protected with `FLAG_SECURE` against screenshots/screen capture; touch events filtered against obscured/overlay taps (`setFilterTouchesWhenObscured(true)`).
+  - Purpose-specific on-screen UI with explicit Allow and Deny buttons; ignores all Intent extras; launch never implies consent.
+  - `FLAG_KEEP_SCREEN_ON` enabled only during active authorized sessions; cleared immediately upon user Deny, Revoke, `onPause`, `onDestroy`, or server termination (`resource == R.string.stopped`).
+  - Strict generation tracking prevents stale server callbacks from clearing flags or modifying status of newer consent sessions.
+  - Ephemeral in-memory consent only; strictly revokes on pause/destroy/backgrounding; never persisted across process death.
+- **Ephemeral session bootstrap & authentication**:
+  - On user Allow, `ProbeServer` generates fresh 256-bit secret and random abstract Unix-domain socket endpoint (`vector_probe_<16-hex-bytes>`).
+  - Bootstrap state written atomically to app private files directory (`files/vector-probe-session`).
+  - Desktop reads bootstrap via development-only `run-as org.vector.probe cat files/vector-probe-session` (ordinary Android debugging authorization, not root/exploit).
+  - The first successful `HELLO` exchange immediately consumes and overwrites the private bootstrap with `REQUIRED`, preventing secondary connections.
+- **Bounded ADB transport (`AdbProbeTransport`)**:
+  - Allocates local loopback port forward via `adb forward tcp:0 localabstract:<endpoint>`.
+  - Rejects connections from any UID other than shell UID 2000 (`getPeerCredentials().getUid() == 2000`). App UIDs and root rejected.
+  - Framing: 4-byte big-endian length prefix, 32-byte HMAC-SHA256 digest, bounded UTF-8 JSON payload.
+  - Directional HMAC prefix (`request\0` and `response\0`) prevents reflection attacks.
+  - Bounded 12-second complete frame watchdog; 900-second session-expiry deadline; cancellation-aware 100ms socket read slices.
+- **Strict JVM Control Protocol (`ControlProtocol`)**:
+  - Bounded, strict JSON parsing via Gson streaming reader; rejects ambiguous numbers, duplicate keys, surrogate pairs, deep nesting (>16), and oversized frames (>64KB).
+  - Enforces protocol version 1, exact session ID, monotonic sequence numbers, distinct nonces, and bounded clock skew (30s TTL).
+  - Supports 3 active control operations: `HELLO`, `GET_CAPABILITIES`, `HEARTBEAT`.
+  - Challenge operations (`START_CHALLENGE`, `CANCEL_CHALLENGE`, `FETCH_OBSERVATIONS`) fail closed with `UNAVAILABLE` without executing hardware work or allocating state.
+- **Desktop Probe Lifecycle Service (`ProbeService` & `ProbeConnection`)**:
+  - Object identity and session epoch binding: `ProbeConnection` binds to specific `DeviceSession` instance and epoch. Epoch invalidation supersedes transport errors, reporting `SESSION_CHANGED` rather than `DEVICE_UNAVAILABLE`.
+  - Concurrency & state query lock behavior: GET does not allocate a new connection or worker. Cross-device service-wide lock contention was mitigated (service-wide lock released before querying connection state or executing stop/join calls). However, state queries are not universally non-blocking: same-device GET/connection operations may still wait behind an in-flight operation. FG-06 remains an accepted LOW finding requiring correction before Phase 8F.
+  - Concurrency cap: enforces maximum of 16 live connections; rejects 17th device when 16 live connections exist, and admits new device when an existing connection is retired.
+  - Background monitor thread per connection polls ownership every 1s and sends heartbeat after 5s.
+- **Development Trust Enrollment Utility (`trust_build.py`)**:
+  - Verifies debug APK (`app-debug.apk`) using host `apksigner.bat` and `aapt2.exe`.
+  - Validates signer certificate SHA-256 fingerprint, package name `org.vector.probe`, `versionCode=1`, `versionName="0.1.0"`, and `application-debuggable`.
+  - Computes and records APK SHA-256 digest in ignored local store `local-agent/.data/probe-trust.json`.
+- **API and Security Boundaries**:
+  - Typed FastAPI endpoints (`GET /api/v1/devices/{id}/probe` and POST `discover`, `launch`, `connect`, `heartbeat`, `stop`), protected by process-local `X-Vector-Local-Auth` token.
+  - Bounded subprocess execution (`BoundedProcess`) with concurrent pipe draining and fixed retained byte buffers.
+  - Cross-language golden test vectors pinned for literal request and response envelopes and HMAC-SHA256 signatures in both Python and Java test suites.
+
+### Phase 8B Verification Results
+- Implementation commit: `365f0e88a3da172b27e5021a9ff95257aa83eb25` (`365f0e8`)
+- Formal Claude phase gate: PASSED (0 BLOCKER, 0 HIGH, 0 MEDIUM, 6 LOW, 9 INFO)
+- Staged-boundary review: PASSED
+- Phase 8B focused Python tests: 120 passed
+- Full local-agent regression: 1,953 passed (1 Starlette/httpx testclient deprecation warning)
+- Phase 8A regression: 254 passed
+- Intelligence: 21 passed
+- Frontend: 96 passed across 10 test files
+- Android JVM tests: 6 passed (all in `ControlProtocolTest`)
+- Android lint: 0 errors, 0 warnings (clean build with `warningsAsErrors = true`)
+- Android Java compilation: PASSED (`compileDebugJavaWithJavac`)
+- Android debug APK assembly: PASSED (`app-debug.apk`, SHA-256: `a0ec37eca13bc3009bc33a3d07b7db60fd9940052232144eb8c61275c27d32eb`)
+- APK signing and package verification: PASSED (`apksigner` Scheme v2 verified, signer SHA-256: `865ccb6a14342e0ff166b9082d94d145ab7c828b17c1a75b95cd0fc03ce8eafb`; `aapt2` verified)
+- VECTOR development trust enrollment: PASSED (`probe-trust.json` recorded and verified)
+- Root `scripts/verify.ps1`: 15/15 passed (writer-reported; formal reviewer independently reproduced non-installing checks)
+
+### Phase 8B Important Boundaries and Operational Constraints
+- **DEVELOPMENT-ONLY**: Probe application is strictly a development companion.
+- **Debuggable APK**: Built with `application-debuggable`; production release builds are unsigned and reject the development bootstrap.
+- **`run-as` Bootstrap**: Private bootstrap exchange relies on standard Android `run-as` debugging facility. Production non-debuggable pairing/bootstrap is NOT IMPLEMENTED.
+- **Production Signer Trust**: Production release signing and production trust roots are NOT IMPLEMENTED.
+- **Physical Hardware Qualification**: NOT RUN. All tests are software integration, bounded subprocess, and loopback socket tests.
+- **Trust Engine**: Remains `NOT_READY`; `trust_score` remains `None`.
+- **Authenticity Claims**: No hardware PASS, component authenticity verdict, or OEM claims arise from Phase 8B.
+- **No Fallback**: LIVE never silently falls back to DEMO.
+- **SDK Target**: Android minSdk is 26, targetSdk is 35, compileSdk is 35.
+
+### Phase 8B Formal Gate Findings and Accepted Technical Debt
+
+#### Accepted Low Debt
+- **FG-01 (LOW, Remediation: PRE-8F):** Unbounded per-device lock registry. `ProbeService._device_locks` grows monotonically with new device IDs. Must be bounded or pruned before Phase 8F frontend/token access.
+- **FG-02 (LOW, Remediation: PRE-8F):** Cancellation, timeout and expiry reason-fidelity gaps. In `AdbProbeTransport`, cancellation, socket timeouts, or frame expiry can collapse to generic disconnect or session-expired reasons. Refine reason fidelity before Phase 8F.
+- **FG-03 (LOW, Remediation: Phase 8G):** ADB forward cleanup failure during transport-constructor failure. In `AdbProbeTransport.__init__`, if an exception occurs after creating `adb forward`, cleanup error handling is incomplete and could leak the forward rule until ADB daemon restart.
+- **FG-04 (LOW, Remediation: Phase 8G / Next Relevant Implementation):** Five identified test-quality gaps (distinct from FG-03's ADB forward-cleanup issue):
+  - Session-change regression test bypasses the intended exception branch.
+  - Cross-device contention test does not exercise a genuinely blocked replacement.
+  - A concurrency-named test performs sequential assertions.
+  - Some assertions are overly broad; HELLO application-version negative coverage is incomplete.
+  - One monitor timing test has a narrow scheduling margin.
+- **FG-05 (LOW, Remediation: Phase 8G):** No executable Android Activity/Server lifecycle tests. JVM tests cover `ControlProtocolTest` (6 tests), but `ProbeActivity` and `ProbeServer` lack Robolectric/instrumentation unit tests in CI. Address in Phase 8G.
+- **FG-06 (LOW, Remediation: PRE-8F):** Same-device state query and connection operation waits. GET does not allocate a new connection or worker, and cross-device service-wide lock contention was mitigated. However, same-device GET/connection operations may still wait behind an in-flight operation. FG-06 remains an accepted LOW finding requiring correction before Phase 8F.
+
+#### Accepted Info Debt & Gate Observations
+- **FG-07 (INFO, Remediation: Phase 8G):** Coarse run-as failure classification. Distinction between missing package vs permission-denied run-as responses could be more granular.
+- **FG-08 (INFO, Remediation: Phase 8G / Production):** Stale private bootstrap file/process-death edge cases. Edge cases where the app dies without deleting the session file are bounded by randomized endpoint names and socket failure, but explicit recovery can be hardened.
+- **FG-09 (INFO, Remediation: Phase 8G):** Only HELLO has fully pinned cross-language golden vectors. Other message envelopes (GET_CAPABILITIES, HEARTBEAT) have schema coverage, but literal cross-language golden byte vectors should be pinned for all operations in Phase 8G.
+- **FG-10 (INFO, Remediation: Phase 8F / Phase 9):** Minor Android-specific assumptions in shared models. Small assumptions in device models (such as adb serial defaults) should be generalized when normalizing cross-platform models.
+- **FG-11 (INFO, Remediation: Resolved in Phase 8B Finalization):** Documentation precision issues (test counts, file inventories, operator instructions). Corrected during this documentation finalization pass.
+- **FG-12 (INFO, Remediation: Later Production Phases):** Missing Android CI, Gradle wrapper and reproducible build metadata. Gradle and Android SDK are currently host-installed; wrapper and reproducible build configurations deferred to production tooling setup.
+- **FG-13 (INFO, Remediation: Resolve alongside FG-02):** Broad exception mapping. Exception handlers catch generic `Exception` in several lifecycle guards. Narrow down alongside FG-02.
+- **FG-14 (INFO, Remediation: Phase 8G / Production):** Local forwarding and development ADB-host trust limitations. Relies on ADB host trust boundary; production pairing and host authentication deferred.
+- **FG-15 (INFO, Remediation: Test branches in Phase 8G):** Benign working-copy line endings and untested enrollment branches (such as negative hash-checking branches). Exercise remaining negative branches in Phase 8G.
+
+#### Production-Blocking Deferred Items
+- Production non-debuggable bootstrap (independent of `run-as`).
+- Release signing keys and production certificate trust infrastructure.
+- Cryptographic host-to-device pairing outside the authorized ADB boundary.
+
 ### Next Implementation Slice
-8B — Signed Android Probe + Discovery / Consent / Lifecycle — NEXT (NOT STARTED). Phase 8 remains IN PROGRESS; this status update does not start later work.
+8C - Deep Android Functional Diagnostics - NEXT (NOT STARTED). Phase 8 remains IN PROGRESS; this status update does not start later work.
 
 ---
 

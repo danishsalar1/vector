@@ -9,9 +9,10 @@ sandbox run failed on DNS/cache permissions and Vitest EPERM; those were
 environment failures, not accepted test results.
 
 STATUS.md, AGENTS.md, roadmap numbering and the Phase 8D provenance implementation
-remain unchanged. This handoff does not constitute independent Claude review or
-a formal phase gate. No staging, commit, push, or hardware qualification is
-authorized or performed.
+were preserved throughout implementation. The Phase 8B implementation was submitted
+to independent Claude review and the formal Phase 8B gate PASSED, followed by a PASSED
+staged-boundary review. The implementation was committed as `365f0e88a3da172b27e5021a9ff95257aa83eb25` (`365f0e8`).
+Documentation finalization is now in progress. Physical hardware qualification remains NOT RUN.
 
 ## Architecture discovered and preserved
 
@@ -128,10 +129,14 @@ the protocol session. No pending request/authorization is transferred to a new
 connection. Cancellation events are private to each connection; no request body
 can nominate another session, scan, diagnostic, attempt or challenge to cancel.
 
-The backend has at most 16 device connection records and one monitor thread per
-record, with a 1s ownership poll and a heartbeat after 5s without a successful
-control heartbeat. Each exchange has a 3s budget. Per-device operations serialize;
-different devices do not block each other's heartbeat deadlines. The app requires
+The backend enforces a cap of at most 16 LIVE device connections concurrently active,
+with one monitor thread per record, a 1s ownership poll and a heartbeat after 5s
+without a successful control heartbeat. Stale or dead records are pruned, and retiring
+a connection allows a new device to be admitted up to the 16 live connection ceiling. Each exchange has a 3s budget. Per-device operations serialize;
+different devices do not block each other's heartbeat deadlines. GET state queries
+do not allocate a new connection or worker, and cross-device service-wide lock contention
+was mitigated. However, same-device GET/connection operations may still wait behind an
+in-flight operation (accepted debt FG-06, requiring correction before Phase 8F). The app requires
 traffic within 12s and expires the whole consent after 900s. Liveness means only
 that the authenticated control endpoint responded, never hardware health.
 
@@ -146,6 +151,9 @@ Normal teardown closes/shuts down the socket, wipes retained key references,
 invalidates the protocol session, and removes only a forward whose current list
 entry still matches the owned device/port/endpoint. If ownership changed or ADB
 is unavailable, cleanup reports ERROR and does not remove someone else's rule.
+Note that if socket connection fails during transport construction after creating
+the port forward, cleanup error handling is incomplete and could leak the forward
+until daemon restart (accepted debt FG-03, targeted for Phase 8G).
 Abrupt desktop death can leave an ADB forwarding rule; the app's idle timeout
 closes its endpoint. Removing stale rules after crashes remains manual. Atomic
 ownership against a malicious concurrent local adb operator is not claimed.
@@ -195,7 +203,7 @@ Final automated results after audit corrections and toolchain verification:
   Host environment: JDK 17.0.20.1, Gradle 8.11.1, Android SDK platform 35, Build Tools 35.0.0.
   Target minSdk is 26, targetSdk is 35, compileSdk is 35.
   Executed: `gradle --no-daemon clean testDebugUnitTest lintDebug compileDebugJavaWithJavac assembleDebug`.
-  - `:app:testDebugUnitTest`: PASSED (100% test success, 0 failures).
+  - `:app:testDebugUnitTest`: PASSED (6 tests executed, 0 failures; all in `ControlProtocolTest`; `ProbeActivity` lifecycle tests deferred to Phase 8G under FG-05).
   - `:app:lintDebug`: PASSED (0 errors, 0 warnings; resolved orientation lock and fail-closed data extraction / backup rules).
   - `:app:compileDebugJavaWithJavac`: PASSED.
   - `:app:assembleDebug`: PASSED.
@@ -215,8 +223,11 @@ Final automated results after audit corrections and toolchain verification:
   - Trust Engine remains NOT_READY; `trust_score` remains None.
   - No hardware PASS or component authenticity claims arise from 8B.
   - Actual Android minSdk is 26, not 28.
-- Independent Claude review: Passed narrow review (0 B / 0 H / 0 M / 9 L / 13 I);
-  cleanup items N-1 through N-6 implemented and verified.
+- Independent Claude review & formal gate:
+  - Narrow review: PASSED (0 BLOCKER, 0 HIGH, 0 MEDIUM, 9 LOW, 13 INFO); cleanup items N-1 through N-6 implemented.
+  - Formal Phase 8B gate: PASSED (0 BLOCKER, 0 HIGH, 0 MEDIUM, 6 LOW, 9 INFO).
+  - Staged-boundary review: PASSED.
+  - Implementation committed as `365f0e88a3da172b27e5021a9ff95257aa83eb25` (`365f0e8`).
 
 Reviewer attention: Actual adbd peer UID/SELinux behavior, profile/version differences,
 consent lifecycle, restart races and forward cleanup on real devices need physical
@@ -267,12 +278,12 @@ local-agent/src/vector_agent/security/bounded_process.py
 local-agent/tests/test_phase8b_probe.py
 ```
 
-Final HEAD and origin/main remain `8456e352053a802a7cff85eff4ad1751ef14878e`.
-Nothing is staged, committed or pushed. STATUS.md and AGENTS.md remain untouched.
-No frontend or Phase 8D source changes. No private keys or production APK artifacts created.
-
-SAFE TO COMMIT: **NO** (controlled dirty tree preserved; awaiting formal gate).
-Hardware qualification remains NOT RUN.
+Implementation commit: `365f0e88a3da172b27e5021a9ff95257aa83eb25` (`365f0e8`).
+Commit message: `feat: add signed Android Probe discovery, consent and lifecycle control plane`.
+Formal Claude gate: PASSED.
+Staged-boundary review: PASSED.
+Final STATUS.md documentation update in progress.
+Physical hardware qualification remains NOT RUN.
 
 ## Primary implementation references
 
