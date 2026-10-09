@@ -103,9 +103,12 @@ class AndroidProbeBridge:
                 availability=A.UNTRUSTED, reason=R.ARTIFACT_NOT_ALLOWLISTED, installed=True
             )
         compatible = (
-            artifact.protocol_version == 1
-            and artifact.version_code == 1
-            and artifact.application_version == "0.1.0"
+            artifact.protocol_version,
+            artifact.version_code,
+            artifact.application_version,
+        ) in (
+            (1, 1, "0.1.0"),
+            (2, 2, "0.2.0"),
         )
         return ProbeState(
             availability=A.INSTALLED_COMPATIBLE if compatible else A.INSTALLED_INCOMPATIBLE,

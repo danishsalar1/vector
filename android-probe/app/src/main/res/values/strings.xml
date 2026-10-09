@@ -1,12 +1,26 @@
 <resources>
     <string name="app_name">VECTOR Probe</string>
-    <string name="purpose">Allow this USB-authorized computer to connect to VECTOR Probe while this screen stays open. This checks the control connection only. No hardware test or personal data collection is performed.</string>
+    <string name="purpose">Allow this USB-authorized computer to run diagnostic tests on VECTOR Probe while this screen stays open. Tests may include camera capture, microphone sampling, speaker audio tone, vibration, screen &amp; touch digitizer, sensors, battery telemetry, and temporary app-private storage I/O. Sensitive tests require your on-screen interaction or runtime permissions. Camera frames and audio samples are processed locally and are never stored or transmitted. Only derived numeric results are sent to the computer: audio level (RMS and peak), camera frame size and brightness statistics (luma mean and variance), sensor statistics, touch-grid coverage and screen size, battery and system telemetry, and your answers to on-screen questions. Storage testing writes a temporary 64 KiB file and deletes it immediately; a failed deletion is reported. Leaving this screen, locking the phone or opening a permission dialog ends the session; allow again to reconnect.</string>
     <string name="allow">Allow connection</string>
     <string name="deny">Decline / stop</string>
     <string name="required">Waiting for your consent.</string>
-    <string name="listening">Consent granted. Waiting for VECTOR Desktop.</string>
-    <string name="connected">VECTOR Desktop connected. No hardware tests are running.</string>
+    <string name="listening">Consent granted. Waiting for VECTOR Desktop command.</string>
+    <string name="connected">VECTOR Desktop connected. Ready for diagnostic commands.</string>
+    <string name="active">Diagnostic active: %1$s. Collecting measurements.</string>
     <string name="stopped">Connection stopped. Allow again to reconnect.</string>
     <string name="denied">Consent declined.</string>
     <string name="restricted">This build cannot use the development connection.</string>
+    <string name="perm_title">Permissions (optional pre-connection setup):</string>
+    <string name="perm_camera">Camera:</string>
+    <string name="perm_mic">Microphone:</string>
+    <string name="perm_activity">Activity recognition:</string>
+    <string name="perm_granted">Granted</string>
+    <string name="perm_not_requested">Not requested</string>
+    <string name="perm_denied_can_retry">Denied (can request again)</string>
+    <string name="perm_settings_recommended">Denied / Settings required</string>
+    <string name="perm_request">Grant</string>
+    <string name="perm_settings">Open Settings</string>
+    <string name="perm_settings_explanation">Permission was previously denied. If the prompt does not appear, open App Settings to grant it manually.</string>
+    <string name="perm_status_format">%1$s %2$s</string>
+    <string name="perm_request_format">%1$s %2$s</string>
 </resources>

@@ -1,0 +1,31 @@
+<resources>
+    <string name="diag_running">Collecting %1$s. No hardware result yet.</string>
+    <string name="diag_complete">%1$s: %2$s. Inspect desktop evidence for measured scope.</string>
+    <string name="diag_cancel">Cancel diagnostic</string>
+    <string name="diag_done">Finish with current coverage</string>
+    <string name="diag_touch">Touch every cell in the 4x6 grid. Use two fingers together to observe simultaneous contacts.</string>
+    <string name="diag_touch_progress">Touched %1$d of 24 cells (%2$d%% coverage); max contacts: %3$d.</string>
+    <string name="diag_pixels">Inspect each color for defects. Your report is human observation, not an automated pixel verdict.</string>
+    <string name="diag_next_color">Next color</string>
+    <string name="diag_brightness">Toggle app brightness</string>
+    <string name="diag_mic_level">Make a sound near the microphone now. Measured input level: %1$d%%.</string>
+    <string name="diag_confirmation_speaker">Did you clearly hear the test tone from the speaker?</string>
+    <string name="diag_confirmation_mic">Did the measured input level rise when you made a sound?</string>
+    <string name="diag_confirmation_vibrate">Did you feel the phone vibrate during the test?</string>
+    <string name="diag_confirmation_pixels">Did all displayed colors look normal, without visible dead, stuck or discolored pixels?</string>
+    <string name="diag_confirmation_default">Did you observe the expected behavior?</string>
+    <string name="diag_speaker_yes">Yes, I heard the tone</string>
+    <string name="diag_speaker_no">No, I did not hear it</string>
+    <string name="diag_mic_yes">Yes, the level rose</string>
+    <string name="diag_mic_no">No, the level did not rise</string>
+    <string name="diag_vibrate_yes">Yes, I felt it</string>
+    <string name="diag_vibrate_no">No, I did not feel it</string>
+    <string name="diag_pixels_yes">Yes, all colors looked normal</string>
+    <string name="diag_pixels_no">No, I saw a defect</string>
+    <string name="diag_yes">Yes, as expected</string>
+    <string name="diag_no">No, problem observed</string>
+    <string name="diag_unsure">Unsure</string>
+    <string name="diag_permission">Request this permission</string>
+    <string name="diag_permission_explanation">Permission is needed for this diagnostic. Request it below, then allow a new connection and retry from the desktop. Opening a permission dialog can revoke this session.</string>
+    <string name="diag_settings_open">Open App Settings</string>
+</resources>

@@ -26,6 +26,7 @@ final class ProbeServer implements AutoCloseable {
     interface Listener { void state(int resource); }
     private final AtomicFile bootstrap;
     private final Listener listener;
+    private final DiagnosticController diagnostics;
     private final byte[] key = new byte[32];
     private final String endpoint;
     private final ScheduledExecutorService deadline = Executors.newSingleThreadScheduledExecutor();
@@ -40,9 +41,10 @@ final class ProbeServer implements AutoCloseable {
         close();
     }
 
-    ProbeServer(Context context, Listener listener) {
+    ProbeServer(Context context, Listener listener, DiagnosticController diagnostics) {
         bootstrap = new AtomicFile(new File(context.getFilesDir(), "vector-probe-session"));
         this.listener = listener;
+        this.diagnostics = diagnostics;
         SecureRandom random = new SecureRandom();
         random.nextBytes(key);
         byte[] name = new byte[16];
@@ -78,7 +80,8 @@ final class ProbeServer implements AutoCloseable {
         worker.start();
     }
 
-    private byte[] mac(String direction, byte[] payload) throws Exception {
+    /** Direction-separated frame MAC ("request" or "response"); shared with the contract tests. */
+    static byte[] mac(byte[] key, String direction, byte[] payload) throws java.security.GeneralSecurityException {
         Mac mac = Mac.getInstance("HmacSHA256");
         mac.init(new SecretKeySpec(key, "HmacSHA256"));
         mac.update((direction + "\0").getBytes(StandardCharsets.US_ASCII));
@@ -101,7 +104,7 @@ final class ProbeServer implements AutoCloseable {
             accepted.setSoTimeout(12000);
             DataInputStream input = new DataInputStream(accepted.getInputStream());
             DataOutputStream output = new DataOutputStream(accepted.getOutputStream());
-            ControlProtocol protocol = new ControlProtocol(Instant.now(), SystemClock.elapsedRealtimeNanos(), android.os.Build.VERSION.SDK_INT);
+            ControlProtocol protocol = new ControlProtocol(Instant.now(), SystemClock.elapsedRealtimeNanos(), android.os.Build.VERSION.SDK_INT, diagnostics);
             boolean first = true;
             while (!isClosed()) {
                 // A complete frame must arrive within 12 seconds, even if bytes
@@ -114,7 +117,7 @@ final class ProbeServer implements AutoCloseable {
                     input.readFully(signature);
                     byte[] payload = new byte[size];
                     input.readFully(payload);
-                    if (!MessageDigest.isEqual(signature, mac("request", payload))) throw ControlProtocol.rejected();
+                    if (!MessageDigest.isEqual(signature, mac(key, "request", payload))) throw ControlProtocol.rejected();
                     byte[] response = protocol.respond(payload, Instant.now(), SystemClock.elapsedRealtimeNanos());
                     if (first) {
                         synchronized (this) {
@@ -126,7 +129,7 @@ final class ProbeServer implements AutoCloseable {
                         first = false;
                     }
                     output.writeInt(response.length);
-                    output.write(mac("response", response));
+                    output.write(mac(key, "response", response));
                     output.write(response);
                     output.flush();
                 } finally { watchdog.cancel(false); }
@@ -141,6 +144,7 @@ final class ProbeServer implements AutoCloseable {
     @Override public synchronized void close() {
         if (closed) return;
         closed = true;
+        diagnostics.close();
         if (client != null) {
             try { client.shutdownInput(); } catch (IOException ignored) { }
             try { client.shutdownOutput(); } catch (IOException ignored) { }

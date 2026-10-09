@@ -66,7 +66,7 @@ def verify_build(sdk_root: Path, java: Path, expected_signer: str) -> TrustedPro
         or re.search(
             r"^package: name='"
             + re.escape(PACKAGE)
-            + r"' versionCode='1' versionName='0\.1\.0'(?: |$)",
+            + r"' (?:versionCode='1' versionName='0\.1\.0'|versionCode='2' versionName='0\.2\.0')(?: |$)",
             text,
             re.MULTILINE,
         )
@@ -78,7 +78,14 @@ def verify_build(sdk_root: Path, java: Path, expected_signer: str) -> TrustedPro
         after = hashlib.file_digest(stream, "sha256").hexdigest()
     if not hmac.compare_digest(before, after):
         raise ValueError("Probe build changed during verification.")
-    return TrustedProbeArtifact(apk_sha256=after, signer_sha256=expected_signer)
+    version = 2 if "versionCode='2' versionName='0.2.0'" in text else 1
+    return TrustedProbeArtifact(
+        apk_sha256=after,
+        signer_sha256=expected_signer,
+        version_code=version,
+        application_version=f"0.{version}.0",
+        protocol_version=version,
+    )
 
 
 def load_trusted_artifact(path: Path) -> TrustedProbeArtifact | None:

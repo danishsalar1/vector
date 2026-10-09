@@ -5,19 +5,23 @@ from __future__ import annotations
 import threading
 import time
 from collections.abc import Callable
+from datetime import UTC, datetime
+from uuid import uuid4
 
 from vector_agent.devices.android.probe_bridge import (
     AndroidProbeBridge,
     ProbeBootstrap,
     TrustedProbeArtifact,
 )
-from vector_agent.models.device import ConnectionState, Platform
-from vector_agent.models.probe import ProbeCapabilityId, ProbeCommandStatus
+from vector_agent.models.device import ConnectionState, DiagnosticResult, Platform
+from vector_agent.models.probe import ProbeCapabilityId, ProbeChallengeBinding, ProbeCommandStatus
 from vector_agent.models.probe import ProbeOperation as O
+from vector_agent.models.probe_diagnostics import DiagnosticCapability, DiagnosticReport
 from vector_agent.models.probe_lifecycle import ProbeAvailability as A
 from vector_agent.models.probe_lifecycle import ProbeReason as R
 from vector_agent.models.probe_lifecycle import ProbeState
 from vector_agent.probe.adb_transport import AdbProbeTransport
+from vector_agent.probe.diagnostic_evidence import diagnostic_result
 from vector_agent.probe.protocol import ProbeProtocolSession
 from vector_agent.probe.transport import ProbeTransport
 from vector_agent.probe.transport import ProbeTransportStatus as T
@@ -26,6 +30,70 @@ from vector_agent.probe.transport import ProbeTransportStatus as T
 from ..devices.session import DeviceSession, DeviceSessionManager
 
 CONTROL_OPERATIONS = (O.HELLO, O.GET_CAPABILITIES, O.HEARTBEAT)
+
+# One transport-failure vocabulary for control and diagnostic exchanges.
+TRANSPORT_FAILURES: dict[T, tuple[A, R]] = {
+    T.TIMEOUT: (A.DISCONNECTED, R.TIMEOUT),
+    T.UNAVAILABLE: (A.DISCONNECTED, R.DEVICE_UNAVAILABLE),
+    T.CLOSED: (A.DISCONNECTED, R.SESSION_EXPIRED),
+    T.UNSUPPORTED_PROTOCOL: (A.INSTALLED_INCOMPATIBLE, R.VERSION_NOT_SUPPORTED),
+    T.AUTHENTICATION_FAILURE: (A.UNTRUSTED, R.AUTHENTICATION_FAILED),
+    T.CANCELLED: (A.DISCONNECTED, R.CANCELLED),
+}
+TRANSPORT_FAILURE_DEFAULT = (A.ERROR, R.INVALID_RESPONSE)
+
+
+class DiagnosticUnavailableError(Exception):
+    """Retryable: the device declined this command now (busy, cleaning up, unknown binding).
+
+    Deliberately not a ValueError: the authenticated session stays CONNECTED and no fresh
+    consent is required, unlike every DiagnosticSessionError.
+    """
+
+
+class DiagnosticSessionError(ValueError):
+    """The diagnostic exchange ended the Probe session.
+
+    ``reason`` equals the reason recorded in the dropped connection state. Reconnecting
+    requires fresh on-device consent. Plain ValueError is reserved for caller misuse that
+    is rejected before any I/O and leaves the session untouched.
+    """
+
+    def __init__(self, reason: R, message: str) -> None:
+        super().__init__(message)
+        self.reason = reason
+
+
+class DiagnosticTransportError(DiagnosticSessionError):
+    """Transport-level failure during a diagnostic exchange (e.g. TIMEOUT, CANCELLED)."""
+
+
+class DiagnosticExhaustedError(DiagnosticSessionError):
+    """START answered ERROR: the device's per-session challenge budget (256) is exhausted."""
+
+    def __init__(self, reason: R = R.SESSION_EXPIRED) -> None:
+        super().__init__(
+            reason, "Diagnostic challenge budget exhausted; reconnect with fresh consent."
+        )
+
+
+def _history_continues(previous: DiagnosticReport, report: DiagnosticReport) -> bool:
+    """A challenge's report may only extend its own history.
+
+    Elapsed time never decreases and a terminal report is immutable. Once STOPPING, the
+    evidence is frozen and collection cannot resume: only STOPPING again or the
+    interrupted terminal state (CANCELLED or EXPIRED) may follow.
+    """
+    if report.elapsed_ms < previous.elapsed_ms:
+        return False
+    if previous.state != "RUNNING":
+        return bool(report == previous)
+    if previous.reason == "STOPPING":
+        return report.metrics == previous.metrics and (
+            report.state in {"CANCELLED", "EXPIRED"}
+            or (report.state == "RUNNING" and report.reason == "STOPPING")
+        )
+    return True
 
 
 class ProbeConnection:
@@ -52,6 +120,10 @@ class ProbeConnection:
         self._state = ProbeState(availability=A.DISCONNECTED, reason=R.STOPPED)
         self._last_heartbeat = 0.0
         self._cleanup_failed = False
+        self._diagnostic_capabilities: tuple[DiagnosticCapability, ...] = ()
+        self._diagnostic_binding: ProbeChallengeBinding | None = None
+        self._diagnostic_running = False
+        self._diagnostic_last: DiagnosticReport | None = None
 
     def _current_epoch(self) -> int:
         return self._manager.probe_owner_epoch(self._owner)
@@ -75,6 +147,10 @@ class ProbeConnection:
             self._cancel.set()
             state, reason = A.ERROR, R.TOOL_ERROR
         self._state = ProbeState(availability=state, reason=reason)
+        self._diagnostic_capabilities = ()
+        self._diagnostic_binding = None
+        self._diagnostic_last = None
+        self._diagnostic_running = False
         return self._state
 
     def _guarded(self, action: Callable[[], ProbeState]) -> ProbeState:
@@ -165,7 +241,9 @@ class ProbeConnection:
                 return self._state
             self._require_live()
             self._session = ProbeProtocolSession(
-                device_id=self._owner.device_id, device_epoch=self._epoch
+                device_id=self._owner.device_id,
+                device_epoch=self._epoch,
+                protocol_version=self._artifact.protocol_version if self._artifact else 1,
             )
             self._transport = self._factory(
                 session=self._session,
@@ -195,14 +273,7 @@ class ProbeConnection:
         )
         result = self._transport.request(request, timeout_seconds=3, cancellation=self._cancel)
         if result.status != T.RECEIVED or result.response is None:
-            state, reason = {
-                T.TIMEOUT: (A.DISCONNECTED, R.TIMEOUT),
-                T.UNAVAILABLE: (A.DISCONNECTED, R.DEVICE_UNAVAILABLE),
-                T.CLOSED: (A.DISCONNECTED, R.SESSION_EXPIRED),
-                T.UNSUPPORTED_PROTOCOL: (A.INSTALLED_INCOMPATIBLE, R.VERSION_NOT_SUPPORTED),
-                T.AUTHENTICATION_FAILURE: (A.UNTRUSTED, R.AUTHENTICATION_FAILED),
-                T.CANCELLED: (A.DISCONNECTED, R.CANCELLED),
-            }.get(result.status, (A.ERROR, R.INVALID_RESPONSE))
+            state, reason = TRANSPORT_FAILURES.get(result.status, TRANSPORT_FAILURE_DEFAULT)
             self._drop(state, reason)
             return False
         response = result.response
@@ -224,8 +295,9 @@ class ProbeConnection:
                 or artifact is None
                 or hello.application_version != artifact.application_version
                 or hello.version_code != artifact.version_code
-                or hello.protocol_versions != (1,)
-                or set(hello.supported_operations) != set(CONTROL_OPERATIONS)
+                or hello.protocol_versions != (artifact.protocol_version,)
+                or set(hello.supported_operations)
+                != (set(O) if artifact.protocol_version == 2 else set(CONTROL_OPERATIONS))
             ):
                 self._drop(A.INSTALLED_INCOMPATIBLE, R.VERSION_NOT_SUPPORTED)
                 return False
@@ -240,7 +312,146 @@ class ProbeConnection:
                 self._drop(A.INSTALLED_INCOMPATIBLE, R.VERSION_NOT_SUPPORTED)
                 return False
             self._state = self._state.model_copy(update={"capabilities": caps})
+            if self._artifact is not None and self._artifact.protocol_version == 2:
+                if not response.diagnostic_capabilities:
+                    self._drop(A.INSTALLED_INCOMPATIBLE, R.VERSION_NOT_SUPPORTED)
+                    return False
+                self._diagnostic_capabilities = response.diagnostic_capabilities
         return True
+
+    def _dropped(
+        self,
+        state: A,
+        reason: R,
+        message: str,
+        kind: type[DiagnosticSessionError] = DiagnosticSessionError,
+    ) -> DiagnosticSessionError:
+        """Drop the session; the error carries the recorded reason (TOOL_ERROR if cleanup failed)."""
+        self._drop(state, reason)
+        return kind(self._state.reason, message)
+
+    def _ended(self) -> DiagnosticSessionError:
+        """Typed error for a connection that is no longer live.
+
+        An owner epoch change is recorded as SESSION_CHANGED. A stop() still waiting for
+        this operation is recorded as CANCELLED. A completed stop() or failed cleanup has
+        already recorded its own reason, which is preserved.
+        """
+        if self._current_epoch() != self._epoch:
+            self._drop(A.DISCONNECTED, R.SESSION_CHANGED)
+        elif self._state.availability == A.CONNECTED:
+            self._drop(A.DISCONNECTED, R.CANCELLED)
+        reason = self._state.reason
+        return DiagnosticSessionError(
+            reason, f"Probe session ended ({reason.value}); reconnect with fresh consent."
+        )
+
+    def diagnostic_capabilities(self) -> tuple[DiagnosticCapability, ...]:
+        with self._operation:
+            if not self._live():
+                raise self._ended()
+            if self._state.availability != A.CONNECTED:
+                raise ValueError("Probe not connected.")
+            return self._diagnostic_capabilities
+
+    def diagnostic(self, operation: O, diagnostic_id: str | None = None) -> DiagnosticResult:
+        """Trusted in-process entry; binding is generated here, never caller supplied.
+
+        Each exchange retains the 3-second transport budget. It never waits for
+        physical interaction. The service monitor remains responsible for liveness.
+
+        Raises DiagnosticUnavailableError (retryable, session kept), DiagnosticSessionError
+        (session dropped; ``reason`` is the recorded drop reason) or plain ValueError
+        (caller misuse rejected before any I/O; session untouched).
+        """
+        with self._operation:
+            if not self._live():
+                raise self._ended()
+            if (
+                self._state.availability != A.CONNECTED
+                or self._session is None
+                or self._transport is None
+                or self._artifact is None
+                or self._artifact.protocol_version != 2
+            ):
+                raise ValueError("Diagnostic protocol unavailable.")
+            if operation not in (O.START_CHALLENGE, O.FETCH_OBSERVATIONS, O.CANCEL_CHALLENGE):
+                raise ValueError("Unsupported diagnostic operation.")
+            if operation == O.START_CHALLENGE:
+                if self._diagnostic_running:
+                    raise ValueError("Diagnostic already running.")
+                if diagnostic_id not in {c.diagnostic_id for c in self._diagnostic_capabilities}:
+                    raise ValueError("Diagnostic not advertised.")
+                assert diagnostic_id is not None
+                self._diagnostic_binding = ProbeChallengeBinding(
+                    scan_id=str(uuid4()),
+                    diagnostic_id=diagnostic_id,
+                    attempt_id=str(uuid4()),
+                    challenge_id=str(uuid4()),
+                    collection_not_before=datetime.now(UTC),
+                )
+                self._diagnostic_last = None
+            elif diagnostic_id is not None:
+                raise ValueError("Polling cannot change diagnostic ownership.")
+            binding = self._diagnostic_binding
+            if binding is None:
+                raise ValueError("No diagnostic started.")
+            try:
+                request = self._session.create_request(
+                    operation, current_device_epoch=self._current_epoch(), binding=binding
+                )
+                result = self._transport.request(
+                    request, timeout_seconds=3, cancellation=self._cancel
+                )
+                if not self._live():
+                    raise self._ended()
+                if result.status != T.RECEIVED or result.response is None:
+                    state, reason = TRANSPORT_FAILURES.get(result.status, TRANSPORT_FAILURE_DEFAULT)
+                    raise self._dropped(
+                        state,
+                        reason,
+                        f"Diagnostic exchange failed: {reason.value}.",
+                        DiagnosticTransportError,
+                    )
+                status = result.response.command_status
+                if status == ProbeCommandStatus.UNAVAILABLE:
+                    if operation == O.START_CHALLENGE:
+                        self._diagnostic_binding = None
+                    raise DiagnosticUnavailableError(
+                        "Device diagnostic unavailable or cleaning up; retryable without re-consent."
+                    )
+                if status == ProbeCommandStatus.ERROR:
+                    # The Probe answers ERROR only to START once its challenge budget is spent.
+                    if operation == O.START_CHALLENGE:
+                        self._drop(A.DISCONNECTED, R.SESSION_EXPIRED)
+                        raise DiagnosticExhaustedError(self._state.reason)
+                    raise self._dropped(
+                        *TRANSPORT_FAILURE_DEFAULT, "Device answered ERROR outside START."
+                    )
+                if status != ProbeCommandStatus.OK or result.response.diagnostic is None:
+                    raise self._dropped(*TRANSPORT_FAILURE_DEFAULT, "Diagnostic exchange rejected.")
+                report = result.response.diagnostic
+                previous = self._diagnostic_last
+                if previous is not None and not _history_continues(previous, report):
+                    raise self._dropped(*TRANSPORT_FAILURE_DEFAULT, "Diagnostic history changed.")
+                self._diagnostic_last = report
+                self._diagnostic_running = report.state == "RUNNING"
+                return diagnostic_result(
+                    report,
+                    device_id=self._owner.device_id,
+                    epoch=self._epoch,
+                    session_id=self._session.probe_session_id,
+                    binding=binding,
+                )
+            except (DiagnosticUnavailableError, DiagnosticSessionError):
+                raise
+            except (ConnectionError, ValueError):
+                if not self._live():
+                    raise self._ended() from None
+                raise self._dropped(
+                    *TRANSPORT_FAILURE_DEFAULT,
+                    "Diagnostic unavailable; reconnect with fresh consent.",
+                ) from None
 
     def heartbeat(self) -> ProbeState:
         def action() -> ProbeState:

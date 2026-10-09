@@ -22,6 +22,7 @@ from vector_agent.models.probe import (
     ProbeRequestEnvelope,
     ProbeUnit,
 )
+from vector_agent.models.probe_diagnostics import DiagnosticCapability, DiagnosticReport
 from vector_agent.probe.protocol import ProbeProtocolSession
 
 
@@ -63,6 +64,8 @@ class ValidatedProbeResponse:
     observations: tuple[ValidatedProbeObservation, ...]
     probe_build: ProbeBuildIdentity | None
     hello: ProbeHello | None = None
+    diagnostic_capabilities: tuple[DiagnosticCapability, ...] = ()
+    diagnostic: DiagnosticReport | None = None
 
 
 def ingest_probe_response(
@@ -109,4 +112,6 @@ def ingest_probe_response(
         observations=tuple(observations),
         probe_build=response.probe_build,
         hello=response.hello,
+        diagnostic_capabilities=response.diagnostic_capabilities,
+        diagnostic=response.diagnostic,
     )

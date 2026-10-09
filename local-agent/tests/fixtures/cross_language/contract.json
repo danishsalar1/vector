@@ -1,0 +1,177 @@
+{
+  "contract": "vector-probe-v2-cross-language",
+  "revision": 1,
+  "about": [
+    "Hand-maintained specification of the Java<->Python Probe v2 contract tests.",
+    "python_requests.json: framed requests from the production Python session, regenerated only by",
+    "  'uv run python -m tests.cross_language_contract --write-requests' (local-agent).",
+    "java_responses.json: framed responses from the real Android DiagnosticController, collectors and",
+    "  ControlProtocol (Robolectric, API 35), regenerated only by",
+    "  'gradle testDebugUnitTest -Pvector.updateCrossLanguageFixtures=true' (android-probe).",
+    "Ordinary test runs only read and compare the fixtures byte for byte.",
+    "'device' describes what the Java test does on the Probe before answering that exchange.",
+    "Camera frame and capture-result delivery is simulated at the CameraCollector event boundary",
+    "(onFrame/onCaptureResult/onCaptureFailed); Robolectric cannot deliver Camera2 HAL callbacks.",
+    "All identifiers and the HMAC key are fabricated. Nothing here is physical hardware evidence."
+  ],
+  "key_hex": "6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b",
+  "issued_at": "2026-10-09T00:00:00Z",
+  "api_level": 35,
+  "scenarios": [
+    {
+      "name": "typical_capabilities",
+      "session_id": "5e55a000-0000-4000-8000-000000000001",
+      "device": "All 11 default sensor types, back and front cameras, touchscreen, microphone, speaker, vibrator.",
+      "exchanges": [
+        {"op": "HELLO", "status": "OK"},
+        {"op": "GET_CAPABILITIES", "status": "OK"}
+      ]
+    },
+    {
+      "name": "sparse_capabilities",
+      "session_id": "5e55a000-0000-4000-8000-000000000002",
+      "device": "Only an accelerometer and a light sensor; no camera, microphone, speaker or vibrator; touchscreen present.",
+      "exchanges": [
+        {"op": "HELLO", "status": "OK"},
+        {"op": "GET_CAPABILITIES", "status": "OK"}
+      ]
+    },
+    {
+      "name": "extreme_capabilities",
+      "session_id": "5e55a000-0000-4000-8000-000000000003",
+      "device": "86 sensors (64 reported) with Float.MAX, infinite, NaN and negative ranges, plus 18 cameras (16 reported).",
+      "exchanges": [
+        {"op": "HELLO", "status": "OK"},
+        {"op": "GET_CAPABILITIES", "status": "OK"}
+      ]
+    },
+    {
+      "name": "storage",
+      "session_id": "5e55a000-0000-4000-8000-000000000004",
+      "device": "Minimal phone; app-private cache with registered free space.",
+      "exchanges": [
+        {"op": "HELLO", "status": "OK"},
+        {"op": "GET_CAPABILITIES", "status": "OK"},
+        {"op": "START_CHALLENGE", "diagnostic_id": "storage", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "PASS", "READBACK_MATCH"], "metrics": {"bytes_written": 65536, "bytes_read": 65536, "readback_match": 1}, "device": "Worker writes, syncs, rereads and compares 64 KiB."},
+        {"op": "START_CHALLENGE", "diagnostic_id": "storage", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "FAIL", "READBACK_MISMATCH"], "metrics": {"bytes_written": 65536, "bytes_read": 65536, "readback_match": 0}, "device": "One byte is flipped on disk before the readback."},
+        {"op": "START_CHALLENGE", "diagnostic_id": "storage", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "ERROR", "READ_ERROR"], "metrics": {"bytes_written": 65536}, "device": "The readback raises an I/O error."},
+        {"op": "START_CHALLENGE", "diagnostic_id": "storage", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "ERROR", "WRITE_ERROR"], "device": "The write raises an I/O error."},
+        {"op": "START_CHALLENGE", "diagnostic_id": "storage", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "ERROR", "CLEANUP_ERROR"], "metrics": {"bytes_written": 65536}, "device": "The temporary file is replaced by an undeletable non-empty directory."}
+      ]
+    },
+    {
+      "name": "camera",
+      "session_id": "5e55a000-0000-4000-8000-000000000005",
+      "device": "One back camera with a 640x480 YUV output; CAMERA permission granted until the last run.",
+      "exchanges": [
+        {"op": "HELLO", "status": "OK"},
+        {"op": "GET_CAPABILITIES", "status": "OK"},
+        {"op": "START_CHALLENGE", "diagnostic_id": "camera_0", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "PASS", "CAPTURE_MATCH"], "metrics": {"capture_completed": 1, "frame_metadata_match": 1, "frame_width": 640, "frame_height": 480, "frame_bytes": 460800}, "device": "Real open/session/capture; capture result and frame delivered with equal timestamps."},
+        {"op": "START_CHALLENGE", "diagnostic_id": "camera_0", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "INCONCLUSIVE", "METADATA_MISMATCH"], "metrics": {"capture_completed": 1, "frame_metadata_match": 0}, "device": "Frame timestamp differs from the capture result."},
+        {"op": "START_CHALLENGE", "diagnostic_id": "camera_0", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "ERROR", "INVALID_FRAME"], "device": "A frame with an empty luma plane is delivered."},
+        {"op": "START_CHALLENGE", "diagnostic_id": "camera_0", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "INCONCLUSIVE", "METADATA_UNAVAILABLE"], "device": "Capture result without a sensor timestamp."},
+        {"op": "START_CHALLENGE", "diagnostic_id": "camera_0", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "ERROR", "CAPTURE_ERROR"], "device": "The capture fails."},
+        {"op": "START_CHALLENGE", "diagnostic_id": "camera_0", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "RESTRICTED", "CAMERA_DISABLED"], "device": "Open reports ERROR_CAMERA_DISABLED (device policy)."},
+        {"op": "START_CHALLENGE", "diagnostic_id": "camera_0", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "INCONCLUSIVE", "CAMERA_BUSY"], "device": "Open reports ERROR_CAMERA_IN_USE."},
+        {"op": "START_CHALLENGE", "diagnostic_id": "camera_0", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "ERROR", "INITIALIZATION_ERROR"], "device": "Open reports ERROR_CAMERA_DEVICE."},
+        {"op": "START_CHALLENGE", "diagnostic_id": "camera_0", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "INCONCLUSIVE", "CAMERA_DISCONNECTED"], "device": "Opening throws CameraAccessException(CAMERA_DISCONNECTED)."},
+        {"op": "START_CHALLENGE", "diagnostic_id": "camera_0", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["EXPIRED", "INCONCLUSIVE", "TIMEOUT"], "device": "Real open/session/capture, then no HAL delivery for 10 s."},
+        {"op": "START_CHALLENGE", "diagnostic_id": "camera_0", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "CANCEL_CHALLENGE", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "STOPPING"], "device": "Real open/session/capture; desktop cancels while main has not yet released the camera."},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["CANCELLED", "INCONCLUSIVE", "CANCELLED"], "device": "Main closes session, device and reader."},
+        {"op": "START_CHALLENGE", "diagnostic_id": "camera_0", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "RESTRICTED", "PERMISSION_REQUIRED"], "device": "CAMERA permission revoked before the run."}
+      ]
+    },
+    {
+      "name": "touch_display",
+      "session_id": "5e55a000-0000-4000-8000-000000000006",
+      "device": "Touchscreen phone, 1233x2673 px display (411x891 dp, xxhdpi).",
+      "exchanges": [
+        {"op": "HELLO", "status": "OK"},
+        {"op": "GET_CAPABILITIES", "status": "OK"},
+        {"op": "START_CHALLENGE", "diagnostic_id": "touch", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "PASS", "TOUCH_COVERED"], "metrics": {"touch_cells": 24, "cell_coverage_percent": 100, "max_contacts": 2, "tested_width": 1233, "tested_height": 2673, "display_width": 1233, "display_height": 2673, "tested_display_area_percent": 100}, "device": "Every cell touched once, one two-finger contact, then Finish."},
+        {"op": "START_CHALLENGE", "diagnostic_id": "touch", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "INCONCLUSIVE", "PARTIAL"], "metrics": {"touch_cells": 24, "tested_width": 180, "tested_height": 180}, "device": "Grid re-laid out to 180x180 px; all 24 cells touched; Finish."},
+        {"op": "START_CHALLENGE", "diagnostic_id": "touch", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "CANCEL_CHALLENGE", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "STOPPING"], "device": "Five cells touched; desktop cancels."},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["CANCELLED", "INCONCLUSIVE", "CANCELLED"], "metrics": {"touch_cells": 5}, "device": "Main dismisses the grid."},
+        {"op": "START_CHALLENGE", "diagnostic_id": "pixels", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "INCONCLUSIVE", "USER_REPORTED"], "metrics": {"patterns_viewed": 5, "user_report": 0}, "device": "Five colors shown; the person answers 'No, I saw a defect'."},
+        {"op": "START_CHALLENGE", "diagnostic_id": "display", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "INCONCLUSIVE", "TELEMETRY_ONLY"]}
+      ]
+    },
+    {
+      "name": "audio_haptics",
+      "session_id": "5e55a000-0000-4000-8000-000000000007",
+      "device": "Microphone, speaker and vibrator present; RECORD_AUDIO granted until the last run; synthetic 12000-amplitude PCM source.",
+      "exchanges": [
+        {"op": "HELLO", "status": "OK"},
+        {"op": "GET_CAPABILITIES", "status": "OK"},
+        {"op": "START_CHALLENGE", "diagnostic_id": "microphone", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "INCONCLUSIVE", "USER_REPORTED"], "metrics": {"user_report": 1}, "device": "3 s of samples, live level shown; the person answers 'Yes, the level rose'."},
+        {"op": "START_CHALLENGE", "diagnostic_id": "vibration", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "INCONCLUSIVE", "USER_REPORTED"], "metrics": {"effect_scheduled": 1, "user_report": 0}, "device": "Pulse scheduled; the person answers 'No, I did not feel it'."},
+        {"op": "START_CHALLENGE", "diagnostic_id": "microphone", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "RESTRICTED", "PERMISSION_REQUIRED"], "device": "RECORD_AUDIO revoked before the run."}
+      ]
+    },
+    {
+      "name": "sensors_battery",
+      "session_id": "5e55a000-0000-4000-8000-000000000008",
+      "device": "Accelerometer, light sensor and step counter present; ACTIVITY_RECOGNITION not granted.",
+      "exchanges": [
+        {"op": "HELLO", "status": "OK"},
+        {"op": "GET_CAPABILITIES", "status": "OK"},
+        {"op": "START_CHALLENGE", "diagnostic_id": "sensor_0", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "INCONCLUSIVE", "SAMPLES_OBSERVED"], "metrics": {"sample_count": 3, "rejected_samples": 2}, "device": "Five events: three valid, one 1e20 value outside the numeric contract, one NaN; 3 s window."},
+        {"op": "START_CHALLENGE", "diagnostic_id": "sensor_3", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "INCONCLUSIVE", "NO_SAMPLES"], "metrics": {"sample_count": 0, "rejected_samples": 0}, "device": "Light sensor registered, no events in 3 s."},
+        {"op": "START_CHALLENGE", "diagnostic_id": "sensor_1", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "UNSUPPORTED", "HARDWARE_ABSENT"], "device": "No gyroscope."},
+        {"op": "START_CHALLENGE", "diagnostic_id": "sensor_10", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "RESTRICTED", "PERMISSION_REQUIRED"], "device": "Step counter without ACTIVITY_RECOGNITION."},
+        {"op": "START_CHALLENGE", "diagnostic_id": "battery", "status": "OK", "report": ["RUNNING", "INCONCLUSIVE", "COLLECTING"]},
+        {"op": "FETCH_OBSERVATIONS", "status": "OK", "report": ["COMPLETED", "INCONCLUSIVE", "TELEMETRY_ONLY"], "device": "Two battery snapshots 3 s apart."}
+      ]
+    }
+  ],
+  "legacy_extracts": {
+    "wire_hello.bin": ["typical_capabilities", 0],
+    "wire_capabilities.bin": ["typical_capabilities", 1],
+    "wire_start_challenge.bin": ["touch_display", 2],
+    "wire_fetch_observations_pass_touch.bin": ["touch_display", 3],
+    "wire_fetch_observations_pass_storage.bin": ["storage", 3],
+    "wire_fetch_observations_fail_storage.bin": ["storage", 5],
+    "wire_fetch_observations_error_write.bin": ["storage", 9],
+    "wire_fetch_observations_restricted_camera_disabled.bin": ["camera", 13],
+    "wire_fetch_observations_inconclusive_camera_busy.bin": ["camera", 15],
+    "wire_fetch_observations_error_init.bin": ["camera", 17],
+    "wire_fetch_observations_inconclusive_timeout.bin": ["camera", 21],
+    "wire_fetch_observations_restricted_perm_required.bin": ["camera", 26],
+    "wire_fetch_observations_inconclusive_user_reported.bin": ["touch_display", 10],
+    "wire_fetch_observations_unsupported_hardware.bin": ["sensors_battery", 7]
+  },
+  "legacy_capabilities": {
+    "capabilities_default.json": "typical_capabilities",
+    "capabilities_missing_sensors.json": "sparse_capabilities",
+    "capabilities_large_range.json": "extreme_capabilities"
+  }
+}

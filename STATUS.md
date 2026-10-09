@@ -21,6 +21,7 @@ Current completed slices:
 - Phase 8A - VECTOR Probe Protocol, Evidence Boundary + Security Foundation (COMPLETE / VERIFIED / FORMAL GATE PASSED / IMPLEMENTATION COMMITTED: 4f073da)
 - Phase 8D - Platform-Neutral Component Authenticity / Provenance Domain (COMPLETE / VERIFIED / FORMAL GATE PASSED / IMPLEMENTATION COMMITTED: 03d80b4)
 - Phase 8B - Signed Android Probe + Discovery / Consent / Lifecycle (COMPLETE / VERIFIED / FORMAL GATE PASSED / IMPLEMENTATION COMMITTED: 365f0e8)
+- Phase 8C - Deep Android Functional Diagnostics (COMPLETE / INDEPENDENT GATE PASSED; baseline 0aa0cbe; committed in the Phase 8C completion commit that follows 0aa0cbe)
 Baseline before Phase 8A: 638955c
 Codex instructions commit: 638955c
 Phase 8A implementation commit: 4f073da
@@ -32,11 +33,12 @@ Formal Phase 8A Gate: PASSED
 Final staged-boundary review (8A): APPROVED
 Formal Phase 8D Gate: PASSED
 Formal Phase 8B Gate: PASSED
+Independent Phase 8C Gate: PASSED (0 BLOCKER, 0 HIGH, 0 MEDIUM, 2 LOW, 5 INFO accepted as nonblocking)
 Final staged-boundary review (8B): APPROVED
 Hardware qualification: NOT RUN
 Trust Engine: NOT_READY
 trust_score: None
-Next implementation slice: 8C - Deep Android Functional Diagnostics (NEXT / NOT STARTED)
+Next implementation slice: 8E - Android Provenance / Anomaly Signals (NEXT / NOT STARTED)
 
 ### Canonical Production Roadmap
 1. Foundation / Production Audit — COMPLETE
@@ -46,7 +48,7 @@ Next implementation slice: 8C - Deep Android Functional Diagnostics (NEXT / NOT 
 5. Diagnostic Registry + Scan Planner + Scan Lifecycle + Diagnostic Events — COMPLETE
 6. Additional Android Standard Diagnostics — COMPLETE
 7. iOS Discovery, Pairing + Advanced / Version-Aware iOS Diagnostics — COMPLETE
-8. VECTOR Probe + Deep Android Diagnostics - IN PROGRESS (8A, 8D & 8B complete; 8C next)
+8. VECTOR Probe + Deep Android Diagnostics - IN PROGRESS (8A, 8D, 8B & 8C complete; 8E next)
 9. Cross-Platform Evidence Normalization + Verification Coverage — NOT STARTED
 10. Explainable Verification / Trust Engine — NOT STARTED
 11. Real-Device Validation + Calibration — NOT STARTED
@@ -64,8 +66,8 @@ Next implementation slice: 8C - Deep Android Functional Diagnostics (NEXT / NOT 
 - 8A - Probe Protocol + Evidence Boundary + Security Foundation - COMPLETE
 - 8D - Platform-Neutral Component Authenticity / Provenance Domain - COMPLETE
 - 8B - Signed Android Probe + Discovery / Consent / Lifecycle - COMPLETE (development-foundation scope; physical hardware qualification NOT RUN)
-- 8C - Deep Android Functional Diagnostics - NEXT (NOT STARTED)
-- 8E - Android Provenance / Anomaly Signals - NOT STARTED
+- 8C - Deep Android Functional Diagnostics - COMPLETE (Independent Gate PASSED; physical hardware qualification NOT RUN)
+- 8E - Android Provenance / Anomaly Signals - NEXT (NOT STARTED)
 - 8F - Planner / Evidence / Coverage / Frontend Integration - NOT STARTED
 - 8G - Adversarial Regression + Hardware Qualification - NOT STARTED
 
@@ -267,8 +269,37 @@ Next implementation slice: 8C - Deep Android Functional Diagnostics (NEXT / NOT 
 - Release signing keys and production certificate trust infrastructure.
 - Cryptographic host-to-device pairing outside the authorized ADB boundary.
 
+### Phase 8C - COMPLETE (Independent Gate PASSED)
+
+#### Verified Phase 8C Implementation (approved scope)
+- Authenticated Android diagnostic collection over the Phase 8B signed control plane.
+- Protocol v2 diagnostics (diagnostic start/fetch operations with strict envelope validation).
+- Android collectors for battery, camera, sensor, touch, audio, storage and system diagnostics (`org.vector.probe`).
+- Desktop diagnostic ingestion and validation (`probe_diagnostics.py`, `diagnostic_evidence.py`, evidence validation).
+- Cross-language integration regression coverage (pinned Java/Python wire fixtures under `local-agent/tests/fixtures/cross_language/`).
+- Consent and permission lifecycle enforcement (foreground consent, permission history, fail-closed on revoke/pause).
+- Strict evidence qualification: every PASS requires evidence; UNSUPPORTED, RESTRICTED, INCONCLUSIVE and execution ERROR are never reported as hardware FAIL.
+- Documentation: `docs/PHASE_8C_ANDROID_DIAGNOSTIC_MATRIX.md`, `docs/PHASE_8C_REAL_DEVICE_VALIDATION.md`.
+
+#### Phase 8C Independent Gate Verification Results
+- Baseline: `0aa0cbec629d5d0eb71c5720aaec8e513e5638a1` (`0aa0cbe`)
+- Android JVM/Robolectric tests: 141 passed
+- Local-agent Python: 2,120 passed
+- Intelligence: 21 passed
+- Frontend: 96 passed
+- Root `scripts/verify.ps1`: 15/15 passed
+- Findings: 0 BLOCKER, 0 HIGH, 0 MEDIUM, 2 LOW, 5 INFO (accepted as nonblocking)
+- Physical hardware qualification: NOT RUN. Diagnostic claims remain CODE_TESTED, not HARDWARE_VALIDATED.
+- Trust Engine remains NOT_READY; `trust_score` remains `None`. No OEM authenticity or provenance claim is made.
+
+#### Phase 8C Accepted Independent-Gate Findings
+- **UG-01 (LOW):** Touch input-source validation. Resolve before a touchscreen PASS is presented as a comprehensive hardware result.
+- **UG-02 (LOW):** Eight surviving negative-test mutations. Address in the relevant follow-up testing/qualification phase.
+- **UG-03 through UG-07 (INFO):** Informational limitations, documentation qualifications and development-tooling notes.
+- Inherited Phase 8B debt (including FG-01, FG-02 and FG-06) is preserved unchanged, with its established pre-8F remediation boundary.
+
 ### Next Implementation Slice
-8C - Deep Android Functional Diagnostics - NEXT (NOT STARTED). Phase 8 remains IN PROGRESS; this status update does not start later work.
+8E - Android Provenance / Anomaly Signals - NEXT (NOT STARTED). Phase 8 remains IN PROGRESS; this status update does not start later work.
 
 ---
 

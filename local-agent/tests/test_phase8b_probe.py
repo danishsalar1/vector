@@ -517,7 +517,20 @@ def test_api_requires_process_authorization_and_local_host() -> None:
 def test_permission_and_scope_contract() -> None:
     root = Path(__file__).resolve().parents[2]
     manifest = (root / "android-probe/app/src/main/AndroidManifest.xml").read_text()
-    assert "uses-permission" not in manifest
+    # Phase 8C deliberately adds this exact permission set; no unrelated access.
+    import xml.etree.ElementTree as ET
+
+    permissions = {
+        node.attrib["{http://schemas.android.com/apk/res/android}name"]
+        for node in ET.fromstring(manifest).findall("uses-permission")
+    }
+    assert permissions == {
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACTIVITY_RECOGNITION",
+        "android.permission.VIBRATE",
+        "android.permission.ACCESS_WIFI_STATE",
+    }
     assert (
         "<service" not in manifest and "<receiver" not in manifest and "<provider" not in manifest
     )

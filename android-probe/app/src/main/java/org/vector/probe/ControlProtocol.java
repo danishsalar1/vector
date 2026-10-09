@@ -30,6 +30,12 @@ final class ControlProtocol {
     private static final String UUID = "[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}";
     private final long startedNanos;
     private final int apiLevel;
+    interface Diagnostics {
+        List<Map<String, Object>> capabilities();
+        Map<String, Object> command(String operation, Map<String, Object> binding);
+        default boolean isExhausted() { return false; }
+    }
+    private final Diagnostics diagnostics;
     private Instant lastWall;
     private String session;
     private long epoch;
@@ -37,9 +43,13 @@ final class ControlProtocol {
     private final Set<String> nonces = new HashSet<>();
 
     ControlProtocol(Instant now, long nanoTime, int apiLevel) {
+        this(now, nanoTime, apiLevel, null);
+    }
+    ControlProtocol(Instant now, long nanoTime, int apiLevel, Diagnostics diagnostics) {
         lastWall = now;
         startedNanos = nanoTime;
         this.apiLevel = apiLevel;
+        this.diagnostics = diagnostics;
     }
 
     static IOException rejected() { return new IOException("Probe control message rejected."); }
@@ -65,7 +75,8 @@ final class ControlProtocol {
     synchronized byte[] respond(byte[] raw, Instant now, long nanoTime) throws IOException {
         try {
             Map<String, Object> request = parse(raw);
-            if (!request.keySet().equals(FIELDS) || integer(request.get("protocol_version")) != 1) throw rejected();
+            int version = diagnostics == null ? 1 : 2;
+            if (!request.keySet().equals(FIELDS) || integer(request.get("protocol_version")) != version) throw rejected();
             String owner = string(request.get("probe_session_id"), UUID);
             long ownerEpoch = integer(request.get("device_epoch"));
             long next = integer(request.get("sequence_number"));
@@ -102,13 +113,30 @@ final class ControlProtocol {
             Map<String, Object> response = new LinkedHashMap<>(request);
             // Echo request timestamps: device clock never extends the desktop deadline.
             response.put("status", challenge ? "UNAVAILABLE" : "OK");
+            if (diagnostics != null) {
+                response.put("diagnostic_capabilities", operation.equals("GET_CAPABILITIES") ? diagnostics.capabilities() : new ArrayList<>());
+                Map<String, Object> report = null;
+                if (challenge) {
+                    Map<String, Object> safeBinding = new LinkedHashMap<>();
+                    for (Map.Entry<?, ?> entry : ((Map<?, ?>) binding).entrySet()) safeBinding.put((String) entry.getKey(), entry.getValue());
+                    report = diagnostics.command(operation, safeBinding);
+                    if (report == null) {
+                        // Exhaustion only ever refuses a START; a stale FETCH/CANCEL is merely unavailable.
+                        boolean exhausted = operation.equals("START_CHALLENGE") && diagnostics.isExhausted();
+                        response.put("status", exhausted ? "ERROR" : "UNAVAILABLE");
+                    } else {
+                        response.put("status", "OK");
+                    }
+                }
+                response.put("diagnostic", report);
+            }
             response.put("probe_build", null);
             if (operation.equals("HELLO")) {
                 Map<String, Object> hello = new LinkedHashMap<>();
-                hello.put("application_version", "0.1.0");
-                hello.put("version_code", 1);
-                hello.put("protocol_versions", Arrays.asList(1));
-                hello.put("supported_operations", Arrays.asList("HELLO", "GET_CAPABILITIES", "HEARTBEAT"));
+                hello.put("application_version", version == 1 ? "0.1.0" : BuildConfig.VERSION_NAME);
+                hello.put("version_code", version == 1 ? 1 : BuildConfig.VERSION_CODE);
+                hello.put("protocol_versions", Arrays.asList(version));
+                hello.put("supported_operations", version == 1 ? Arrays.asList("HELLO", "GET_CAPABILITIES", "HEARTBEAT") : Arrays.asList("HELLO", "GET_CAPABILITIES", "HEARTBEAT", "START_CHALLENGE", "CANCEL_CHALLENGE", "FETCH_OBSERVATIONS"));
                 hello.put("api_level", apiLevel);
                 response.put("hello", hello);
             }
@@ -119,7 +147,9 @@ final class ControlProtocol {
             capability.put("operations", Arrays.asList("HELLO", "GET_CAPABILITIES", "HEARTBEAT"));
             response.put("capabilities", operation.equals("GET_CAPABILITIES")
                 ? Arrays.asList(capability) : new ArrayList<>());
-            return new GsonBuilder().serializeNulls().create().toJson(response).getBytes(StandardCharsets.UTF_8);
+            byte[] encoded = new GsonBuilder().serializeNulls().create().toJson(response).getBytes(StandardCharsets.UTF_8);
+            if (encoded.length > MAX_BYTES) throw rejected();
+            return encoded;
         } catch (RuntimeException error) { throw rejected(); }
     }
 

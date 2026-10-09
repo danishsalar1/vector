@@ -14,10 +14,14 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    SerializerFunctionWrapHandler,
     StringConstraints,
     field_validator,
+    model_serializer,
     model_validator,
 )
+
+from vector_agent.models.probe_diagnostics import DiagnosticCapability, DiagnosticReport
 
 MAX_PROTOCOL_MESSAGE_BYTES = 65_536
 MAX_STRING_LENGTH = 4_096
@@ -49,6 +53,7 @@ UTCDateTime = Annotated[datetime, Field(strict=True)]
 
 class ProbeProtocolVersion(IntEnum):
     V1 = 1
+    V2 = 2
 
 
 class ProbeOperation(StrEnum):
@@ -210,7 +215,7 @@ class ProbeObservationCandidate(ProbeModel):
 
 
 class ProbeEnvelope(ProbeModel):
-    protocol_version: Annotated[int, Field(strict=True, ge=1, le=1)]
+    protocol_version: Annotated[int, Field(strict=True, ge=1, le=2)]
     probe_session_id: ProbeSessionId
     device_epoch: SequenceNumber
     binding: ProbeChallengeBinding | None
@@ -252,9 +257,38 @@ class ProbeResponseEnvelope(ProbeEnvelope):
     observations: Annotated[
         tuple[ProbeObservationCandidate, ...], Field(max_length=MAX_COLLECTION_ITEMS)
     ]
+    diagnostic_capabilities: Annotated[tuple[DiagnosticCapability, ...], Field(max_length=100)] = ()
+    diagnostic: DiagnosticReport | None = None
+
+    @model_serializer(mode="wrap")
+    def serialize_version(self, handler: SerializerFunctionWrapHandler) -> dict[str, object]:
+        result: dict[str, object] = handler(self)
+        if self.protocol_version == 1:
+            result.pop("diagnostic", None)
+            result.pop("diagnostic_capabilities", None)
+        return result
 
     @model_validator(mode="after")
     def validate_payload(self) -> Self:
+        if self.protocol_version == 1 and (
+            self.diagnostic is not None or self.diagnostic_capabilities
+        ):
+            raise ValueError("Diagnostics require protocol 2.")
+        if self.diagnostic_capabilities and (
+            self.operation != ProbeOperation.GET_CAPABILITIES
+            or self.status != ProbeCommandStatus.OK
+        ):
+            raise ValueError("Diagnostic capabilities require successful discovery.")
+        if len({c.diagnostic_id for c in self.diagnostic_capabilities}) != len(
+            self.diagnostic_capabilities
+        ):
+            raise ValueError("Duplicate diagnostic capabilities.")
+        if self.diagnostic is not None and (
+            self.status != ProbeCommandStatus.OK
+            or self.binding is None
+            or self.diagnostic.diagnostic_id != self.binding.diagnostic_id
+        ):
+            raise ValueError("Diagnostic result requires the exact successful challenge binding.")
         if self.hello is not None and (
             self.operation != ProbeOperation.HELLO or self.status != ProbeCommandStatus.OK
         ):

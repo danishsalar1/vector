@@ -140,7 +140,7 @@ def _check_values(value: object) -> None:
             _check_values(item)
 
 
-def decode_message(raw: bytes) -> dict[str, object]:
+def decode_message(raw: bytes, *, version: int = 1) -> dict[str, object]:
     """Reject malformed, ambiguous or oversized JSON before schema validation."""
     if type(raw) is not bytes:
         raise ProbeValidationError(ProbeErrorCode.MALFORMED_MESSAGE)
@@ -164,10 +164,13 @@ def decode_message(raw: bytes) -> dict[str, object]:
         raise ProbeValidationError(failure)
     if not isinstance(value, dict):
         raise ProbeValidationError(ProbeErrorCode.MALFORMED_MESSAGE)
-    version = value.get("protocol_version")
-    if type(version) is not int:
+    received_version = value.get("protocol_version")
+    if type(received_version) is not int:
         raise ProbeValidationError(ProbeErrorCode.MALFORMED_MESSAGE)
-    if version != ProbeProtocolVersion.V1:
+    if (
+        version not in (ProbeProtocolVersion.V1, ProbeProtocolVersion.V2)
+        or received_version != version
+    ):
         raise ProbeValidationError(ProbeErrorCode.UNSUPPORTED_PROTOCOL)
     return value
 
@@ -175,8 +178,10 @@ def decode_message(raw: bytes) -> dict[str, object]:
 _Model = TypeVar("_Model", bound=ProbeModel)
 
 
-def _parse(raw: bytes, model: type[_Model]) -> _Model:
-    decode_message(raw)
+def _parse(raw: bytes, model: type[_Model], *, version: int = 1) -> _Model:
+    decoded = decode_message(raw, version=version)
+    if version == 1 and ({"diagnostic", "diagnostic_capabilities"} & decoded.keys()):
+        raise ProbeValidationError(ProbeErrorCode.MALFORMED_MESSAGE)
     result: _Model | None = None
     with suppress(ValidationError):
         result = model.model_validate_json(raw, strict=True)
@@ -185,14 +190,14 @@ def _parse(raw: bytes, model: type[_Model]) -> _Model:
     return result
 
 
-def parse_request(raw: bytes) -> ProbeRequestEnvelope:
+def parse_request(raw: bytes, *, version: int = 1) -> ProbeRequestEnvelope:
     """Schema validation only; does not authorize dispatch or consume replay state."""
-    return _parse(raw, ProbeRequestEnvelope)
+    return _parse(raw, ProbeRequestEnvelope, version=version)
 
 
-def parse_response(raw: bytes) -> ProbeResponseEnvelope:
+def parse_response(raw: bytes, *, version: int = 1) -> ProbeResponseEnvelope:
     """Schema validation only; ingestion must also use the session binding gate."""
-    return _parse(raw, ProbeResponseEnvelope)
+    return _parse(raw, ProbeResponseEnvelope, version=version)
 
 
 class ProbeProtocolSession:
@@ -209,6 +214,7 @@ class ProbeProtocolSession:
         *,
         device_id: str,
         device_epoch: int,
+        protocol_version: int = 1,
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
         monotonic: Callable[[], float] = time.monotonic,
     ) -> None:
@@ -220,6 +226,9 @@ class ProbeProtocolSession:
         if type(device_epoch) is not int or not 0 <= device_epoch <= MAX_SEQUENCE_NUMBER:
             raise ProbeValidationError(ProbeErrorCode.BINDING_MISMATCH)
         self._epoch = device_epoch
+        if type(protocol_version) is not int or protocol_version not in (1, 2):
+            raise ProbeValidationError(ProbeErrorCode.UNSUPPORTED_PROTOCOL)
+        self._version = protocol_version
         self._device_id = device_id
         self._id = str(uuid4())
         self._clock = clock
@@ -299,7 +308,7 @@ class ProbeProtocolSession:
             request: ProbeRequestEnvelope | None = None
             with suppress(ValidationError):
                 request = ProbeRequestEnvelope(
-                    protocol_version=1,
+                    protocol_version=self._version,
                     probe_session_id=self._id,
                     device_epoch=self._epoch,
                     binding=binding,
@@ -317,7 +326,9 @@ class ProbeProtocolSession:
             if binding is not None and not self._created_at <= binding.collection_not_before <= now:
                 raise ProbeValidationError(ProbeErrorCode.INVALID_TIME)
             # Round-trip also enforces the shared wire byte/shape budget on outbound data.
-            request = parse_request(request.model_dump_json().encode("utf-8"))
+            request = parse_request(
+                request.model_dump_json().encode("utf-8"), version=self._version
+            )
             self._nonce_hashes.add(digest)
             self._next_sequence += 1
             self._pending, self._pending_mono = request, self._last_mono
@@ -332,7 +343,7 @@ class ProbeProtocolSession:
     ) -> ProbeResponseEnvelope:
         if type(expected_request) is not ProbeRequestEnvelope:
             raise ProbeValidationError(ProbeErrorCode.MALFORMED_MESSAGE)
-        response = parse_response(raw)
+        response = parse_response(raw, version=self._version)
         with self._lock:
             now = self._now(current_device_epoch)
             request = self._pending

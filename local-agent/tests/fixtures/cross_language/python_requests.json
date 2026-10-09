@@ -1,0 +1,333 @@
+{
+ "generator": "local-agent tests/cross_language_contract.py --write-requests",
+ "scenarios": {
+  "typical_capabilities": [
+   {
+    "mac": "35ac5c45f94903bad9e27f455da571cbd6f032db9abe9cc8b85fc5f50ccaa664",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000001\",\"device_epoch\":0,\"binding\":null,\"nonce\":\"s01n000000000000000000000000000000000000001\",\"sequence_number\":0,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"HELLO\"}"
+   },
+   {
+    "mac": "b414f1ba92db315058c49e8b48936d672128554949ca3af3ecb066a7cabe2bda",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000001\",\"device_epoch\":0,\"binding\":null,\"nonce\":\"s01n000000000000000000000000000000000000002\",\"sequence_number\":1,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"GET_CAPABILITIES\"}"
+   }
+  ],
+  "sparse_capabilities": [
+   {
+    "mac": "4ef98244836478891b795816b8b7185748f2995bb57e49a9f010ee49a9590d85",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000002\",\"device_epoch\":0,\"binding\":null,\"nonce\":\"s02n000000000000000000000000000000000000001\",\"sequence_number\":0,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"HELLO\"}"
+   },
+   {
+    "mac": "419d9bb2a215051d65fb1fb470d06e298bc9fafc69ce5bc38814cb3cfed109b4",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000002\",\"device_epoch\":0,\"binding\":null,\"nonce\":\"s02n000000000000000000000000000000000000002\",\"sequence_number\":1,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"GET_CAPABILITIES\"}"
+   }
+  ],
+  "extreme_capabilities": [
+   {
+    "mac": "024b5fad5c04f9d7ca39c22418730eace44cf2fe41e892c947e2ac16a39ee274",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000003\",\"device_epoch\":0,\"binding\":null,\"nonce\":\"s03n000000000000000000000000000000000000001\",\"sequence_number\":0,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"HELLO\"}"
+   },
+   {
+    "mac": "9c6940e16777aa98b305f678128d595cf11a9f30b1434118093bea549539be07",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000003\",\"device_epoch\":0,\"binding\":null,\"nonce\":\"s03n000000000000000000000000000000000000002\",\"sequence_number\":1,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"GET_CAPABILITIES\"}"
+   }
+  ],
+  "storage": [
+   {
+    "mac": "c9bb83df3f350dc631bf65148f80aca32b6edf0eec634ffe83e5acddd00afccc",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000004\",\"device_epoch\":0,\"binding\":null,\"nonce\":\"s04n000000000000000000000000000000000000001\",\"sequence_number\":0,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"HELLO\"}"
+   },
+   {
+    "mac": "bbf83c56c6a8748cb8ff7ea16bc60ab51d3fe63fea1c771ee1ff5511d2ab6271",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000004\",\"device_epoch\":0,\"binding\":null,\"nonce\":\"s04n000000000000000000000000000000000000002\",\"sequence_number\":1,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"GET_CAPABILITIES\"}"
+   },
+   {
+    "mac": "73e15e135890fd9cdeeeaaf28bf57f5c17b86dee67dfe708a0a90bc570c219b8",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000004\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000001-cafe-4000-8000-000000000004\",\"diagnostic_id\":\"storage\",\"attempt_id\":\"00000002-cafe-4000-8000-000000000004\",\"challenge_id\":\"00000003-cafe-4000-8000-000000000004\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s04n000000000000000000000000000000000000003\",\"sequence_number\":2,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "22605f04e8e659de5cf8b6f180387ae0e634302113920ee317d217b3cb3ccec5",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000004\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000001-cafe-4000-8000-000000000004\",\"diagnostic_id\":\"storage\",\"attempt_id\":\"00000002-cafe-4000-8000-000000000004\",\"challenge_id\":\"00000003-cafe-4000-8000-000000000004\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s04n000000000000000000000000000000000000004\",\"sequence_number\":3,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   },
+   {
+    "mac": "4cf4dfdc3dc4c880220c47e0bf4300d988e9d80c565bf73d1c5864eb0f852171",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000004\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000004-cafe-4000-8000-000000000004\",\"diagnostic_id\":\"storage\",\"attempt_id\":\"00000005-cafe-4000-8000-000000000004\",\"challenge_id\":\"00000006-cafe-4000-8000-000000000004\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s04n000000000000000000000000000000000000005\",\"sequence_number\":4,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "f9c2d940414e713133bd2d561068ede15c97874bf6bfba7396a720eb469c1eb1",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000004\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000004-cafe-4000-8000-000000000004\",\"diagnostic_id\":\"storage\",\"attempt_id\":\"00000005-cafe-4000-8000-000000000004\",\"challenge_id\":\"00000006-cafe-4000-8000-000000000004\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s04n000000000000000000000000000000000000006\",\"sequence_number\":5,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   },
+   {
+    "mac": "fc6bb7cd1eb2b3862bc96ad337dee83806c33a197933330ba09542e5ab059476",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000004\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000007-cafe-4000-8000-000000000004\",\"diagnostic_id\":\"storage\",\"attempt_id\":\"00000008-cafe-4000-8000-000000000004\",\"challenge_id\":\"00000009-cafe-4000-8000-000000000004\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s04n000000000000000000000000000000000000007\",\"sequence_number\":6,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "0d5daae942f07777831ecafa4639c75308672815d431b688e48f60a6b9f02ca6",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000004\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000007-cafe-4000-8000-000000000004\",\"diagnostic_id\":\"storage\",\"attempt_id\":\"00000008-cafe-4000-8000-000000000004\",\"challenge_id\":\"00000009-cafe-4000-8000-000000000004\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s04n000000000000000000000000000000000000008\",\"sequence_number\":7,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   },
+   {
+    "mac": "155a1938caccb52017137445e9c266a34c770396be2a4a70edd0e968f9e76f28",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000004\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"0000000a-cafe-4000-8000-000000000004\",\"diagnostic_id\":\"storage\",\"attempt_id\":\"0000000b-cafe-4000-8000-000000000004\",\"challenge_id\":\"0000000c-cafe-4000-8000-000000000004\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s04n000000000000000000000000000000000000009\",\"sequence_number\":8,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "20fbe366661fa5b622aaf1d2e3a4901ccdc9d4029516ec5d3275c0900349f9f3",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000004\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"0000000a-cafe-4000-8000-000000000004\",\"diagnostic_id\":\"storage\",\"attempt_id\":\"0000000b-cafe-4000-8000-000000000004\",\"challenge_id\":\"0000000c-cafe-4000-8000-000000000004\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s04n000000000000000000000000000000000000010\",\"sequence_number\":9,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   },
+   {
+    "mac": "6b29e5ec412391b9972b679fd24fb946e1e9870d623678063d2e5f289c5680a9",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000004\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"0000000d-cafe-4000-8000-000000000004\",\"diagnostic_id\":\"storage\",\"attempt_id\":\"0000000e-cafe-4000-8000-000000000004\",\"challenge_id\":\"0000000f-cafe-4000-8000-000000000004\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s04n000000000000000000000000000000000000011\",\"sequence_number\":10,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "e1150300666f4f23773a27bc0f9be6e397a34328083546f503f007656dd2fd40",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000004\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"0000000d-cafe-4000-8000-000000000004\",\"diagnostic_id\":\"storage\",\"attempt_id\":\"0000000e-cafe-4000-8000-000000000004\",\"challenge_id\":\"0000000f-cafe-4000-8000-000000000004\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s04n000000000000000000000000000000000000012\",\"sequence_number\":11,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   }
+  ],
+  "camera": [
+   {
+    "mac": "091808effd33859aeb05c84b4b6255a2b5d7221fbdd19efe737c95ada444a5d3",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":null,\"nonce\":\"s05n000000000000000000000000000000000000001\",\"sequence_number\":0,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"HELLO\"}"
+   },
+   {
+    "mac": "a79b61635a91921eda79696828f18734ba59d232ce79fa0c21f548ab843b44a5",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":null,\"nonce\":\"s05n000000000000000000000000000000000000002\",\"sequence_number\":1,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"GET_CAPABILITIES\"}"
+   },
+   {
+    "mac": "c8205750356086abdbda4601f2d76887e986e3e3908e609690702af8618c1e96",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000001-cafe-4000-8000-000000000005\",\"diagnostic_id\":\"camera_0\",\"attempt_id\":\"00000002-cafe-4000-8000-000000000005\",\"challenge_id\":\"00000003-cafe-4000-8000-000000000005\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s05n000000000000000000000000000000000000003\",\"sequence_number\":2,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "c98dd1194a605a5b6995e6b8dd86d3a6a038060999f4fba46f49795e8d0ce75b",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000001-cafe-4000-8000-000000000005\",\"diagnostic_id\":\"camera_0\",\"attempt_id\":\"00000002-cafe-4000-8000-000000000005\",\"challenge_id\":\"00000003-cafe-4000-8000-000000000005\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s05n000000000000000000000000000000000000004\",\"sequence_number\":3,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   },
+   {
+    "mac": "3101bbcf61d264ff0582e2ff71c51483742f5350635a2e9be99db52b2c876983",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000004-cafe-4000-8000-000000000005\",\"diagnostic_id\":\"camera_0\",\"attempt_id\":\"00000005-cafe-4000-8000-000000000005\",\"challenge_id\":\"00000006-cafe-4000-8000-000000000005\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s05n000000000000000000000000000000000000005\",\"sequence_number\":4,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "dde2e7ba1c8be507cf31c7e1f331eb692b1cb5f465fa4f75732880e47195288b",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000004-cafe-4000-8000-000000000005\",\"diagnostic_id\":\"camera_0\",\"attempt_id\":\"00000005-cafe-4000-8000-000000000005\",\"challenge_id\":\"00000006-cafe-4000-8000-000000000005\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s05n000000000000000000000000000000000000006\",\"sequence_number\":5,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   },
+   {
+    "mac": "662553d92927f0676d24a436e6b3f917e620e36252dc1f389e2510576309f7ea",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000007-cafe-4000-8000-000000000005\",\"diagnostic_id\":\"camera_0\",\"attempt_id\":\"00000008-cafe-4000-8000-000000000005\",\"challenge_id\":\"00000009-cafe-4000-8000-000000000005\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s05n000000000000000000000000000000000000007\",\"sequence_number\":6,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "08b498c5ac257fb199e0d50bfe8c0180874cc534c1dfa2a77adbe1f63a4e713d",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000007-cafe-4000-8000-000000000005\",\"diagnostic_id\":\"camera_0\",\"attempt_id\":\"00000008-cafe-4000-8000-000000000005\",\"challenge_id\":\"00000009-cafe-4000-8000-000000000005\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s05n000000000000000000000000000000000000008\",\"sequence_number\":7,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   },
+   {
+    "mac": "14703c88ac0c3e31fd034db9a8cefb63009fe168cb3b04885ed409592cf49be8",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"0000000a-cafe-4000-8000-000000000005\",\"diagnostic_id\":\"camera_0\",\"attempt_id\":\"0000000b-cafe-4000-8000-000000000005\",\"challenge_id\":\"0000000c-cafe-4000-8000-000000000005\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s05n000000000000000000000000000000000000009\",\"sequence_number\":8,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "5748cd7580bef011e88b66635fee96e79e04820994def4150624381691d1a10c",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"0000000a-cafe-4000-8000-000000000005\",\"diagnostic_id\":\"camera_0\",\"attempt_id\":\"0000000b-cafe-4000-8000-000000000005\",\"challenge_id\":\"0000000c-cafe-4000-8000-000000000005\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s05n000000000000000000000000000000000000010\",\"sequence_number\":9,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   },
+   {
+    "mac": "ed53806af063e75053889d514f1dfb5cba47d0cf0092681681ff27198e7cb8f5",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"0000000d-cafe-4000-8000-000000000005\",\"diagnostic_id\":\"camera_0\",\"attempt_id\":\"0000000e-cafe-4000-8000-000000000005\",\"challenge_id\":\"0000000f-cafe-4000-8000-000000000005\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s05n000000000000000000000000000000000000011\",\"sequence_number\":10,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "93c527251cc3e8a1c74115502e0a8942a73617fe9ed9e6ae6f7328727adf56ec",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"0000000d-cafe-4000-8000-000000000005\",\"diagnostic_id\":\"camera_0\",\"attempt_id\":\"0000000e-cafe-4000-8000-000000000005\",\"challenge_id\":\"0000000f-cafe-4000-8000-000000000005\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s05n000000000000000000000000000000000000012\",\"sequence_number\":11,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   },
+   {
+    "mac": "82e2d3a82569d6c6dfd71e7c874a608c9913e3181e41b5ba7fedfb912044f108",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000010-cafe-4000-8000-000000000005\",\"diagnostic_id\":\"camera_0\",\"attempt_id\":\"00000011-cafe-4000-8000-000000000005\",\"challenge_id\":\"00000012-cafe-4000-8000-000000000005\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s05n000000000000000000000000000000000000013\",\"sequence_number\":12,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "8336e4e6237a71d6069890cff12cf29adc9324fc2df72c9dc3b76c67cc823894",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000010-cafe-4000-8000-000000000005\",\"diagnostic_id\":\"camera_0\",\"attempt_id\":\"00000011-cafe-4000-8000-000000000005\",\"challenge_id\":\"00000012-cafe-4000-8000-000000000005\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s05n000000000000000000000000000000000000014\",\"sequence_number\":13,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   },
+   {
+    "mac": "fb02098c5af2a0aa4d6c737472e10d830519a4702a435800de138b48f77e22f3",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000013-cafe-4000-8000-000000000005\",\"diagnostic_id\":\"camera_0\",\"attempt_id\":\"00000014-cafe-4000-8000-000000000005\",\"challenge_id\":\"00000015-cafe-4000-8000-000000000005\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s05n000000000000000000000000000000000000015\",\"sequence_number\":14,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "09867f7d2a21a85f1299b842adf35c65e4032b19aca94cc10341c16fc8b03d66",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000013-cafe-4000-8000-000000000005\",\"diagnostic_id\":\"camera_0\",\"attempt_id\":\"00000014-cafe-4000-8000-000000000005\",\"challenge_id\":\"00000015-cafe-4000-8000-000000000005\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s05n000000000000000000000000000000000000016\",\"sequence_number\":15,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   },
+   {
+    "mac": "60257921843660a07cab55cba1053c51ed8e641aa7998efe4d9be1b5678686f6",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000016-cafe-4000-8000-000000000005\",\"diagnostic_id\":\"camera_0\",\"attempt_id\":\"00000017-cafe-4000-8000-000000000005\",\"challenge_id\":\"00000018-cafe-4000-8000-000000000005\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s05n000000000000000000000000000000000000017\",\"sequence_number\":16,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "64a84239e05d7a48bd6f19f2d7b746d8cfc5755b37ec472628da041b9be1320c",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000016-cafe-4000-8000-000000000005\",\"diagnostic_id\":\"camera_0\",\"attempt_id\":\"00000017-cafe-4000-8000-000000000005\",\"challenge_id\":\"00000018-cafe-4000-8000-000000000005\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s05n000000000000000000000000000000000000018\",\"sequence_number\":17,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   },
+   {
+    "mac": "39522323ab8e9510a97eae01076f02677d175634bb868838f896c941f7e364e2",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000019-cafe-4000-8000-000000000005\",\"diagnostic_id\":\"camera_0\",\"attempt_id\":\"0000001a-cafe-4000-8000-000000000005\",\"challenge_id\":\"0000001b-cafe-4000-8000-000000000005\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s05n000000000000000000000000000000000000019\",\"sequence_number\":18,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "a4b7d6c6a4f9e71707e2701d58e8784d2ee5eee3e31a96a0625d8790ecc4f4ac",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000019-cafe-4000-8000-000000000005\",\"diagnostic_id\":\"camera_0\",\"attempt_id\":\"0000001a-cafe-4000-8000-000000000005\",\"challenge_id\":\"0000001b-cafe-4000-8000-000000000005\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s05n000000000000000000000000000000000000020\",\"sequence_number\":19,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   },
+   {
+    "mac": "2fcb594fddc581f8dc2159cc7a871e052677304b084a667d2eddd87d221fdd7b",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"0000001c-cafe-4000-8000-000000000005\",\"diagnostic_id\":\"camera_0\",\"attempt_id\":\"0000001d-cafe-4000-8000-000000000005\",\"challenge_id\":\"0000001e-cafe-4000-8000-000000000005\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s05n000000000000000000000000000000000000021\",\"sequence_number\":20,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "c3415b8d458b8b4daa67bd4e21cfbe31afe684bb36a98aeadc2633b2b0fa5eed",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"0000001c-cafe-4000-8000-000000000005\",\"diagnostic_id\":\"camera_0\",\"attempt_id\":\"0000001d-cafe-4000-8000-000000000005\",\"challenge_id\":\"0000001e-cafe-4000-8000-000000000005\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s05n000000000000000000000000000000000000022\",\"sequence_number\":21,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   },
+   {
+    "mac": "3688d7060f2ec049ac30aa9580b70f8d7fcceaa5ea855aeea57ec9296061856e",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"0000001f-cafe-4000-8000-000000000005\",\"diagnostic_id\":\"camera_0\",\"attempt_id\":\"00000020-cafe-4000-8000-000000000005\",\"challenge_id\":\"00000021-cafe-4000-8000-000000000005\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s05n000000000000000000000000000000000000023\",\"sequence_number\":22,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "97e5a052bea9f4cb41b6649edfa868a9e267e650ce97e771b1bdd7e3f19c1d89",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"0000001f-cafe-4000-8000-000000000005\",\"diagnostic_id\":\"camera_0\",\"attempt_id\":\"00000020-cafe-4000-8000-000000000005\",\"challenge_id\":\"00000021-cafe-4000-8000-000000000005\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s05n000000000000000000000000000000000000024\",\"sequence_number\":23,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"CANCEL_CHALLENGE\"}"
+   },
+   {
+    "mac": "70a52817f4efe3b0e8f5d806fd18a3ff3aed99ebb9cece9bf10426e9a4061171",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"0000001f-cafe-4000-8000-000000000005\",\"diagnostic_id\":\"camera_0\",\"attempt_id\":\"00000020-cafe-4000-8000-000000000005\",\"challenge_id\":\"00000021-cafe-4000-8000-000000000005\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s05n000000000000000000000000000000000000025\",\"sequence_number\":24,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   },
+   {
+    "mac": "c7e8c3781a57beacf31bfb9ee62009883da2f0ba62933cef39fb9428cf425588",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000022-cafe-4000-8000-000000000005\",\"diagnostic_id\":\"camera_0\",\"attempt_id\":\"00000023-cafe-4000-8000-000000000005\",\"challenge_id\":\"00000024-cafe-4000-8000-000000000005\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s05n000000000000000000000000000000000000026\",\"sequence_number\":25,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "622543583caae13cfd0915a000c4fe68662675ccd778310499f377c15fb39a08",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000005\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000022-cafe-4000-8000-000000000005\",\"diagnostic_id\":\"camera_0\",\"attempt_id\":\"00000023-cafe-4000-8000-000000000005\",\"challenge_id\":\"00000024-cafe-4000-8000-000000000005\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s05n000000000000000000000000000000000000027\",\"sequence_number\":26,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   }
+  ],
+  "touch_display": [
+   {
+    "mac": "5b2e65236658ce25f6c0eb06bb123133e2f1f9832eca817621db01496bda53ac",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000006\",\"device_epoch\":0,\"binding\":null,\"nonce\":\"s06n000000000000000000000000000000000000001\",\"sequence_number\":0,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"HELLO\"}"
+   },
+   {
+    "mac": "cd1ed95856d4763e38e171578b558309554606e2f52241700aff104f35c06f8c",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000006\",\"device_epoch\":0,\"binding\":null,\"nonce\":\"s06n000000000000000000000000000000000000002\",\"sequence_number\":1,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"GET_CAPABILITIES\"}"
+   },
+   {
+    "mac": "e4c0b725d7f7bd1905ad9b1902645f78dbec447606b22a157e0a0b1e7a271c39",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000006\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000001-cafe-4000-8000-000000000006\",\"diagnostic_id\":\"touch\",\"attempt_id\":\"00000002-cafe-4000-8000-000000000006\",\"challenge_id\":\"00000003-cafe-4000-8000-000000000006\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s06n000000000000000000000000000000000000003\",\"sequence_number\":2,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "4b015a797ddb24e276eaeda3f5c32d362ec2fa9ba5568e0b6d06f92f3fbe16eb",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000006\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000001-cafe-4000-8000-000000000006\",\"diagnostic_id\":\"touch\",\"attempt_id\":\"00000002-cafe-4000-8000-000000000006\",\"challenge_id\":\"00000003-cafe-4000-8000-000000000006\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s06n000000000000000000000000000000000000004\",\"sequence_number\":3,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   },
+   {
+    "mac": "da099996eb06912a4426f2cc6b8c460a2fb4327921fd137db78f2e881a0a36fc",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000006\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000004-cafe-4000-8000-000000000006\",\"diagnostic_id\":\"touch\",\"attempt_id\":\"00000005-cafe-4000-8000-000000000006\",\"challenge_id\":\"00000006-cafe-4000-8000-000000000006\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s06n000000000000000000000000000000000000005\",\"sequence_number\":4,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "66ea0219e4e2ce8ea55484d89a65eeebc2ebabe84d058e9239117d92f2abfe2a",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000006\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000004-cafe-4000-8000-000000000006\",\"diagnostic_id\":\"touch\",\"attempt_id\":\"00000005-cafe-4000-8000-000000000006\",\"challenge_id\":\"00000006-cafe-4000-8000-000000000006\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s06n000000000000000000000000000000000000006\",\"sequence_number\":5,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   },
+   {
+    "mac": "a0638bb8cf8932a5e6ec7aea7c34716200d3d514634a294cde5eadd1e084bd20",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000006\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000007-cafe-4000-8000-000000000006\",\"diagnostic_id\":\"touch\",\"attempt_id\":\"00000008-cafe-4000-8000-000000000006\",\"challenge_id\":\"00000009-cafe-4000-8000-000000000006\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s06n000000000000000000000000000000000000007\",\"sequence_number\":6,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "7ba59297315ef15da05c510460e7ae30cad0b004862bcdc33e46a3d3a5a8e304",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000006\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000007-cafe-4000-8000-000000000006\",\"diagnostic_id\":\"touch\",\"attempt_id\":\"00000008-cafe-4000-8000-000000000006\",\"challenge_id\":\"00000009-cafe-4000-8000-000000000006\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s06n000000000000000000000000000000000000008\",\"sequence_number\":7,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"CANCEL_CHALLENGE\"}"
+   },
+   {
+    "mac": "955922d50c4a51f03f5a052b73283ba42091fd6951667ceed58b2837409188dc",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000006\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000007-cafe-4000-8000-000000000006\",\"diagnostic_id\":\"touch\",\"attempt_id\":\"00000008-cafe-4000-8000-000000000006\",\"challenge_id\":\"00000009-cafe-4000-8000-000000000006\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s06n000000000000000000000000000000000000009\",\"sequence_number\":8,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   },
+   {
+    "mac": "7af545e55c3d8c3f34dd69aee0211503ae4960d39888dd2ba7d44850f7bea856",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000006\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"0000000a-cafe-4000-8000-000000000006\",\"diagnostic_id\":\"pixels\",\"attempt_id\":\"0000000b-cafe-4000-8000-000000000006\",\"challenge_id\":\"0000000c-cafe-4000-8000-000000000006\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s06n000000000000000000000000000000000000010\",\"sequence_number\":9,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "a46cd06ca28a90f89e2447f23b46bc2e4a9961475f6fb39e0bfb59f4bff35fe7",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000006\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"0000000a-cafe-4000-8000-000000000006\",\"diagnostic_id\":\"pixels\",\"attempt_id\":\"0000000b-cafe-4000-8000-000000000006\",\"challenge_id\":\"0000000c-cafe-4000-8000-000000000006\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s06n000000000000000000000000000000000000011\",\"sequence_number\":10,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   },
+   {
+    "mac": "14b7e7226f022af75f7fb39d07a4bd3ffb4e0a8ed5bcad33c4ac673ec7f391a1",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000006\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"0000000d-cafe-4000-8000-000000000006\",\"diagnostic_id\":\"display\",\"attempt_id\":\"0000000e-cafe-4000-8000-000000000006\",\"challenge_id\":\"0000000f-cafe-4000-8000-000000000006\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s06n000000000000000000000000000000000000012\",\"sequence_number\":11,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "3228aef66344db602757ddc08ed024f1183606cd4158991acfcb65698e54d09b",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000006\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"0000000d-cafe-4000-8000-000000000006\",\"diagnostic_id\":\"display\",\"attempt_id\":\"0000000e-cafe-4000-8000-000000000006\",\"challenge_id\":\"0000000f-cafe-4000-8000-000000000006\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s06n000000000000000000000000000000000000013\",\"sequence_number\":12,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   }
+  ],
+  "audio_haptics": [
+   {
+    "mac": "dbef65a3d73e9b85f5c51c025de0e6f518759c91b4d84b9797ae275c0ff2dac2",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000007\",\"device_epoch\":0,\"binding\":null,\"nonce\":\"s07n000000000000000000000000000000000000001\",\"sequence_number\":0,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"HELLO\"}"
+   },
+   {
+    "mac": "6de6409673164a65f172336fbaaad518d017b963db4376ed7f5f672d85f43a1a",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000007\",\"device_epoch\":0,\"binding\":null,\"nonce\":\"s07n000000000000000000000000000000000000002\",\"sequence_number\":1,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"GET_CAPABILITIES\"}"
+   },
+   {
+    "mac": "4ea32f95aa98495b8b16e6409a24a52e48c30335056402da360d4b9cd6eec307",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000007\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000001-cafe-4000-8000-000000000007\",\"diagnostic_id\":\"microphone\",\"attempt_id\":\"00000002-cafe-4000-8000-000000000007\",\"challenge_id\":\"00000003-cafe-4000-8000-000000000007\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s07n000000000000000000000000000000000000003\",\"sequence_number\":2,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "13247ca89da54d000d113abe83eff2f530a76fe01ee645bdc49c44247a8f609b",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000007\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000001-cafe-4000-8000-000000000007\",\"diagnostic_id\":\"microphone\",\"attempt_id\":\"00000002-cafe-4000-8000-000000000007\",\"challenge_id\":\"00000003-cafe-4000-8000-000000000007\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s07n000000000000000000000000000000000000004\",\"sequence_number\":3,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   },
+   {
+    "mac": "2bdc9ee35302144c009765fc3aa79987cc9bf771152f58e809d320eba3efd36b",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000007\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000004-cafe-4000-8000-000000000007\",\"diagnostic_id\":\"vibration\",\"attempt_id\":\"00000005-cafe-4000-8000-000000000007\",\"challenge_id\":\"00000006-cafe-4000-8000-000000000007\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s07n000000000000000000000000000000000000005\",\"sequence_number\":4,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "9d035113523e8f4e5fa71d6c1251db797545d0eaec6216cb04c5655cbe015d92",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000007\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000004-cafe-4000-8000-000000000007\",\"diagnostic_id\":\"vibration\",\"attempt_id\":\"00000005-cafe-4000-8000-000000000007\",\"challenge_id\":\"00000006-cafe-4000-8000-000000000007\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s07n000000000000000000000000000000000000006\",\"sequence_number\":5,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   },
+   {
+    "mac": "8c17bc88b58a0ed3c66d6fcb49716ece0f831242231a254c5689d036793ec90f",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000007\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000007-cafe-4000-8000-000000000007\",\"diagnostic_id\":\"microphone\",\"attempt_id\":\"00000008-cafe-4000-8000-000000000007\",\"challenge_id\":\"00000009-cafe-4000-8000-000000000007\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s07n000000000000000000000000000000000000007\",\"sequence_number\":6,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "33df7dbd21ded371cd64f51e860a97f540bd8350ea845ab817c40a4f03c79054",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000007\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000007-cafe-4000-8000-000000000007\",\"diagnostic_id\":\"microphone\",\"attempt_id\":\"00000008-cafe-4000-8000-000000000007\",\"challenge_id\":\"00000009-cafe-4000-8000-000000000007\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s07n000000000000000000000000000000000000008\",\"sequence_number\":7,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   }
+  ],
+  "sensors_battery": [
+   {
+    "mac": "9443efcc70171f17df8656cd3b939e9dde8ee759c110052cce1324ac3311ecbd",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000008\",\"device_epoch\":0,\"binding\":null,\"nonce\":\"s08n000000000000000000000000000000000000001\",\"sequence_number\":0,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"HELLO\"}"
+   },
+   {
+    "mac": "4c68554576d78718cf65c3c7f8cd7d66b4750594cd0ddf040a581aa03b9259ea",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000008\",\"device_epoch\":0,\"binding\":null,\"nonce\":\"s08n000000000000000000000000000000000000002\",\"sequence_number\":1,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"GET_CAPABILITIES\"}"
+   },
+   {
+    "mac": "29e9300e00ea33d9a5eadf7463963ed484435121f3c52dd6db13adaefdc006ab",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000008\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000001-cafe-4000-8000-000000000008\",\"diagnostic_id\":\"sensor_0\",\"attempt_id\":\"00000002-cafe-4000-8000-000000000008\",\"challenge_id\":\"00000003-cafe-4000-8000-000000000008\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s08n000000000000000000000000000000000000003\",\"sequence_number\":2,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "3c4e834ffc5670f04f88e8088d760f6f7d21a45befb35b79e1fbf322f3420e77",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000008\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000001-cafe-4000-8000-000000000008\",\"diagnostic_id\":\"sensor_0\",\"attempt_id\":\"00000002-cafe-4000-8000-000000000008\",\"challenge_id\":\"00000003-cafe-4000-8000-000000000008\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s08n000000000000000000000000000000000000004\",\"sequence_number\":3,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   },
+   {
+    "mac": "44d08f96662cc52ecc44d2ae4ab094da64b2827b23335d02962472e2211dce7a",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000008\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000004-cafe-4000-8000-000000000008\",\"diagnostic_id\":\"sensor_3\",\"attempt_id\":\"00000005-cafe-4000-8000-000000000008\",\"challenge_id\":\"00000006-cafe-4000-8000-000000000008\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s08n000000000000000000000000000000000000005\",\"sequence_number\":4,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "cdac938d2edf4fd5e6af4549c5c37596c0e49f5cd2f35e4af1dbf44fa7d96021",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000008\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000004-cafe-4000-8000-000000000008\",\"diagnostic_id\":\"sensor_3\",\"attempt_id\":\"00000005-cafe-4000-8000-000000000008\",\"challenge_id\":\"00000006-cafe-4000-8000-000000000008\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s08n000000000000000000000000000000000000006\",\"sequence_number\":5,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   },
+   {
+    "mac": "2668a2c2769522c76db5df06d1913db785e153dc508207201b8c75f695d8d2ec",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000008\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000007-cafe-4000-8000-000000000008\",\"diagnostic_id\":\"sensor_1\",\"attempt_id\":\"00000008-cafe-4000-8000-000000000008\",\"challenge_id\":\"00000009-cafe-4000-8000-000000000008\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s08n000000000000000000000000000000000000007\",\"sequence_number\":6,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "53da05fd947c2be92c35071b318c88d5ee4c3ca8711b917fa07044eb2a492174",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000008\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"00000007-cafe-4000-8000-000000000008\",\"diagnostic_id\":\"sensor_1\",\"attempt_id\":\"00000008-cafe-4000-8000-000000000008\",\"challenge_id\":\"00000009-cafe-4000-8000-000000000008\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s08n000000000000000000000000000000000000008\",\"sequence_number\":7,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   },
+   {
+    "mac": "69bcece9166d2e781e0cd6e0bb8ee5eb3e322c702ff676420cb79e258b1c6016",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000008\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"0000000a-cafe-4000-8000-000000000008\",\"diagnostic_id\":\"sensor_10\",\"attempt_id\":\"0000000b-cafe-4000-8000-000000000008\",\"challenge_id\":\"0000000c-cafe-4000-8000-000000000008\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s08n000000000000000000000000000000000000009\",\"sequence_number\":8,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "50160704be8c6d967a347fd609306cc1178b72070a2eacfc460b3a9cd3013dea",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000008\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"0000000a-cafe-4000-8000-000000000008\",\"diagnostic_id\":\"sensor_10\",\"attempt_id\":\"0000000b-cafe-4000-8000-000000000008\",\"challenge_id\":\"0000000c-cafe-4000-8000-000000000008\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s08n000000000000000000000000000000000000010\",\"sequence_number\":9,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   },
+   {
+    "mac": "ae0c4d43a486afa5f9ea4973a7c26fb2fbfbbe9969a158728a9de68e75a9c596",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000008\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"0000000d-cafe-4000-8000-000000000008\",\"diagnostic_id\":\"battery\",\"attempt_id\":\"0000000e-cafe-4000-8000-000000000008\",\"challenge_id\":\"0000000f-cafe-4000-8000-000000000008\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s08n000000000000000000000000000000000000011\",\"sequence_number\":10,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"START_CHALLENGE\"}"
+   },
+   {
+    "mac": "186cdd2d57439a14ce65290841f6deee712f5ffb291267a1eed2ca2c0f0dfd2b",
+    "payload": "{\"protocol_version\":2,\"probe_session_id\":\"5e55a000-0000-4000-8000-000000000008\",\"device_epoch\":0,\"binding\":{\"scan_id\":\"0000000d-cafe-4000-8000-000000000008\",\"diagnostic_id\":\"battery\",\"attempt_id\":\"0000000e-cafe-4000-8000-000000000008\",\"challenge_id\":\"0000000f-cafe-4000-8000-000000000008\",\"collection_not_before\":\"2026-10-09T00:00:00Z\"},\"nonce\":\"s08n000000000000000000000000000000000000012\",\"sequence_number\":11,\"issued_at\":\"2026-10-09T00:00:00Z\",\"expires_at\":\"2026-10-09T00:00:30Z\",\"operation\":\"FETCH_OBSERVATIONS\"}"
+   }
+  ]
+ }
+}
