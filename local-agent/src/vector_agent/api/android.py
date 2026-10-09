@@ -49,7 +49,7 @@ def _get_bridge() -> AndroidDeviceBridge:
 
 
 @router.get("", response_model=AndroidDeviceListResponse)
-async def discover_android_devices() -> AndroidDeviceListResponse:
+def discover_android_devices() -> AndroidDeviceListResponse:
     """Discover connected Android devices via ADB.
 
     Performs 'adb devices -l' and returns structured state.
@@ -107,7 +107,7 @@ async def discover_android_devices() -> AndroidDeviceListResponse:
 
 
 @router.get("/{device_id}/battery", response_model=BatteryTelemetryResponse)
-async def get_android_battery(device_id: str) -> BatteryTelemetryResponse:
+def get_android_battery(device_id: str) -> BatteryTelemetryResponse:
     """Collect battery telemetry from an authorized Android device.
 
     The device_id must have been registered by a prior discovery call.
@@ -117,7 +117,7 @@ async def get_android_battery(device_id: str) -> BatteryTelemetryResponse:
     It does NOT represent a battery health assessment.
     """
     session = device_session_manager.get_session(device_id)
-    if session is None:
+    if session is None or session.platform != Platform.ANDROID:
         raise HTTPException(
             status_code=404,
             detail=(
@@ -153,7 +153,10 @@ async def get_android_battery(device_id: str) -> BatteryTelemetryResponse:
         raise HTTPException(status_code=500, detail="Internal serial validation error.") from exc
 
     bridge = _get_bridge()
+    epoch = session.session_epoch
     result = bridge.get_battery_telemetry(validated_serial)
+    if session.session_epoch != epoch or session.connection_state != ConnectionState.CONNECTED:
+        raise HTTPException(status_code=409, detail="Device session changed during collection.")
 
     tel = result.telemetry
 
@@ -164,7 +167,7 @@ async def get_android_battery(device_id: str) -> BatteryTelemetryResponse:
             "PASS confirms successful battery telemetry collection. "
             "It does not represent full battery-health assessment."
         ),
-        confidence=result.confidence,
+        confidence=None,
         level_pct=tel.level if tel else None,
         charging_state=tel.status if tel else None,
         health_state=tel.health if tel else None,

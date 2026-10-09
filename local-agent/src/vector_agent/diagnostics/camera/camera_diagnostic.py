@@ -203,8 +203,8 @@ def _build_evidence_records(
             raw_value=str(inventory.camera_count),
             normalized_value=float(inventory.camera_count),
             unit="count",
-            reliability=1.0,
-            confidence=confidence,
+            reliability=None,
+            confidence=None,
             metadata={"field": "camera_device_count"},
         )
     )
@@ -230,8 +230,8 @@ def _build_evidence_records(
                 raw_value=raw_str,
                 normalized_value=None,
                 unit=None,
-                reliability=1.0,
-                confidence=confidence,
+                reliability=None,
+                confidence=None,
                 metadata=meta,
             )
         )

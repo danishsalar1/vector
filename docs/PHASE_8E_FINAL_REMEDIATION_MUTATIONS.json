@@ -1,0 +1,235 @@
+{
+  "harness": "scratch-only; mutants of the remediated code run against tests/test_phase8e_final_remediation.py only; KILLED = call-phase AssertionError; INVALID = test detected the mutant through a non-assertion failure (DID NOT RAISE / exception) and is not counted as a kill; no survivors",
+  "results": [
+    {
+      "id": "CONTROL",
+      "file": "src/vector_agent/reference/comparator.py",
+      "result": "CONTROL_PASS",
+      "killers": [],
+      "n_killers": 0,
+      "errors": []
+    },
+    {
+      "id": "R1",
+      "file": "src/vector_agent/reference/resolver.py",
+      "result": "KILLED",
+      "killers": [
+        "tests/test_phase8e_final_remediation.py::test_fr01_variants_sharing_a_code_never_resolve_exact[False]",
+        "tests/test_phase8e_final_remediation.py::test_fr01_variants_sharing_a_code_never_resolve_exact[True]"
+      ],
+      "n_killers": 2,
+      "errors": []
+    },
+    {
+      "id": "A3",
+      "file": "src/vector_agent/reference/comparator.py",
+      "result": "KILLED",
+      "killers": [
+        "tests/test_phase8e_final_remediation.py::test_fr01_claim_for_another_variant_does_not_authorize"
+      ],
+      "n_killers": 1,
+      "errors": []
+    },
+    {
+      "id": "A11",
+      "file": "src/vector_agent/reference/comparator.py",
+      "result": "KILLED",
+      "killers": [
+        "tests/test_phase8e_final_remediation.py::test_fr01_variant_without_citations_is_never_authoritative[soc.core_count-spec_sources0-variant_sources0]",
+        "tests/test_phase8e_final_remediation.py::test_fr01_variant_without_citations_is_never_authoritative[network.5g_mmwave_supported-spec_sources1-variant_sources1]"
+      ],
+      "n_killers": 2,
+      "errors": []
+    },
+    {
+      "id": "A7",
+      "file": "src/vector_agent/reference/comparator.py",
+      "result": "KILLED",
+      "killers": [
+        "tests/test_phase8e_final_remediation.py::test_fr01_invalid_mmwave_values_are_not_comparable[2]",
+        "tests/test_phase8e_final_remediation.py::test_fr01_invalid_mmwave_values_are_not_comparable[-1]"
+      ],
+      "n_killers": 5,
+      "errors": []
+    },
+    {
+      "id": "P2",
+      "file": "src/vector_agent/reference/performance.py",
+      "result": "INVALID",
+      "killers": [
+        "tests/test_phase8e_final_remediation.py::test_fr01_negative_performance_observation_is_insufficient_not_a_mismatch[-1.0]",
+        "tests/test_phase8e_final_remediation.py::test_fr01_negative_performance_observation_is_insufficient_not_a_mismatch[-0.0001]"
+      ],
+      "n_killers": 3,
+      "errors": [
+        "tests/test_phase8e_final_remediation.py::test_fr02_malformed_performance_observation_is_safe[unknown-metric-10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000...(truncated)",
+        "tests/test_phase8e_final_remediation.py::test_fr02_malformed_performance_observation_is_safe[unverified-100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000...(truncated)"
+      ]
+    },
+    {
+      "id": "P3",
+      "file": "src/vector_agent/reference/performance.py",
+      "result": "KILLED",
+      "killers": [
+        "tests/test_phase8e_final_remediation.py::test_fr01_performance_claim_must_bind_the_baseline_property_path"
+      ],
+      "n_killers": 1,
+      "errors": []
+    },
+    {
+      "id": "F2a",
+      "file": "src/vector_agent/reference/performance.py",
+      "result": "INVALID",
+      "killers": [
+        "tests/test_phase8e_final_remediation.py::test_fr01_negative_performance_observation_is_insufficient_not_a_mismatch[-1.0]",
+        "tests/test_phase8e_final_remediation.py::test_fr01_negative_performance_observation_is_insufficient_not_a_mismatch[-0.0001]"
+      ],
+      "n_killers": 3,
+      "errors": [
+        "tests/test_phase8e_final_remediation.py::test_fr02_malformed_performance_observation_is_safe[unknown-metric-nan]",
+        "tests/test_phase8e_final_remediation.py::test_fr02_malformed_performance_observation_is_safe[unknown-metric-inf]"
+      ]
+    },
+    {
+      "id": "F3",
+      "file": "src/vector_agent/models/reference.py",
+      "result": "INVALID",
+      "killers": [],
+      "n_killers": 0,
+      "errors": [
+        "tests/test_phase8e_final_remediation.py::test_fr03_negative_standard_deviation_is_rejected_zero_is_allowed"
+      ]
+    },
+    {
+      "id": "F4a",
+      "file": "src/vector_agent/reference/catalog.py",
+      "result": "INVALID",
+      "killers": [],
+      "n_killers": 0,
+      "errors": [
+        "tests/test_phase8e_final_remediation.py::test_fr04_production_catalog_rejects_synthetic_source_registration",
+        "tests/test_phase8e_final_remediation.py::test_fr04_synthetic_source_in_import_payload_rejects_atomically"
+      ]
+    },
+    {
+      "id": "F4b",
+      "file": "src/vector_agent/reference/importer.py",
+      "result": "INVALID",
+      "killers": [],
+      "n_killers": 0,
+      "errors": [
+        "tests/test_phase8e_final_remediation.py::test_fr04_untrusted_import_cannot_manufacture_verified_claims"
+      ]
+    },
+    {
+      "id": "F4c",
+      "file": "src/vector_agent/reference/importer.py",
+      "result": "INVALID",
+      "killers": [],
+      "n_killers": 0,
+      "errors": [
+        "tests/test_phase8e_final_remediation.py::test_fr04_explicit_curator_and_test_only_paths_remain_available"
+      ]
+    },
+    {
+      "id": "F5a",
+      "file": "src/vector_agent/reference/resolver.py",
+      "result": "KILLED",
+      "killers": [
+        "tests/test_phase8e_final_remediation.py::test_fr05_contradictory_platform_is_not_resolved[who0]",
+        "tests/test_phase8e_final_remediation.py::test_fr05_contradictory_platform_is_not_resolved[who1]"
+      ],
+      "n_killers": 4,
+      "errors": []
+    },
+    {
+      "id": "F5b",
+      "file": "src/vector_agent/reference/resolver.py",
+      "result": "KILLED",
+      "killers": [
+        "tests/test_phase8e_final_remediation.py::test_fr05_contradictory_platform_is_not_resolved[who2]",
+        "tests/test_phase8e_final_remediation.py::test_fr05_contradictory_platform_is_not_resolved[who3]"
+      ],
+      "n_killers": 2,
+      "errors": []
+    },
+    {
+      "id": "F6a",
+      "file": "src/vector_agent/reference/comparator.py",
+      "result": "KILLED",
+      "killers": [
+        "tests/test_phase8e_final_remediation.py::test_fr06_ambiguous_variant_withholds_mismatch_but_keeps_proven_consensus[soc.core_count-differing0-matching0]",
+        "tests/test_phase8e_final_remediation.py::test_fr06_ambiguous_variant_withholds_mismatch_but_keeps_proven_consensus[sensors.nfc_present-differing1-matching1]"
+      ],
+      "n_killers": 5,
+      "errors": []
+    },
+    {
+      "id": "F6b",
+      "file": "src/vector_agent/reference/comparator.py",
+      "result": "KILLED",
+      "killers": [
+        "tests/test_phase8e_final_remediation.py::test_fr06_ambiguous_variant_withholds_mismatch_but_keeps_proven_consensus[soc.core_count-differing0-matching0]",
+        "tests/test_phase8e_final_remediation.py::test_fr06_ambiguous_variant_withholds_mismatch_but_keeps_proven_consensus[sensors.nfc_present-differing1-matching1]"
+      ],
+      "n_killers": 5,
+      "errors": []
+    },
+    {
+      "id": "F7a",
+      "file": "src/vector_agent/reference/comparator.py",
+      "result": "KILLED",
+      "killers": [
+        "tests/test_phase8e_final_remediation.py::test_fr07_every_test_only_item_is_labeled_including_unresolved_reports"
+      ],
+      "n_killers": 1,
+      "errors": []
+    },
+    {
+      "id": "F7b",
+      "file": "src/vector_agent/reference/comparator.py",
+      "result": "KILLED",
+      "killers": [
+        "tests/test_phase8e_final_remediation.py::test_fr07_every_test_only_item_is_labeled_including_unresolved_reports"
+      ],
+      "n_killers": 1,
+      "errors": []
+    },
+    {
+      "id": "F8a",
+      "file": "src/vector_agent/devices/android/bridge.py",
+      "result": "INVALID",
+      "killers": [
+        "tests/test_phase8e_final_remediation.py::test_fr08_non_ascii_decimal_integers_are_invalid_not_coerced[8_3-level]",
+        "tests/test_phase8e_final_remediation.py::test_fr08_non_ascii_decimal_integers_are_invalid_not_coerced[8_3-voltage]"
+      ],
+      "n_killers": 9,
+      "errors": [
+        "tests/test_phase8e_final_remediation.py::test_fr08_non_ascii_decimal_integers_are_invalid_not_coerced[1e2-level]",
+        "tests/test_phase8e_final_remediation.py::test_fr08_non_ascii_decimal_integers_are_invalid_not_coerced[1e2-scale]"
+      ]
+    },
+    {
+      "id": "F8b",
+      "file": "src/vector_agent/devices/android/bridge.py",
+      "result": "INVALID",
+      "killers": [],
+      "n_killers": 0,
+      "errors": [
+        "tests/test_phase8e_final_remediation.py::test_fr08_non_ascii_decimal_integers_are_invalid_not_coerced[99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999...(truncated)",
+        "tests/test_phase8e_final_remediation.py::test_fr08_non_ascii_decimal_integers_are_invalid_not_coerced[99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999...(truncated)"
+      ]
+    },
+    {
+      "id": "F9",
+      "file": "src/vector_agent/devices/android/bridge.py",
+      "result": "KILLED",
+      "killers": [
+        "tests/test_phase8e_final_remediation.py::test_fr09_unrecognized_plug_source_is_not_published_and_does_not_change_pass[99999]",
+        "tests/test_phase8e_final_remediation.py::test_fr09_unrecognized_plug_source_is_not_published_and_does_not_change_pass[garbage]"
+      ],
+      "n_killers": 5,
+      "errors": []
+    }
+  ]
+}

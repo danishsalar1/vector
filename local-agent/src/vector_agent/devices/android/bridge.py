@@ -10,6 +10,7 @@ Security invariants (enforced throughout):
 
 from __future__ import annotations
 
+import re
 import shutil
 import time
 from dataclasses import dataclass
@@ -117,6 +118,8 @@ class BatteryTelemetry:
     raw_output: str
     collected_at: datetime
 
+    invalid_fields: tuple[str, ...] = ()
+
     @property
     def temperature_celsius(self) -> float | None:
         """Convert Android tenths-of-degree Celsius to Celsius."""
@@ -138,7 +141,7 @@ class BatteryTelemetryResult:
 
     telemetry: BatteryTelemetry | None
     status: str  # "PASS" | "INCONCLUSIVE" | "ERROR"
-    confidence: float  # 0.0–1.0
+    confidence: float | None  # None: no empirically calibrated collection confidence
     evidence_source: str
     collection_method: str
     error: str | None
@@ -172,7 +175,9 @@ _BATTERY_PLUGGED_MAP: dict[str, str] = {
     "1": "AC",
     "2": "USB",
     "4": "Wireless",
+    "8": "Dock",
 }
+_ASCII_INTEGER = re.compile(r"-?[0-9]{1,12}", re.ASCII)
 
 # Properties to retrieve for device identity — ordered, minimal set.
 _IDENTITY_PROPS: list[tuple[str, str]] = [
@@ -1029,6 +1034,7 @@ def _parse_battery_output(raw: str, collected_at: datetime) -> BatteryTelemetry:
     Handles missing fields safely. Does not raise on malformed values.
     """
     fields: dict[str, str] = {}
+    invalid_fields: set[str] = set()
     for line in raw.splitlines():
         stripped = line.strip()
         if ":" in stripped:
@@ -1039,17 +1045,23 @@ def _parse_battery_output(raw: str, collected_at: datetime) -> BatteryTelemetry:
         v = fields.get(key)
         if v is None:
             return None
-        try:
-            return int(v)
-        except (ValueError, TypeError):
-            logger.debug("Battery field %r has non-integer value: %r", key, v)
+        # dumpsys prints plain ASCII decimals; Python's int() would also accept
+        # "8_3", "+83" and non-ASCII digits, which are not AOSP output.
+        if not _ASCII_INTEGER.fullmatch(v):
+            invalid_fields.add(key)
             return None
+        return int(v)
 
     def _bool_field(key: str) -> bool | None:
         v = fields.get(key)
         if v is None:
             return None
-        return v.lower() in ("true", "1", "yes")
+        if v.lower() in ("true", "1", "yes"):
+            return True
+        if v.lower() in ("false", "0", "no"):
+            return False
+        invalid_fields.add(key)
+        return None
 
     level = _int_field("level")
     scale = _int_field("scale")
@@ -1057,23 +1069,56 @@ def _parse_battery_output(raw: str, collected_at: datetime) -> BatteryTelemetry:
     temperature_tenths = _int_field("temperature")
     present = _bool_field("present")
 
+    # AOSP dumpsys: level is percent, voltage mV, temperature tenths Celsius.
+    # Broad ingestion bounds, NOT health/safety thresholds or OEM calibration.
+    # Out-of-envelope readings remain unavailable, never hardware failures.
+    if level is not None and not 0 <= level <= 100:
+        invalid_fields.add("level")
+        level = None
+    if (scale is not None and scale != 100) or "scale" in invalid_fields:
+        invalid_fields.add("scale")
+        level = None  # Cannot label an unknown scale as a percentage.
+    if voltage_mv is not None and not 0 < voltage_mv <= 20000:
+        invalid_fields.add("voltage")
+        voltage_mv = None
+    if temperature_tenths is not None and not -1000 <= temperature_tenths <= 2000:
+        invalid_fields.add("temperature")
+        temperature_tenths = None
+
     # Status: ADB may report numeric or string
     status_raw = fields.get("status")
     status_str: str | None = None
     if status_raw is not None:
-        status_str = _BATTERY_STATUS_MAP.get(status_raw, status_raw)
+        if status_raw in _BATTERY_STATUS_MAP:
+            status_str = _BATTERY_STATUS_MAP[status_raw]
+        elif status_raw in set(_BATTERY_STATUS_MAP.values()):
+            status_str = status_raw
+        else:
+            invalid_fields.add("status")
+            status_str = None
 
     # Health: similar
     health_raw = fields.get("health")
     health_str: str | None = None
     if health_raw is not None:
-        health_str = _BATTERY_HEALTH_MAP.get(health_raw, health_raw)
+        if health_raw in _BATTERY_HEALTH_MAP:
+            health_str = _BATTERY_HEALTH_MAP[health_raw]
+        elif health_raw in set(_BATTERY_HEALTH_MAP.values()):
+            health_str = health_raw
+        else:
+            invalid_fields.add("health")
+            health_str = None
 
     # Plugged: prefer the explicit 'plugged' numeric field, otherwise infer
     plugged_raw = fields.get("plugged")
     plugged_str: str | None = None
     if plugged_raw is not None:
-        plugged_str = _BATTERY_PLUGGED_MAP.get(plugged_raw, plugged_raw)
+        # Only recognised AOSP plug sources are published. An unrecognised value is
+        # unknown, not echoed as if it were a charging source, and does not alter PASS.
+        if plugged_raw in _BATTERY_PLUGGED_MAP:
+            plugged_str = _BATTERY_PLUGGED_MAP[plugged_raw]
+        elif plugged_raw in set(_BATTERY_PLUGGED_MAP.values()):
+            plugged_str = plugged_raw
     else:
         # Infer from ac powered / usb powered boolean fields
         ac = _bool_field("ac powered")
@@ -1102,10 +1147,11 @@ def _parse_battery_output(raw: str, collected_at: datetime) -> BatteryTelemetry:
         present=present,
         raw_output=raw,
         collected_at=collected_at,
+        invalid_fields=tuple(sorted(invalid_fields)),
     )
 
 
-def _evaluate_battery_telemetry(telemetry: BatteryTelemetry) -> tuple[str, float]:
+def _evaluate_battery_telemetry(telemetry: BatteryTelemetry) -> tuple[str, None]:
     """Determine PASS/INCONCLUSIVE/ERROR status and confidence for battery telemetry.
 
     PASS means: telemetry was successfully retrieved and parsed.
@@ -1114,29 +1160,36 @@ def _evaluate_battery_telemetry(telemetry: BatteryTelemetry) -> tuple[str, float
     Returns:
         (status, confidence) where status is "PASS" | "INCONCLUSIVE" | "ERROR"
     """
-    if telemetry.level is None and telemetry.voltage_mv is None:
-        return ("INCONCLUSIVE", 0.4)
+    if telemetry.invalid_fields or (telemetry.level is None and telemetry.voltage_mv is None):
+        return ("INCONCLUSIVE", None)
 
     present = telemetry.present
     if present is False:
         # Battery reported as not physically present — unusual
-        return ("INCONCLUSIVE", 0.5)
+        return ("INCONCLUSIVE", None)
 
     # Count how many key fields were successfully parsed
+    # AOSP status codes 2-5 are valid active charging states.
+    # "Unknown" (code 1) does not count toward passing telemetry.
+    valid_status = (
+        telemetry.status
+        if telemetry.status in {"Charging", "Discharging", "Not Charging", "Full"}
+        else None
+    )
     key_fields = [
         telemetry.level,
         telemetry.voltage_mv,
         telemetry.temperature_tenths_c,
-        telemetry.status,
+        valid_status,
     ]
     fields_present = sum(1 for f in key_fields if f is not None)
 
     if fields_present >= 3:
-        return ("PASS", 0.95)
+        return ("PASS", None)
     if fields_present >= 1:
-        return ("INCONCLUSIVE", 0.6)
+        return ("INCONCLUSIVE", None)
 
-    return ("INCONCLUSIVE", 0.3)
+    return ("INCONCLUSIVE", None)
 
 
 def _clean_prop(value: str | None) -> str | None:

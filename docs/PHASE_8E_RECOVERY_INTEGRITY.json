@@ -1,0 +1,451 @@
+{
+  "branch": "main",
+  "head": "e6e7ff4cddf16e1797ce4b81e2d3ff7f5db6fba4",
+  "origin_main": "e6e7ff4cddf16e1797ce4b81e2d3ff7f5db6fba4",
+  "staged": [],
+  "initial_hash_manifest": "Captured in per-command sandbox temp before edits, but that sandbox was subsequently removed. It is not recoverable; do not claim a complete retained before/after manifest.",
+  "initial_comparator_sha256": "c288a881aab92d1c1cb93ccb5d363785fa8537520f8a4992eaceabf398b27c49",
+  "current_comparator_sha256": "d383818f9d13e06877c8b0bc08dec4af6f6b9294de1f7637d91f5dfabe694aaf",
+  "final_files": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "0404ead38c66ee45af6fd3f8d1b21928cb784a0a12e901c78274296e43cf387f",
+      "bytes": 2468,
+      "protected": true
+    },
+    {
+      "path": "PRODUCT.md",
+      "sha256": "28ad00ba24381ae6321dba88c4ae6e45fe317571ad83c882e02772aa79506baf",
+      "bytes": 16537,
+      "protected": true
+    },
+    {
+      "path": "STATUS.md",
+      "sha256": "e9f01a3d96cf53b328360b3eaea0b1844b3f306d7a66b4c658e058be0100acfb",
+      "bytes": 83086,
+      "protected": false,
+      "authorized_change": "Localized Phase 8E status and roadmap correction authorized by the user on 2026-10-10"
+    },
+    {
+      "path": "docs/PHASE_8E_CHECKPOINT_1.md",
+      "sha256": "356a7533537cd315477c09020ce6060a61ff375fb4f368f4558c639c5039456c",
+      "bytes": 19486,
+      "protected": false
+    },
+    {
+      "path": "docs/PHASE_8E_CHECKPOINT_2A.md",
+      "sha256": "43dba337208867a0e585e917ff3a374faac2d4b7f356a9fbfe2fec08d640296c",
+      "bytes": 19142,
+      "protected": false
+    },
+    {
+      "path": "docs/PHASE_8E_CHECKPOINT_2B.md",
+      "sha256": "da0e25835640564d127c4aa3f3b2c8fea47cca9e6c447669c666df634d817c0a",
+      "bytes": 32612,
+      "protected": false
+    },
+    {
+      "path": "docs/PHASE_8E_CHECKPOINT_2B1.md",
+      "sha256": "426b50ce4a7647508351e3c441e1169736c8cb92e6d056b710261d482779ca56",
+      "bytes": 24431,
+      "protected": false
+    },
+    {
+      "path": "docs/PHASE_8E_CHECKPOINT_2C.md",
+      "sha256": "eecf7f8f50ab982e03ac7c5024d560ff51954a71fc636dd54f371fb47ce7e681",
+      "bytes": 24750,
+      "protected": false
+    },
+    {
+      "path": "docs/PHASE_8E_CHECKPOINT_2C1.md",
+      "sha256": "4caabf453656c3a10554d1981abdc34bfca8e75f6b536a57c16f80a175979ef6",
+      "bytes": 22878,
+      "protected": false
+    },
+    {
+      "path": "docs/PHASE_8E_RECOVERY.md",
+      "sha256": "6cc0ccc5cf7eb563a7d565386bc3117aa9cf3620e625ffb7756986a31cb23894",
+      "bytes": 20812,
+      "protected": false
+    },
+    {
+      "path": "docs/PHASE_8E_RECOVERY_CLAUDE_REVIEW.txt",
+      "sha256": "b893981e8235bc1a9445f3e7060e65768b98bca8d886c2b83ce0eb08f0f080b0",
+      "bytes": 8497,
+      "protected": false
+    },
+    {
+      "path": "docs/PHASE_8E_RECOVERY_MUTATIONS.json",
+      "sha256": "2f4f251fe20d91360d96dfe94dc64a6f1f2521a64d969bb0944c07d44a2e016d",
+      "bytes": 24178,
+      "protected": false
+    },
+    {
+      "path": "docs/PHASE_8E_SEED_SOURCE_AUDIT.json",
+      "sha256": "d7a418da91dde7fd2316fd35aacf0da26c2cfe709a5c198385464269c784bb63",
+      "bytes": 206878,
+      "protected": false
+    },
+    {
+      "path": "docs/PHASE_8E_SPECIFICATION_CATALOG.md",
+      "sha256": "861952577fd2d941933b88c2bc636e4a8604e824139288359fb35eba71698dae",
+      "bytes": 21737,
+      "protected": false
+    },
+    {
+      "path": "frontend/src/__tests__/recovery_safety.test.tsx",
+      "sha256": "1926dffbc6bebf660baf2a67a72806f5cb036b366686bc27a570006c2d01826a",
+      "bytes": 1856,
+      "protected": false
+    },
+    {
+      "path": "frontend/src/lib/api/types.ts",
+      "sha256": "8a81afb090edf8880501a01bf5fce8749d9172b3125858662faadbbe20fc94de",
+      "bytes": 15267,
+      "protected": false
+    },
+    {
+      "path": "frontend/src/providers/LiveDiagnosticProvider.ts",
+      "sha256": "1ef8427786213b6a729a419cf081571c3dcd92f4f614bbb8cbd07b2f19d7f020",
+      "bytes": 3602,
+      "protected": false
+    },
+    {
+      "path": "frontend/vitest.config.ts",
+      "sha256": "379cd3a4dacca4b71b9cccc38fddd48299e2a95efe31507e04c2bf236f7b5bb0",
+      "bytes": 400,
+      "protected": true
+    },
+    {
+      "path": "local-agent/3.11/cache.0.db",
+      "sha256": "4aa3cdbf7205e65152cd2df47aeae092c07e4f2af39b31049ac8a6c64ab15000",
+      "bytes": 614400,
+      "protected": true
+    },
+    {
+      "path": "local-agent/3.11/cache.1.db",
+      "sha256": "efff5081c796d094425dacdf20049dbb89e8bf13409ee7d2640f3fda368cc32c",
+      "bytes": 696320,
+      "protected": true
+    },
+    {
+      "path": "local-agent/3.11/cache.2.db",
+      "sha256": "c8e43ea6121538d5cb33aab09eae50633886cce6c25d80232471d19baa12079a",
+      "bytes": 675840,
+      "protected": true
+    },
+    {
+      "path": "local-agent/3.11/cache.3.db",
+      "sha256": "2c88c087d49a6813dfc3f837c068afce6b5b861f5880e128d9decc1d411e6f07",
+      "bytes": 454656,
+      "protected": true
+    },
+    {
+      "path": "local-agent/3.11/cache.4.db",
+      "sha256": "a7226e5e51803b1c2f619e2de584ea0bd22e9ed5d7debdcff61f0ffdbfe89223",
+      "bytes": 708608,
+      "protected": true
+    },
+    {
+      "path": "local-agent/3.11/cache.5.db",
+      "sha256": "fe63249004678628fdb790e9d82c862661ae7b8acca4de01edb74c1b8566b5b0",
+      "bytes": 684032,
+      "protected": true
+    },
+    {
+      "path": "local-agent/3.11/cache.6.db",
+      "sha256": "f4b439cc2225839526cce51cebaa8c0952424cb327a88716ce5619e385d80c8c",
+      "bytes": 856064,
+      "protected": true
+    },
+    {
+      "path": "local-agent/3.11/cache.7.db",
+      "sha256": "ca075c851730e66df597b430a8e9690e7b1c816bfcee341532d713a346a46f5e",
+      "bytes": 589824,
+      "protected": true
+    },
+    {
+      "path": "local-agent/3.11/cache.8.db",
+      "sha256": "50a50c3edebd1905d8ad64d7f4982072d65dff03187c8b12f3ae726f8688d1d2",
+      "bytes": 679936,
+      "protected": true
+    },
+    {
+      "path": "local-agent/3.11/cache.9.db",
+      "sha256": "228d61c5891ac54378333329236edcda1988bc53ff780e1d263824c37aacc1f7",
+      "bytes": 1175552,
+      "protected": true
+    },
+    {
+      "path": "local-agent/3.11/cache.10.db",
+      "sha256": "20d94ba14c7dc216261a48de888af8979f537d2786471899fac33f77d0945ae7",
+      "bytes": 1163264,
+      "protected": true
+    },
+    {
+      "path": "local-agent/3.11/cache.11.db",
+      "sha256": "1adc3b9dc9012b02d7c8fe8e5700116c2def478eab1ac31f7de8a9e4d2cf0c0d",
+      "bytes": 528384,
+      "protected": true
+    },
+    {
+      "path": "local-agent/3.11/cache.12.db",
+      "sha256": "4667e2fbaa2fd88cf2faaf2ab79ba88b55465ad5b1c22275d6ead935fe231b27",
+      "bytes": 483328,
+      "protected": true
+    },
+    {
+      "path": "local-agent/3.11/cache.13.db",
+      "sha256": "88e6056352c9f8069c2566eb6959f63de7f202300b30976971a3f796c32b02d6",
+      "bytes": 851968,
+      "protected": true
+    },
+    {
+      "path": "local-agent/3.11/cache.14.db",
+      "sha256": "05b7638cabf44f09194ea45ccf487fc7e30ba49ed9bfe1b45dfe171a59489ac4",
+      "bytes": 622592,
+      "protected": true
+    },
+    {
+      "path": "local-agent/3.11/cache.15.db",
+      "sha256": "79f3e818ec2c8d89cefcb9af218eb11fe32f3165a662dd3a82a30ac23ad0062e",
+      "bytes": 843776,
+      "protected": true
+    },
+    {
+      "path": "local-agent/src/vector_agent/api/android.py",
+      "sha256": "87c4d084b0934af69143838ae9dd513cbd0630dafdd56f0a9e71c13e4afd4b6f",
+      "bytes": 6822,
+      "protected": false
+    },
+    {
+      "path": "local-agent/src/vector_agent/devices/android/bridge.py",
+      "sha256": "60815595740bb4a457f143a535956a3ea3f3e5aead682e8f93d8b843bbdeb01e",
+      "bytes": 42746,
+      "protected": false
+    },
+    {
+      "path": "local-agent/src/vector_agent/diagnostics/battery/battery_diagnostic.py",
+      "sha256": "b9d2767a5fa9a3782e2be78ef2b5b24dbc80d0ab6e2a2b19bda4b9ac3ac9009f",
+      "bytes": 9856,
+      "protected": false
+    },
+    {
+      "path": "local-agent/src/vector_agent/diagnostics/camera/camera_diagnostic.py",
+      "sha256": "be84dfbf6f9ad93bab32a2cabeee2b5448dae4efe307a698bc4ef31b91c36ff5",
+      "bytes": 8679,
+      "protected": false
+    },
+    {
+      "path": "local-agent/src/vector_agent/diagnostics/display/display_diagnostic.py",
+      "sha256": "f62c5b47d373ad3194641526a4153fb91dcf8c22243809ea079e6e1cdbfad8a9",
+      "bytes": 8795,
+      "protected": false
+    },
+    {
+      "path": "local-agent/src/vector_agent/diagnostics/memory/memory_diagnostic.py",
+      "sha256": "c0f855a337673e53caa939a74a5759490081a004ce44080514c765bcf35a77c6",
+      "bytes": 8202,
+      "protected": false
+    },
+    {
+      "path": "local-agent/src/vector_agent/diagnostics/storage/storage_diagnostic.py",
+      "sha256": "c51f0e7427dfd0ad4dd4430f5e22d8c31d9e1dde0168666c5b3f472f8c7e0ba7",
+      "bytes": 8375,
+      "protected": false
+    },
+    {
+      "path": "local-agent/src/vector_agent/diagnostics/thermal/thermal_diagnostic.py",
+      "sha256": "e9303ed561453d27dfe9d8a88854066a7cbc3ae83d38855925042e4baff6766d",
+      "bytes": 8726,
+      "protected": false
+    },
+    {
+      "path": "local-agent/src/vector_agent/models/android.py",
+      "sha256": "0856446b156dc5e627d70cd8ef728905aabcc23a83d6c03ea77277aa2c6e4d10",
+      "bytes": 2262,
+      "protected": false
+    },
+    {
+      "path": "local-agent/src/vector_agent/models/reference.py",
+      "sha256": "7bf913d0b264b28a46b18553adaa74792d3bb0987bc7d1980a7921af790c995d",
+      "bytes": 30827,
+      "protected": false
+    },
+    {
+      "path": "local-agent/src/vector_agent/reference/__init__.py",
+      "sha256": "54af0e83ea0758e08c2c77bf21ecaaee88ff88083e0c4603bf1fb59fdbe19d83",
+      "bytes": 886,
+      "protected": false
+    },
+    {
+      "path": "local-agent/src/vector_agent/reference/catalog.py",
+      "sha256": "ce9d35d6a5cfb2f48b49f0a02797d93d07f6fb1447d4b13c4529da6e05daa728",
+      "bytes": 17277,
+      "protected": false
+    },
+    {
+      "path": "local-agent/src/vector_agent/reference/comparator.py",
+      "sha256": "d383818f9d13e06877c8b0bc08dec4af6f6b9294de1f7637d91f5dfabe694aaf",
+      "bytes": 46166,
+      "protected": false
+    },
+    {
+      "path": "local-agent/src/vector_agent/reference/evidence_adapter.py",
+      "sha256": "851b5409a75237938ac47948bd6171ee5f2131ad8898ab8f087105c917f5e754",
+      "bytes": 17937,
+      "protected": false
+    },
+    {
+      "path": "local-agent/src/vector_agent/reference/importer.py",
+      "sha256": "e36a6b9de2c07740ea1afdf94a2dd017fb4abf4f8cd767d7d5bfda9980dd9512",
+      "bytes": 8379,
+      "protected": false
+    },
+    {
+      "path": "local-agent/src/vector_agent/reference/performance.py",
+      "sha256": "908638de0827e9488ad4ca04f24f46cf6b326cb1bec3835a56f81edc17f9f426",
+      "bytes": 9540,
+      "protected": false
+    },
+    {
+      "path": "local-agent/src/vector_agent/reference/resolver.py",
+      "sha256": "c968ef6c59410852260726fa9738a5a13b63c395e649128db0c03355f2532cfa",
+      "bytes": 14733,
+      "protected": false
+    },
+    {
+      "path": "local-agent/src/vector_agent/reference/seed.py",
+      "sha256": "86044ddfc40024dae8c30ddfe3f1a6628ea8de4e75bfe410571470871cc6ad19",
+      "bytes": 49760,
+      "protected": false
+    },
+    {
+      "path": "local-agent/src/vector_agent/scan/service.py",
+      "sha256": "3fa446e6eaf11232851fbefe5b0cea61e88352e91761f9c5826486d3c4e25750",
+      "bytes": 8624,
+      "protected": false
+    },
+    {
+      "path": "local-agent/tests/test_phase1_diagnostic_protocol.py",
+      "sha256": "b11b100f61c77d3ff3749b6cddfb2014e5dc209cf2175c12815846a59ebca7d6",
+      "bytes": 20130,
+      "protected": false
+    },
+    {
+      "path": "local-agent/tests/test_phase8e_checkpoint1.py",
+      "sha256": "9d64a19e802c8320e37911fc05f7b66ada3720f27eff1572ca05b225264b5f42",
+      "bytes": 16514,
+      "protected": false
+    },
+    {
+      "path": "local-agent/tests/test_phase8e_checkpoint2a.py",
+      "sha256": "12a736850b0c8f5441e681ebe184fa27c84c11057980eb06c4b9c526b37090f8",
+      "bytes": 14844,
+      "protected": false
+    },
+    {
+      "path": "local-agent/tests/test_phase8e_checkpoint2b.py",
+      "sha256": "c9e7b1ca7f0b0305409d46f4a1f16688560fc8f01ef0675a32a8c6ae87e2c82c",
+      "bytes": 43710,
+      "protected": false
+    },
+    {
+      "path": "local-agent/tests/test_phase8e_checkpoint2c.py",
+      "sha256": "8d7ca9effb62bc7b2dec57fb43076ed53a65c79a61a400a9c950eece64e0801d",
+      "bytes": 89023,
+      "protected": false
+    },
+    {
+      "path": "local-agent/tests/test_phase8e_reference.py",
+      "sha256": "96f378c71dcd1132b73e4dea0e403dc59ab87c63e8f65bf0a3ac593c4fe3a21a",
+      "bytes": 31897,
+      "protected": false
+    },
+    {
+      "path": "local-agent/tests/test_recovery_reference.py",
+      "sha256": "36c74a7d4687684af2a21f5b289c8668ef5be62dc706aca087e3c15d46b46df7",
+      "bytes": 21678,
+      "protected": false
+    },
+    {
+      "path": "local-agent/tests/test_recovery_safety.py",
+      "sha256": "d4a066fb04d0fbe1c41d08f1953eba80fa1b6709d38b1e7aa82ed5d705c205dc",
+      "bytes": 10828,
+      "protected": false
+    },
+    {
+      "path": "scripts/verify_reference_mutations.py",
+      "sha256": "0affddf720443decb6d1d13de5a210e8d4c2c0a59a5ca9df08c6cb6887d08663",
+      "bytes": 7195,
+      "protected": false
+    },
+    {
+      "path": "docs/PHASE_8E_FINAL_REMEDIATION.md",
+      "sha256": "d787c1bf6ad41e325655b1fb5b34e5110e9536e6d8415b6c955e91b8901b6b21",
+      "bytes": 6820,
+      "protected": false
+    },
+    {
+      "path": "docs/PHASE_8E_FINAL_REMEDIATION_MUTATIONS.json",
+      "sha256": "9f8b1af32a118a538ebc88c5f87f6e4b5a773604d174f5654afb00f80e67bb15",
+      "bytes": 9561,
+      "protected": false
+    },
+    {
+      "path": "frontend/src/__tests__/final_remediation.test.tsx",
+      "sha256": "a1f0de621959071d4d29213b348acfd9f67fcc87fe2bd6e6f24bfe9ee34acb7a",
+      "bytes": 2410,
+      "protected": false
+    },
+    {
+      "path": "frontend/src/components/AndroidStatus.tsx",
+      "sha256": "d1c22e55d3275d7f017557a4b787a0ad66ac96e481285b3d21ad865b5ec1420d",
+      "bytes": 16192,
+      "protected": false
+    },
+    {
+      "path": "local-agent/tests/test_phase8e_final_remediation.py",
+      "sha256": "c39f77cfd932ac6677cb767c4543aaa1a0ed1ac1309f5cf2533b2bc6c81d098e",
+      "bytes": 22478,
+      "protected": false
+    },
+    {
+      "path": "docs/PHASE_8E_CLOSURE.md",
+      "sha256": "1f66a275e0e68dab712b3b5a2e4045d38e73bd4af59e6d22c806748ff3660e34",
+      "bytes": 6512,
+      "protected": false
+    },
+    {
+      "path": "local-agent/tests/test_phase8e_rv01.py",
+      "sha256": "da2eccd2691243f31aca31957fac0579f2d6c7730e6eb1d805c9fcfa4054ca92",
+      "bytes": 5411,
+      "protected": false
+    }
+  ],
+  "remediation": {
+    "date": "2026-10-10",
+    "note": "Regenerated after the final Phase 8E remediation (FR-01..FR-13). Protected files (AGENTS/STATUS/PRODUCT, frontend/vitest.config.ts, local-agent/3.11) were not modified. This file cannot contain its own hash.",
+    "previous_manifest_sha256": "0d657d3ac648b322e4e72447c30eea637e091a3a7f56a01cf68e323c95e1cdd6",
+    "previous_comparator_sha256": "b2eaa8c4b240f28b279e6cb01c03b3d5492c31afb0d2c9f1ab97c0c4684e5d31",
+    "closure": {
+      "date": "2026-10-10",
+      "note": "Updated at Phase 8E closure. Changed since the final-remediation manifest: STATUS.md (user-authorized localized correction), docs/PHASE_8E_RECOVERY.md (FR-13 historical-count note) and the new docs/PHASE_8E_CLOSURE.md. frontend/vitest.config.ts (PG-18) and local-agent/3.11 (FR-12) remain protected, unchanged and excluded from the checkpoint. AGENTS.md and PRODUCT.md were not modified. This file cannot contain its own hash.",
+      "previous_manifest_sha256": "0351cf666a7d5cf5fbfa2adf0ec12dd41db16edf81385dd11099ee60ae2090b9",
+      "previous_status_sha256": "db08a02c8a4a8f0abecdc4ed00686485a3a378da902b7e8f6ef3146a1e167b5b",
+      "revision_2": {
+        "note": "Revision after the focused review: STATUS.md gate line corrected (RV-02) and review findings RV-01..RV-05 recorded in docs/PHASE_8E_CLOSURE.md. No source or test file changed.",
+        "previous_manifest_sha256": "5c769f1f75ce2bc38c4e35ce840ea3d93dbae4e92e9094bfa5e02489a2a90877",
+        "previous_status_sha256": "9752fc441c5df92bbfd55d53b9bb42166c2688852e685f6ddf3bf2e29eb95cbb"
+      },
+      "revision_3": {
+        "note": "RV-01 correction (user-approved Option B): reference/performance.py guard, new tests/test_phase8e_rv01.py, STATUS.md, PHASE_8E_RECOVERY.md and PHASE_8E_CLOSURE.md updated. comparator.py is unchanged (sha256 d383818f...). frontend/vitest.config.ts and local-agent/3.11 remain protected and unchanged.",
+        "previous_manifest_sha256": "34b747f1130f85bb8e5627c48d49cdc252363c36b5eb9c9c1ac109748f9c41a9"
+      },
+      "revision_4": {
+        "note": "Commit-time wording alignment: STATUS.md and PHASE_8E_CLOSURE.md now state that the acceptance re-gate is PENDING and RV2-01 (LOW) must be resolved before production exposure. No source or test file changed.",
+        "previous_manifest_sha256": "1310e3076b52192827f1bcd87625be40432b3c01fc118e72d548f15930e63d19"
+      }
+    }
+  }
+}

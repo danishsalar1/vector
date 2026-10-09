@@ -164,6 +164,8 @@ export type AndroidConnectionState =
   | "OFFLINE"
   | "NO_DEVICE"
   | "MULTIPLE_DEVICES"
+  | "UNKNOWN"
+  | "MISSING_DRIVER"
   | "ERROR";
 
 /**
@@ -210,7 +212,7 @@ export interface BatteryTelemetryResponse {
   device_id: string;
   status: BatteryDiagnosticStatus;
   status_note: string; // Explicitly disclaims battery health
-  confidence: number;
+  confidence: number | null;
 
   level_pct: number | null;
   charging_state: string | null;
@@ -286,7 +288,7 @@ export function isBatteryTelemetryResponse(
     typeof d.device_id === "string" &&
     typeof d.status === "string" &&
     typeof d.status_note === "string" &&
-    typeof d.confidence === "number" &&
+    (d.confidence === null || typeof d.confidence === "number") &&
     typeof d.evidence_source === "string"
   );
 }

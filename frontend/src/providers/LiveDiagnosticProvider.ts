@@ -50,11 +50,16 @@ export class LiveDiagnosticProvider implements DiagnosticProvider {
     }
 
     // Filter by explicit platform field — never infer from device_id prefix
-    const androidDevices = result.data.devices.filter(
+    const allAndroid = result.data.devices.filter(
       (d) => d.platform.toUpperCase() === "ANDROID"
     );
+    const activeAndroid = allAndroid.filter(
+      (d) => d.connection_state !== "OFFLINE"
+    );
 
-    const mappedDevices: AndroidDevice[] = androidDevices.map((d) => {
+    const targetDevices = activeAndroid.length > 0 ? activeAndroid : allAndroid;
+
+    const mappedDevices: AndroidDevice[] = targetDevices.map((d) => {
       const connState: AndroidConnectionState =
         d.connection_state === "CONNECTED"
           ? "DEVICE"
@@ -78,10 +83,12 @@ export class LiveDiagnosticProvider implements DiagnosticProvider {
     });
 
     let overallState: AndroidConnectionState = "NO_DEVICE";
-    if (mappedDevices.length === 1) {
+    if (activeAndroid.length === 1) {
       overallState = mappedDevices[0].connection_state;
-    } else if (mappedDevices.length > 1) {
+    } else if (activeAndroid.length > 1) {
       overallState = "MULTIPLE_DEVICES";
+    } else if (allAndroid.length > 0) {
+      overallState = "OFFLINE";
     }
 
     return {

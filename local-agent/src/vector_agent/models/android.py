@@ -60,8 +60,8 @@ class BatteryTelemetryResponse(BaseModel):
     status_note: str
     """Explains what PASS means — explicitly not battery health assessment."""
 
-    confidence: float
-    """Evidence collection reliability (0.0–1.0). Not a health prediction confidence."""
+    confidence: float | None
+    """None when collection confidence has not been empirically calibrated."""
 
     # Telemetry fields — None if unavailable
     level_pct: int | None = None

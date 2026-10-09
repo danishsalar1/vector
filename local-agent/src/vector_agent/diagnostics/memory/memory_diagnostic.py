@@ -206,8 +206,8 @@ def _build_evidence_records(
                 raw_value=raw_val,
                 normalized_value=normalized_val,
                 unit=unit,
-                reliability=1.0,
-                confidence=confidence,
+                reliability=None,
+                confidence=None,
                 metadata={"field": field_name},
             )
         )

@@ -353,18 +353,18 @@ class TestBatteryEvidenceRecords:
                 "raw_output from bridge must not appear as an evidence raw_value"
             )
 
-    def test_evidence_confidence_propagated(self) -> None:
+    def test_uncalibrated_bridge_confidence_is_not_published(self) -> None:
         bridge_result = _make_bridge_result(_FULL_TELEMETRY, "PASS", confidence=0.87)
         diag = _make_diagnostic(bridge_result)
         result = diag.execute(device_id=_DEVICE_ID, serial=_SERIAL)
         for ev in result.evidence:
-            assert ev.confidence == pytest.approx(0.87)
+            assert ev.confidence is None
 
     def test_evidence_reliability_range(self) -> None:
         diag = _make_diagnostic(_make_bridge_result(_FULL_TELEMETRY, "PASS"))
         result = diag.execute(device_id=_DEVICE_ID, serial=_SERIAL)
         for ev in result.evidence:
-            assert 0.0 <= ev.reliability <= 1.0
+            assert ev.reliability is None
 
     def test_voltage_evidence_unit(self) -> None:
         diag = _make_diagnostic(_make_bridge_result(_FULL_TELEMETRY, "PASS"))

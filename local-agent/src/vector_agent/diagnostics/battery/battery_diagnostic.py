@@ -35,7 +35,7 @@ BATTERY_TELEMETRY_DEFINITION = DiagnosticDefinition(
     diagnostic_id="battery_telemetry",
     name="Battery Telemetry Verification",
     category="battery",
-    verification_level=VerificationLevel.FUNCTIONAL_VERIFICATION,
+    verification_level=VerificationLevel.RUNTIME_DETECTION,
     supported_platforms=frozenset({Platform.ANDROID}),
     automation_level=AutomationLevel.AUTOMATIC,
     timeout_seconds=20.0,
@@ -192,7 +192,7 @@ def _build_evidence_records(
     diagnostic_id: str,
     evidence_source: str,
     collection_method: str,
-    confidence: float,
+    confidence: float | None,
     collected_at: datetime,
 ) -> list[EvidenceRecord]:
     """Convert BatteryTelemetry fields into structured EvidenceRecords.
@@ -215,7 +215,7 @@ def _build_evidence_records(
         *,
         unit: str | None = None,
         normalized_value: float | None = None,
-        reliability: float = 1.0,
+        reliability: float | None = None,
     ) -> None:
         if raw_value is None:
             return
@@ -231,7 +231,7 @@ def _build_evidence_records(
                 normalized_value=normalized_value,
                 unit=unit,
                 reliability=reliability,
-                confidence=confidence,
+                confidence=None,
                 metadata={"field": field_name},
             )
         )

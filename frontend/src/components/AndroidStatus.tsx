@@ -174,9 +174,38 @@ export const AndroidStatus: FC<AndroidStatusProps> = ({ provider }) => {
       return (
         <div className="offline-message" data-testid="android-offline">
           <p>
-            Android device is listed as offline by ADB. Disconnect and
-            reconnect the USB cable, ensuring it supports data transfer, then
-            click Retry Detection.
+            The agent has an Android device record that is currently offline.
+            The phone may be disconnected, or ADB may be listing it as offline;
+            this response does not say which. Reconnect the USB cable (use one
+            that supports data transfer), unlock the phone, then click Retry
+            Detection.
+          </p>
+        </div>
+      );
+    }
+
+    // UNKNOWN — the agent could not classify the connection state
+    if (discoveryData.state === "UNKNOWN") {
+      return (
+        <div className="offline-message" data-testid="android-unknown">
+          <p>
+            The agent could not determine the connection state of this Android
+            device, so no diagnostics can run. Reconnect the phone, unlock it,
+            and click Retry Detection.
+          </p>
+        </div>
+      );
+    }
+
+    // MISSING_DRIVER — reported by the agent; do not claim more than that
+    if (discoveryData.state === "MISSING_DRIVER") {
+      return (
+        <div className="offline-message" data-testid="android-missing-driver">
+          <p>
+            The agent reports that a USB driver for this Android device is
+            missing, so no diagnostics can run. Install the phone
+            manufacturer&apos;s USB driver, reconnect the phone, and click
+            Retry Detection.
           </p>
         </div>
       );
@@ -232,7 +261,10 @@ export const AndroidStatus: FC<AndroidStatusProps> = ({ provider }) => {
     // Fallback for ERROR or unknown state from discovery
     return (
       <div className="offline-message" data-testid="android-discovery-error">
-        <p>{discoveryData.message}</p>
+        <p>
+          {discoveryData.message ||
+            `VECTOR received an Android connection state it cannot interpret (${discoveryData.state}). No diagnostics can run for it. Reconnect the device and click Retry Detection.`}
+        </p>
       </div>
     );
   };

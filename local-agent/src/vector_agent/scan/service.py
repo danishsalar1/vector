@@ -95,7 +95,7 @@ class ScanService:
 
         if session.connection_state == ConnectionState.UNAUTHORIZED:
             raise DeviceUnauthorizedError(
-                f"Device '{device_id}' is unauthorized. Approve USB debugging on the device."
+                f"Device '{device_id}' is unauthorized. Authorize this computer on the device before running diagnostics."
             )
 
         if session.connection_state != ConnectionState.CONNECTED:

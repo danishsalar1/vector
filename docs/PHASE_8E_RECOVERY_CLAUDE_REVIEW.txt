@@ -1,0 +1,88 @@
+Blocked. The candidate wasn't frozen, so this review covers whatever was on disk when I read each file. I ran nothing: no tests, hashing, git, or reads of the external temp folders. So the 2,540 / 107 / 21 / 141 counts are unconfirmed. Every finding below comes from tracing the current code and the existing fixtures.
+
+## Findings
+
+**RR-01 HIGH: the candidate kept changing during this review, and its evidence doesn't match the files now on disk**
+- **What changed between my reads:**
+  - `catalog.py:79-93` gained `validate_variant_lineage`, which `comparator.py:653-656` now calls.
+  - `comparator.py:594-596` now drops conflict source IDs that aren't registered.
+  - `test_recovery_safety.py:213-236` gained a new test.
+  - `test_recovery_reference.py:447-453` was single-quoted when I first read it, which the default `ruff format --check` flags, and was rewritten later.
+  - `scan/service.py:96-99` is now the newest source file. The handoff doesn't mention it, the integrity manifest doesn't list it, and it is iOS/unknown-state messaging that the handoff calls deferred.
+- **Conflicting hashes:** `docs/PHASE_8E_RECOVERY_MUTATIONS.json` was rewritten mid-review. Its comparator hash was `a8254828…` when I first read it and is now `41ccd365…` (`:2-3`). `PHASE_8E_RECOVERY_INTEGRITY.json:287-289` still records `a8254828…`.
+- **Result:** the test counts, the "Ruff/format passed" claim, the hash manifest and the mutation kills can't be tied to the current bytes.
+- **Smallest correction:** stop the writer. Regenerate the manifest so it covers every changed file, including `scan/service.py`. Rerun the full suites and `verify_reference_mutations.py` on that frozen tree, then re-review against those hashes.
+
+**RR-02 MEDIUM: the battery check still reaches PASS with an unknown or invalid status**
+- **Cause:**
+  - `bridge.py:1088` passes unrecognised status codes through as raw strings, and maps `1` to "Unknown".
+  - `bridge.py:1151-1160` counts any non-empty status toward the "3 of 4 fields" PASS rule.
+- **Trigger:** `level: 83`, `scale: 100`, `voltage: 4127`, `status: 1`, with no temperature line. The same happens with `status: 99` or `status: garbage`.
+- **Result:** PASS, with `battery_charging_status = "Unknown"` (or `"99"`) published as evidence (`battery_diagnostic.py:270-271`). This contradicts the handoff's "a reported invalid field prevents PASS". The new test at `test_recovery_safety.py:44-57` always supplies a temperature, so it misses this case.
+- **Smallest correction:**
+  - Count only the recognised AOSP status codes 2–5.
+  - Don't count "Unknown" (1).
+  - Add unrecognised codes to `invalid_fields`.
+  - Add these three cases to the test with the temperature omitted.
+
+**RR-03 MEDIUM: the LIVE view says "No Android device detected" for a phone that is attached but offline in ADB**
+- **Cause:**
+  - `LiveDiagnosticProvider.ts:53-55` drops every OFFLINE session, not just leftover history.
+  - `bridge.py:964-968` maps ADB `offline` and every unrecognised ADB state (such as `authorizing` or `recovery`) to OFFLINE.
+  - `session.py:153-160` refreshes those sessions on every discovery cycle, so they are current devices.
+- **Trigger:** `adb devices -l` prints `SERIAL offline usb:1-1`.
+- **Result:**
+  - The provider reports `NO_DEVICE` with count 0, and the UI shows "No Android device detected" (`AndroidStatus.tsx:147-156`).
+  - The correct offline guidance at `AndroidStatus.tsx:173-183` can no longer be reached in LIVE mode.
+  - `recovery_safety.test.tsx:24` pins the wrong behaviour.
+  - This is a regression from before the recovery. The handoff says only "retained" OFFLINE sessions are excluded.
+- **Smallest correction:**
+  - If no usable Android device remains but OFFLINE entries exist, return `OFFLINE` with wording that covers "offline or disconnected".
+  - The exact fix is a backend flag for "seen in the latest discovery".
+
+**RR-04 MEDIUM: the mmWave item silently disappears when the variant is ambiguous**
+- **Cause:** at `comparator.py:1053-1073`, when no exact variant is resolved, every candidate shares one `network_configuration`, and `feature_5g_mmwave` is 0 or 1, the function appends nothing.
+- **Trigger (existing fixture):**
+  - Catalog: `build_seed_catalog(test_only=True)`.
+  - Resolution: `MODEL_MATCH_AMBIGUOUS_VARIANT` for `synthetic-model-x`, which has one variant with network `"5G"`.
+  - Observation: `{"feature_5g_mmwave": 1}`.
+- **Result:** the report has no network item at all. That contradicts the handoff's "every outcome is accounted for". It can also happen in production once curated claims exist, using the mechanism shown in `test_recovery_reference.py:130-160`.
+- **Smallest correction:** append the consensus comparison with its consensus note, or at least append the reference item, and add a regression test.
+
+**RR-05 LOW: a "multiple candidates" resolution can still be compared as one model**
+- `models/reference.py:518-528` allows `resolved_model` with `MULTIPLE_CANDIDATES`.
+- `comparator.py:406-410` doesn't stop early for that status, so a hand-built resolution gets that model's consensus verdicts.
+- The resolver never produces this shape (`resolver.py:242-256`), so this is defence in depth only.
+- **Smallest correction:** add `MULTIPLE_CANDIDATES` to the early-return list.
+
+**RR-06 LOW: mmWave support is read from free text by substring**
+- `comparator.py:1074` checks whether `"mmWave"` appears in the 64-character free-text field (`models/reference.py:418`).
+- A verified claim for `"5G Sub-6 (no mmWave)"` would make the reference `True` and report CONSISTENT for an mmWave phone.
+- This can't happen with today's seed strings, and the logic predates the recovery.
+- **Smallest correction:** use a structured boolean, or an exact list of allowed configuration strings.
+
+**RR-07 LOW: two test-quality gaps**
+- `test_recovery_reference.py:289-299` can't catch a shallow `snapshot()`, because it mutates the copy that `get_model` returns (`catalog.py:276-278`). It should mutate `cat._models[...]` after taking the snapshot.
+- Two tests at `test_recovery_safety.py:78-135` need a real `adb` on PATH, because `_require_adb` isn't patched there, unlike line 160. Without adb they fail rather than falsely pass, so they aren't vacuous, but they won't run on another machine.
+
+## Checked, no material defect
+- **Mutation script:**
+  - Design (`scripts/verify_reference_mutations.py:81-117`): each target must match exactly once and compile; each run is a fresh process that asserts it imported the scratch copy; only assertion failures count as kills; any error marks the run invalid; the unmutated control is required; the live comparator's hash is checked after each run.
+  - Current results: control passes and 20/20 mutants are killed, with M07 now killed by the mmWave tests.
+  - Still needs a rerun on the frozen tree (RR-01).
+- **Source authority:**
+  - Each citation needs an exact verified claim (`comparator.py:657-674`), and the lineage re-check (`catalog.py:79-93`) blocks corrupt, missing or synthetic citations at any level.
+  - The production seed excludes synthetic records (`seed.py:994-1001`), and synthetic models are rejected outside test catalogs (`catalog.py:136-139`).
+- **Import race:** clone, validation and commit all run under one lock (`importer.py:42-43`), and the staging test (`test_recovery_reference.py:302-348`) would fail against the old pattern.
+- **Snapshots:** the comparator and resolver work on deep copies (`comparator.py:367`, `resolver.py:78`). Registered records can't be edited, so drift between snapshots can only add data, and the comparator's equality check fails closed.
+- **Report counts:** recomputed whenever a report is built (`models/reference.py:633-664`).
+- **Stage A:**
+  - Invalid numeric battery readings now give INCONCLUSIVE (`bridge.py:1071-1082`, `1142-1143`).
+  - All six standard diagnostics publish null reliability and confidence, and the legacy battery response hard-codes null (`api/android.py:170`).
+  - The Android routes are synchronous, with the epoch re-check at `api/android.py:156-159`.
+
+**Nit:** the bridge's ERROR results still carry `confidence=0.0` internally (`bridge.py:411` and others). Nothing publishes it, but the field can mislead a later caller.
+
+The remaining intentional restrictions (all seed assertions unverified, production comparisons failing closed, explicit test-only fixtures) aren't counted as defects. RR-04 and RR-06 are mostly hidden by them today.
+
+**BLOCKED - corrections required**

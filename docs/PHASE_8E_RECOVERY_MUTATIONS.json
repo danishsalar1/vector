@@ -1,0 +1,391 @@
+{
+  "before": "d383818f9d13e06877c8b0bc08dec4af6f6b9294de1f7637d91f5dfabe694aaf",
+  "after": "d383818f9d13e06877c8b0bc08dec4af6f6b9294de1f7637d91f5dfabe694aaf",
+  "results": [
+    {
+      "assertions": [],
+      "errors": [],
+      "exit": 0,
+      "import": "C:\\Users\\danis\\AppData\\Local\\Temp\\vector-reference-mutations-j_fdh6v_\\CONTROL\\vector_agent\\reference\\comparator.py",
+      "id": "CONTROL",
+      "source_sha256": "d383818f9d13e06877c8b0bc08dec4af6f6b9294de1f7637d91f5dfabe694aaf",
+      "old": "",
+      "new": "",
+      "result": "CONTROL_PASS"
+    },
+    {
+      "assertions": [
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[future_domain.deep.field-blocked0]",
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[sensors.future_flag-blocked1]",
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[connectivity-blocked2]",
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[connectivity.network_configuration-blocked3]",
+        "test_conflicts.py::test_two_sources_disagree_same_property_blocks_definitive_verdict",
+        "test_conflicts.py::test_conflict_observed_value_equals_source_a_remains_non_definitive",
+        "test_conflicts.py::test_conflict_observed_value_equals_source_b_remains_non_definitive",
+        "test_conflicts.py::test_conflict_observed_value_matches_neither_source_remains_non_definitive",
+        "test_conflicts.py::test_reverse_source_insertion_order_produces_identical_conflict_outcome",
+        "test_conflicts.py::test_reverse_observation_construction_order_produces_identical_conflict_outcome",
+        "test_conflicts.py::test_different_sources_assert_different_properties_no_conflict",
+        "test_conflicts.py::test_model_level_conflict_inherited_by_variant",
+        "test_conflicts.py::test_variant_only_conflict_does_not_poison_sibling_variant",
+        "test_conflicts.py::test_conflicts_affecting_optional_missing_fields_reported_truthfully",
+        "test_conflicts.py::test_different_units_without_explicit_conversion_treated_as_conflict",
+        "test_conflicts.py::test_empty_or_malformed_conflict_property_reference_handled_safely",
+        "test_conflicts.py::test_dangling_source_identifier_in_conflict_handled_safely",
+        "test_conflicts.py::test_multiple_conflicting_sources_for_single_property",
+        "test_conflicts.py::test_multiple_independent_conflicts_for_different_properties",
+        "test_conflicts.py::test_checkpoint2b_evidence_adapter_cannot_bypass_applicable_reference_conflict",
+        "test_conflicts.py::test_reference_conflict_cannot_be_presented_as_evidence_of_replacement_or_tampering",
+        "test_conflicts.py::test_conflict_property_not_counted_as_consistent",
+        "test_conflicts.py::test_conflict_property_not_counted_as_differs",
+        "test_conflicts.py::test_unaffected_properties_retain_valid_outcomes_and_counts",
+        "test_conflicts.py::test_stable_deterministic_output_across_equivalent_source_orders",
+        "test_conflicts.py::test_conflict_reason_references_only_legitimately_available_source_data",
+        "test_conflicts.py::test_barometer_conflict_blocks_otherwise_consistent_outcome",
+        "test_conflicts.py::test_barometer_conflict_blocks_otherwise_differs_outcome",
+        "test_conflicts.py::test_unrelated_nfc_conflict_does_not_incorrectly_block_barometer",
+        "test_conflicts.py::test_variant_specific_network_conflict_blocks_definitive_mmwave_verdict",
+        "test_conflicts.py::test_model_level_network_conflict_affects_applicable_variants",
+        "test_conflicts.py::test_unknown_region_does_not_become_exact_because_of_network_conflict",
+        "test_conflicts.py::test_ambiguous_variant_with_one_candidate_conflicted_does_not_bypass_conflict",
+        "test_conflicts.py::test_prefix_and_alias_normalization_matches_ancestors_and_collection_elements",
+        "test_conflicts.py::test_conflict_item_source_integrity_and_disputed_metadata",
+        "test_conflicts.py::test_uncontested_properties_remain_fully_comparable",
+        "test_conflicts.py::test_diagnostic_evidence_adapter_cannot_bypass_barometer_and_nfc_conflicts",
+        "test_conflicts.py::test_prefix_normalization_prevents_cross_domain_contamination",
+        "test_conflicts.py::test_base_specifications_prefix_normalization_prevents_cross_domain_contamination"
+      ],
+      "errors": [],
+      "exit": 1,
+      "import": "C:\\Users\\danis\\AppData\\Local\\Temp\\vector-reference-mutations-j_fdh6v_\\M01\\vector_agent\\reference\\comparator.py",
+      "id": "M01",
+      "source_sha256": "9985e49f63adc7c3e3bbc10cb9056d2c4a7c3e094656ae913dc5572ee6864be2",
+      "old": "        if applicable_conflicts:\n",
+      "new": "        if False:\n",
+      "result": "KILLED"
+    },
+    {
+      "assertions": [
+        "test_conflicts.py::test_model_level_network_conflict_affects_applicable_variants",
+        "test_conflicts.py::test_prefix_and_alias_normalization_matches_ancestors_and_collection_elements"
+      ],
+      "errors": [],
+      "exit": 1,
+      "import": "C:\\Users\\danis\\AppData\\Local\\Temp\\vector-reference-mutations-j_fdh6v_\\M02\\vector_agent\\reference\\comparator.py",
+      "id": "M02",
+      "source_sha256": "e22ad28c6f4e74ae45a6ec147e67b8de8c62fc023b2df25d63013d0953d61188",
+      "old": "        if conf_domain == prop_domain:\n            return True",
+      "new": "        if conf_domain == prop_domain:\n            return False",
+      "result": "KILLED"
+    },
+    {
+      "assertions": [
+        "test_conflicts.py::test_sibling_collection_element_conflict_does_not_block_unrelated_collection"
+      ],
+      "errors": [],
+      "exit": 1,
+      "import": "C:\\Users\\danis\\AppData\\Local\\Temp\\vector-reference-mutations-j_fdh6v_\\M03\\vector_agent\\reference\\comparator.py",
+      "id": "M03",
+      "source_sha256": "5f009c47eb2edbbf55fd546a5b99dea28aba47de4d8e2f1992421217331cbb6f",
+      "old": "    c_clean = re.sub(r\"\\[\\d+\\]\", \"\", c_norm)",
+      "new": "    c_clean = c_norm",
+      "result": "KILLED"
+    },
+    {
+      "assertions": [
+        "test_conflicts.py::test_prefix_normalization_prevents_cross_domain_contamination"
+      ],
+      "errors": [],
+      "exit": 1,
+      "import": "C:\\Users\\danis\\AppData\\Local\\Temp\\vector-reference-mutations-j_fdh6v_\\M04\\vector_agent\\reference\\comparator.py",
+      "id": "M04",
+      "source_sha256": "933a8b4163c70e112a8702f7d5cfc8f7b6dae3be971bf0c343943e19119d42b6",
+      "old": "for prefix in (\"specifications.\", \"base_specifications.\"):",
+      "new": "for prefix in (\"base_specifications.\",):",
+      "result": "KILLED"
+    },
+    {
+      "assertions": [
+        "test_conflicts.py::test_base_specifications_prefix_normalization_prevents_cross_domain_contamination"
+      ],
+      "errors": [],
+      "exit": 1,
+      "import": "C:\\Users\\danis\\AppData\\Local\\Temp\\vector-reference-mutations-j_fdh6v_\\M05\\vector_agent\\reference\\comparator.py",
+      "id": "M05",
+      "source_sha256": "668834608f56a7d189e45c6bd0b5865e1a75289e155c2cefd7d03f2b65bc97b9",
+      "old": "for prefix in (\"specifications.\", \"base_specifications.\"):",
+      "new": "for prefix in (\"specifications.\",):",
+      "result": "KILLED"
+    },
+    {
+      "assertions": [
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[future_domain.deep.field-blocked0]",
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[sensors.future_flag-blocked1]",
+        "test_conflicts.py::test_barometer_conflict_blocks_otherwise_consistent_outcome",
+        "test_conflicts.py::test_barometer_conflict_blocks_otherwise_differs_outcome",
+        "test_conflicts.py::test_prefix_and_alias_normalization_matches_ancestors_and_collection_elements",
+        "test_conflicts.py::test_diagnostic_evidence_adapter_cannot_bypass_barometer_and_nfc_conflicts"
+      ],
+      "errors": [],
+      "exit": 1,
+      "import": "C:\\Users\\danis\\AppData\\Local\\Temp\\vector-reference-mutations-j_fdh6v_\\M06\\vector_agent\\reference\\comparator.py",
+      "id": "M06",
+      "source_sha256": "12da6e618c8ffd254ace752a8c2ed7caa798d99260f99b3c0159508f9a88f71c",
+      "old": "        if applicable_conflicts:\n",
+      "new": "        if applicable_conflicts and property_path != \"sensors.barometer_present\":\n",
+      "result": "KILLED"
+    },
+    {
+      "assertions": [
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[future_domain.deep.field-blocked0]",
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[connectivity-blocked2]",
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[connectivity.network_configuration-blocked3]",
+        "test_conflicts.py::test_variant_specific_network_conflict_blocks_definitive_mmwave_verdict",
+        "test_conflicts.py::test_model_level_network_conflict_affects_applicable_variants",
+        "test_conflicts.py::test_unknown_region_does_not_become_exact_because_of_network_conflict"
+      ],
+      "errors": [],
+      "exit": 1,
+      "import": "C:\\Users\\danis\\AppData\\Local\\Temp\\vector-reference-mutations-j_fdh6v_\\M07\\vector_agent\\reference\\comparator.py",
+      "id": "M07",
+      "source_sha256": "cf3ec0b9182795a2c2ca366ec9a6fbc796a8d92fef5f40cfde106a0f45406f8c",
+      "old": "        if applicable_conflicts:\n",
+      "new": "        if applicable_conflicts and property_path != \"network.5g_mmwave_supported\":\n",
+      "result": "KILLED"
+    },
+    {
+      "assertions": [
+        "test_conflicts.py::test_unknown_region_does_not_become_exact_because_of_network_conflict",
+        "test_conflicts.py::test_ambiguous_variant_with_one_candidate_conflicted_does_not_bypass_conflict"
+      ],
+      "errors": [],
+      "exit": 1,
+      "import": "C:\\Users\\danis\\AppData\\Local\\Temp\\vector-reference-mutations-j_fdh6v_\\M08\\vector_agent\\reference\\comparator.py",
+      "id": "M08",
+      "source_sha256": "1b55682f220449519c2ea6460ce539b55b4ed4a60231d32339adbda8232797ce",
+      "old": "                elif candidate_variants:\n",
+      "new": "                elif False:\n",
+      "result": "KILLED"
+    },
+    {
+      "assertions": [
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[future_domain.deep.field-blocked0]",
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[sensors.future_flag-blocked1]",
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[connectivity-blocked2]",
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[connectivity.network_configuration-blocked3]",
+        "test_conflicts.py::test_empty_or_malformed_conflict_property_reference_handled_safely",
+        "test_conflicts.py::test_barometer_conflict_blocks_otherwise_consistent_outcome",
+        "test_conflicts.py::test_barometer_conflict_blocks_otherwise_differs_outcome",
+        "test_conflicts.py::test_unrelated_nfc_conflict_does_not_incorrectly_block_barometer",
+        "test_conflicts.py::test_variant_specific_network_conflict_blocks_definitive_mmwave_verdict",
+        "test_conflicts.py::test_model_level_network_conflict_affects_applicable_variants",
+        "test_conflicts.py::test_unknown_region_does_not_become_exact_because_of_network_conflict",
+        "test_conflicts.py::test_ambiguous_variant_with_one_candidate_conflicted_does_not_bypass_conflict",
+        "test_conflicts.py::test_prefix_and_alias_normalization_matches_ancestors_and_collection_elements",
+        "test_conflicts.py::test_conflict_item_source_integrity_and_disputed_metadata",
+        "test_conflicts.py::test_diagnostic_evidence_adapter_cannot_bypass_barometer_and_nfc_conflicts"
+      ],
+      "errors": [],
+      "exit": 1,
+      "import": "C:\\Users\\danis\\AppData\\Local\\Temp\\vector-reference-mutations-j_fdh6v_\\M09\\vector_agent\\reference\\comparator.py",
+      "id": "M09",
+      "source_sha256": "c4a321b4cf9d950c86f2e64215397d2619878713d3f0e199fd2a50cefc0cabfc",
+      "old": "                observed_value=None,\n                reference_value=None,\n                unit=unit,",
+      "new": "                observed_value=None,\n                reference_value=applicable_conflicts[0].source_a_value,\n                unit=unit,",
+      "result": "KILLED"
+    },
+    {
+      "assertions": [
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[future_domain.deep.field-blocked0]",
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[sensors.future_flag-blocked1]",
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[connectivity-blocked2]",
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[connectivity.network_configuration-blocked3]",
+        "test_conflicts.py::test_two_sources_disagree_same_property_blocks_definitive_verdict",
+        "test_conflicts.py::test_reverse_source_insertion_order_produces_identical_conflict_outcome",
+        "test_conflicts.py::test_dangling_source_identifier_in_conflict_handled_safely",
+        "test_conflicts.py::test_multiple_conflicting_sources_for_single_property",
+        "test_conflicts.py::test_stable_deterministic_output_across_equivalent_source_orders",
+        "test_conflicts.py::test_conflict_item_source_integrity_and_disputed_metadata"
+      ],
+      "errors": [],
+      "exit": 1,
+      "import": "C:\\Users\\danis\\AppData\\Local\\Temp\\vector-reference-mutations-j_fdh6v_\\M10\\vector_agent\\reference\\comparator.py",
+      "id": "M10",
+      "source_sha256": "75710344b8f7715938805ccf685d61565b3c7ec2ba6b1123019d88b7e14ecb04",
+      "old": "                source_ids=sorted_sources,",
+      "new": "                source_ids=(),",
+      "result": "KILLED"
+    },
+    {
+      "assertions": [
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[future_domain.deep.field-blocked0]",
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[sensors.future_flag-blocked1]",
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[connectivity-blocked2]",
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[connectivity.network_configuration-blocked3]",
+        "test_conflicts.py::test_dangling_source_identifier_in_conflict_handled_safely",
+        "test_conflicts.py::test_multiple_conflicting_sources_for_single_property",
+        "test_conflicts.py::test_conflict_item_source_integrity_and_disputed_metadata"
+      ],
+      "errors": [],
+      "exit": 1,
+      "import": "C:\\Users\\danis\\AppData\\Local\\Temp\\vector-reference-mutations-j_fdh6v_\\M11\\vector_agent\\reference\\comparator.py",
+      "id": "M11",
+      "source_sha256": "793cf61c97b95877e718901cd4635ec38cde2660da4fc02bdbd32769480f3ae0",
+      "old": "                limitations=tuple(conflict_limitations),",
+      "new": "                limitations=(),",
+      "result": "KILLED"
+    },
+    {
+      "assertions": [
+        "test_conflicts.py::test_conflict_observed_value_equals_source_a_remains_non_definitive",
+        "test_conflicts.py::test_ambiguous_variant_with_one_candidate_conflicted_does_not_bypass_conflict",
+        "test_conflicts.py::test_conflict_item_source_integrity_and_disputed_metadata"
+      ],
+      "errors": [],
+      "exit": 1,
+      "import": "C:\\Users\\danis\\AppData\\Local\\Temp\\vector-reference-mutations-j_fdh6v_\\M12\\vector_agent\\reference\\comparator.py",
+      "id": "M12",
+      "source_sha256": "bad438c6394467cb0ee49f27668668a9a8a46d2139fcbe085ccb96263e234c40",
+      "old": "reference = reference.model_copy(update={\"observed_value\": int(obs_cores)})",
+      "new": "reference = reference.model_copy(update={\"observed_value\": None})",
+      "result": "KILLED"
+    },
+    {
+      "assertions": [
+        "test_conflicts.py::test_multiple_conflicting_sources_for_single_property"
+      ],
+      "errors": [],
+      "exit": 1,
+      "import": "C:\\Users\\danis\\AppData\\Local\\Temp\\vector-reference-mutations-j_fdh6v_\\M13\\vector_agent\\reference\\comparator.py",
+      "id": "M13",
+      "source_sha256": "6e1c9d8a733068d509df5947b7bda044bf96f6c3dbbe1c45b2dafbcdb91cd6d5",
+      "old": "            for c in applicable_conflicts:\n",
+      "new": "            for c in applicable_conflicts[:1]:\n",
+      "result": "KILLED"
+    },
+    {
+      "assertions": [
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[sensors.future_flag-blocked1]",
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[connectivity-blocked2]",
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[connectivity.network_configuration-blocked3]",
+        "test_conflicts.py::test_reverse_observation_construction_order_produces_identical_conflict_outcome",
+        "test_conflicts.py::test_different_sources_assert_different_properties_no_conflict",
+        "test_conflicts.py::test_recognized_unrelated_field_conflict_does_not_contaminate_unrelated_property",
+        "test_conflicts.py::test_multiple_independent_conflicts_for_different_properties",
+        "test_conflicts.py::test_unaffected_properties_retain_valid_outcomes_and_counts",
+        "test_conflicts.py::test_unrelated_nfc_conflict_does_not_incorrectly_block_barometer",
+        "test_conflicts.py::test_uncontested_properties_remain_fully_comparable",
+        "test_conflicts.py::test_sibling_collection_element_conflict_does_not_block_unrelated_collection",
+        "test_conflicts.py::test_prefix_normalization_prevents_cross_domain_contamination",
+        "test_conflicts.py::test_base_specifications_prefix_normalization_prevents_cross_domain_contamination"
+      ],
+      "errors": [],
+      "exit": 1,
+      "import": "C:\\Users\\danis\\AppData\\Local\\Temp\\vector-reference-mutations-j_fdh6v_\\M14\\vector_agent\\reference\\comparator.py",
+      "id": "M14",
+      "source_sha256": "2d59af51b6b0bd5e4cd8aeb8d6f03b42aca5423c3b7eb3a19231a5af5a6568ee",
+      "old": "if not _property_matches_conflict(property_path, c.field_path):",
+      "new": "if False:",
+      "result": "KILLED"
+    },
+    {
+      "assertions": [
+        "test_conflicts.py::test_unrelated_nfc_conflict_does_not_incorrectly_block_barometer"
+      ],
+      "errors": [],
+      "exit": 1,
+      "import": "C:\\Users\\danis\\AppData\\Local\\Temp\\vector-reference-mutations-j_fdh6v_\\M15\\vector_agent\\reference\\comparator.py",
+      "id": "M15",
+      "source_sha256": "6d88049f560c113eb16a0048a80be89fe3db09a562b0e18b3b0f3b2c0e7d918f",
+      "old": "\"targets\": {\"nfc\", \"nfc_present\"}",
+      "new": "\"targets\": {\"nfc_present\"}",
+      "result": "KILLED"
+    },
+    {
+      "assertions": [
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[sensors.future_flag-blocked1]",
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[connectivity-blocked2]",
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[connectivity.network_configuration-blocked3]",
+        "test_conflicts.py::test_reverse_observation_construction_order_produces_identical_conflict_outcome",
+        "test_conflicts.py::test_two_sources_identical_compatible_assertions_no_conflict",
+        "test_conflicts.py::test_same_source_asserted_twice_with_identical_value_no_conflict",
+        "test_conflicts.py::test_different_sources_assert_different_properties_no_conflict",
+        "test_conflicts.py::test_missing_or_unknown_source_assertion_no_conflict",
+        "test_conflicts.py::test_unrelated_conflict_from_different_model_does_not_poison",
+        "test_conflicts.py::test_unrelated_conflict_from_different_variant_does_not_poison",
+        "test_conflicts.py::test_variant_only_conflict_does_not_poison_sibling_variant",
+        "test_conflicts.py::test_recognized_unrelated_field_conflict_does_not_contaminate_unrelated_property",
+        "test_conflicts.py::test_source_metadata_change_without_spec_value_change_no_conflict",
+        "test_conflicts.py::test_multiple_independent_conflicts_for_different_properties",
+        "test_conflicts.py::test_checkpoint2a_exact_match_behavior_remains_intact_when_no_conflicts",
+        "test_conflicts.py::test_unaffected_properties_retain_valid_outcomes_and_counts",
+        "test_conflicts.py::test_unrelated_nfc_conflict_does_not_incorrectly_block_barometer",
+        "test_conflicts.py::test_unrelated_regional_variant_remains_unaffected_by_sibling_network_conflict",
+        "test_conflicts.py::test_uncontested_properties_remain_fully_comparable",
+        "test_conflicts.py::test_sibling_collection_element_conflict_does_not_block_unrelated_collection",
+        "test_conflicts.py::test_prefix_normalization_prevents_cross_domain_contamination",
+        "test_conflicts.py::test_base_specifications_prefix_normalization_prevents_cross_domain_contamination"
+      ],
+      "errors": [],
+      "exit": 1,
+      "import": "C:\\Users\\danis\\AppData\\Local\\Temp\\vector-reference-mutations-j_fdh6v_\\M16\\vector_agent\\reference\\comparator.py",
+      "id": "M16",
+      "source_sha256": "03ad169ec8997492a19bae63966bc9eae5c29df07b94613cca35eb2a0974d7f9",
+      "old": "            outcome = ComparisonOutcome.INSUFFICIENT_EVIDENCE\n",
+      "new": "            outcome = ComparisonOutcome.REFERENCE_UNAVAILABLE\n",
+      "result": "KILLED"
+    },
+    {
+      "assertions": [
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[future_domain.deep.field-blocked0]"
+      ],
+      "errors": [],
+      "exit": 1,
+      "import": "C:\\Users\\danis\\AppData\\Local\\Temp\\vector-reference-mutations-j_fdh6v_\\G01\\vector_agent\\reference\\comparator.py",
+      "id": "G01",
+      "source_sha256": "ec72a6835800e1c3df4cff282392fc16e2e2fab0e02e550808f2341c3f644055",
+      "old": "    # Completely unrecognized path: fail closed at entity level\n    return conf_domain not in _KNOWN_DOMAINS",
+      "new": "    # Completely unrecognized path: fail closed at entity level\n    return False",
+      "result": "KILLED"
+    },
+    {
+      "assertions": [
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[sensors.future_flag-blocked1]"
+      ],
+      "errors": [],
+      "exit": 1,
+      "import": "C:\\Users\\danis\\AppData\\Local\\Temp\\vector-reference-mutations-j_fdh6v_\\G02\\vector_agent\\reference\\comparator.py",
+      "id": "G02",
+      "source_sha256": "5f56c580e0488d2ed8788dd7fe6461f62ebad12542023b985349cfe238531911",
+      "old": "        return not (segments[1] in known_fields or field_part in known_fields)",
+      "new": "        return False",
+      "result": "KILLED"
+    },
+    {
+      "assertions": [
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[connectivity-blocked2]"
+      ],
+      "errors": [],
+      "exit": 1,
+      "import": "C:\\Users\\danis\\AppData\\Local\\Temp\\vector-reference-mutations-j_fdh6v_\\G03\\vector_agent\\reference\\comparator.py",
+      "id": "G03",
+      "source_sha256": "f61b3a65ceba61d8288bc7c5584e1a4e1fec1a672090ff2ef3c37bf3cc698d79",
+      "old": "conf_domain in (\"network_configuration\", \"connectivity\")",
+      "new": "conf_domain in (\"network_configuration\",)",
+      "result": "KILLED"
+    },
+    {
+      "assertions": [
+        "test_conflicts.py::test_fail_closed_guards_preserve_report_and_sibling_scope[connectivity.network_configuration-blocked3]"
+      ],
+      "errors": [],
+      "exit": 1,
+      "import": "C:\\Users\\danis\\AppData\\Local\\Temp\\vector-reference-mutations-j_fdh6v_\\G04\\vector_agent\\reference\\comparator.py",
+      "id": "G04",
+      "source_sha256": "4c4700cdbcea082588c89262e7326176e7eccf3adaace3f908c892ad4860d668",
+      "old": "or (prop_domain == \"network\" and conf_domain == \"connectivity\")",
+      "new": "or False",
+      "result": "KILLED"
+    }
+  ]
+}

@@ -22,6 +22,7 @@ Current completed slices:
 - Phase 8D - Platform-Neutral Component Authenticity / Provenance Domain (COMPLETE / VERIFIED / FORMAL GATE PASSED / IMPLEMENTATION COMMITTED: 03d80b4)
 - Phase 8B - Signed Android Probe + Discovery / Consent / Lifecycle (COMPLETE / VERIFIED / FORMAL GATE PASSED / IMPLEMENTATION COMMITTED: 365f0e8)
 - Phase 8C - Deep Android Functional Diagnostics (COMPLETE / INDEPENDENT GATE PASSED; baseline 0aa0cbe; committed in the Phase 8C completion commit that follows 0aa0cbe)
+- Phase 8E - OEM Reference Catalog, Identity Resolution, Evidence-Based Comparison + Hardening (IMPLEMENTATION COMPLETE / REMEDIATED; committed in the Phase 8E checkpoint commit, SHA not recorded here; independent post-remediation acceptance re-gate PENDING, so full Phase 8E closure is NOT claimed). Android provenance/anomaly collectors are DEFERRED, not completed.
 Baseline before Phase 8A: 638955c
 Codex instructions commit: 638955c
 Phase 8A implementation commit: 4f073da
@@ -34,11 +35,13 @@ Final staged-boundary review (8A): APPROVED
 Formal Phase 8D Gate: PASSED
 Formal Phase 8B Gate: PASSED
 Independent Phase 8C Gate: PASSED (0 BLOCKER, 0 HIGH, 0 MEDIUM, 2 LOW, 5 INFO accepted as nonblocking)
+Independent Phase 8E Final Gate (before remediation): PASSED (0 BLOCKER, 0 HIGH, 0 MEDIUM; FR-01..FR-13 were LOW findings)
+Phase 8E FR-01..FR-13 remediation: applied and verified by the implementer; focused post-remediation review raised RV-01 (MEDIUM), which is now FIXED and covered by `local-agent/tests/test_phase8e_rv01.py`; a second focused read-only review of the fix found no BLOCKER/HIGH/MEDIUM issue. The independent re-gate of the remediation is still PENDING (see docs/PHASE_8E_CLOSURE.md)
 Final staged-boundary review (8B): APPROVED
 Hardware qualification: NOT RUN
 Trust Engine: NOT_READY
 trust_score: None
-Next implementation slice: 8E - Android Provenance / Anomaly Signals (NEXT / NOT STARTED)
+Next implementation slice: 8F - Premium Frontend, Real Diagnostics Integration, Quick Scan, Optional Deep Scan + VECTOR Core Animation (NEXT / NOT STARTED; requires separate explicit authorization)
 
 ### Canonical Production Roadmap
 1. Foundation / Production Audit — COMPLETE
@@ -48,7 +51,7 @@ Next implementation slice: 8E - Android Provenance / Anomaly Signals (NEXT / NOT
 5. Diagnostic Registry + Scan Planner + Scan Lifecycle + Diagnostic Events — COMPLETE
 6. Additional Android Standard Diagnostics — COMPLETE
 7. iOS Discovery, Pairing + Advanced / Version-Aware iOS Diagnostics — COMPLETE
-8. VECTOR Probe + Deep Android Diagnostics - IN PROGRESS (8A, 8D, 8B & 8C complete; 8E next)
+8. VECTOR Probe + Deep Android Diagnostics - IN PROGRESS (8A, 8D, 8B & 8C complete; 8E implementation complete with acceptance re-gate PENDING; 8F next)
 9. Cross-Platform Evidence Normalization + Verification Coverage — NOT STARTED
 10. Explainable Verification / Trust Engine — NOT STARTED
 11. Real-Device Validation + Calibration — NOT STARTED
@@ -67,9 +70,11 @@ Next implementation slice: 8E - Android Provenance / Anomaly Signals (NEXT / NOT
 - 8D - Platform-Neutral Component Authenticity / Provenance Domain - COMPLETE
 - 8B - Signed Android Probe + Discovery / Consent / Lifecycle - COMPLETE (development-foundation scope; physical hardware qualification NOT RUN)
 - 8C - Deep Android Functional Diagnostics - COMPLETE (Independent Gate PASSED; physical hardware qualification NOT RUN)
-- 8E - Android Provenance / Anomaly Signals - NEXT (NOT STARTED)
-- 8F - Planner / Evidence / Coverage / Frontend Integration - NOT STARTED
-- 8G - Adversarial Regression + Hardware Qualification - NOT STARTED
+- 8E - OEM Reference Catalog, Identity Resolution, Evidence-Based Comparison + Associated Hardening - IMPLEMENTATION COMPLETE (remediation verified and committed; independent acceptance re-gate PENDING; physical hardware qualification NOT RUN)
+- 8F - Premium Frontend, Real Diagnostics Integration, Quick Scan, Optional Deep Scan + VECTOR Core Animation - NEXT (NOT STARTED)
+- 8G - Security, Reliability, Performance, Accessibility + Physical-Device Qualification - NOT STARTED
+- DEFERRED (not completed, not assigned to a named slice): Android provenance/anomaly signal collectors (real OEM provenance collectors and anomaly detection) originally planned under the 8E name. Phase 8E did not implement them.
+- Roadmap reconciliation for 8E / 8F / 8G approved by the user on 2026-10-10; it supersedes the earlier working titles (8E "Android Provenance / Anomaly Signals", 8F "Planner / Evidence / Coverage / Frontend Integration", 8G "Adversarial Regression + Hardware Qualification").
 
 ### Verified Phase 8A Implementation
 - versioned Probe protocol v1 with strict typed contracts and six allowlisted operations: HELLO, GET_CAPABILITIES, START_CHALLENGE, CANCEL_CHALLENGE, FETCH_OBSERVATIONS, HEARTBEAT
@@ -298,8 +303,38 @@ Next implementation slice: 8E - Android Provenance / Anomaly Signals (NEXT / NOT
 - **UG-03 through UG-07 (INFO):** Informational limitations, documentation qualifications and development-tooling notes.
 - Inherited Phase 8B debt (including FG-01, FG-02 and FG-06) is preserved unchanged, with its established pre-8F remediation boundary.
 
+### Phase 8E - IMPLEMENTATION COMPLETE (remediation verified and committed; independent acceptance re-gate PENDING)
+
+#### Verified Phase 8E Implementation (reconciled scope)
+- Platform-neutral reference domain models (`models/reference.py`) and an in-memory OEM reference catalog (`local-agent/src/vector_agent/reference/`): sources, manufacturers, models, variants, specifications and performance baselines, with atomic import. Test-only catalogs are labeled TEST-ONLY at report and item level.
+- Seed catalog: 642 source assertions, all UNVERIFIED and non-authoritative (0 verified claims). A definitive CONSISTENT / DIFFERS outcome requires an exact curator verification record bound to the entity, property and value. Missing, unverified or unresolved reference data yields REFERENCE_UNAVAILABLE / INSUFFICIENT_EVIDENCE / NOT_COMPARABLE, never a failure.
+- Identity resolution (`resolver.py`): exact model-code / variant resolution, explicit ambiguity and conflict states; a platform that contradicts the catalogued maker yields CONFLICTING_IDENTIFIERS. No identity is invented.
+- Evidence-based comparison (`comparator.py`, `evidence_adapter.py`): consumes canonical diagnostic evidence; while the variant is unresolved a mismatch is withheld (VARIANT_AMBIGUOUS) rather than asserted. A specification match is not proof of a genuine/original part, and a mismatch is not proof of a counterfeit.
+- Performance baselines (`performance.py`): malformed observations are treated as missing; a negative reference standard deviation is rejected.
+- Android battery parsing hardening (`bridge.py`): ASCII-decimal integers only, bounded ingestion ranges, only recognized plug sources published. Battery PASS still means valid telemetry was collected, not battery health.
+- Frontend `AndroidStatus`: explicit UNKNOWN, MISSING_DRIVER and OFFLINE guidance; no device presence is invented.
+- Documentation: `docs/PHASE_8E_CHECKPOINT_*.md`, `docs/PHASE_8E_RECOVERY.md`, `docs/PHASE_8E_FINAL_REMEDIATION.md`, `docs/PHASE_8E_CLOSURE.md`, `docs/PHASE_8E_SPECIFICATION_CATALOG.md` and the JSON integrity/mutation records.
+
+#### Phase 8E Verification Results
+- Local-agent Python: 2,727 passed (2,694 before the RV-01 fix plus 33 new RV-01 cases; 1 existing httpx/Starlette deprecation warning); Ruff check, Ruff format and mypy clean
+- Intelligence: 21 passed; Ruff, format and mypy clean
+- Frontend: 111 passed (12 test files); `tsc -b` and ESLint clean (verified in a scratch copy; NOT re-run after the RV-01 fix, which changed no frontend file)
+- Android JVM/Robolectric: 141 passed (no Android or fixture files changed in Phase 8E; NOT re-run after the RV-01 fix)
+- Reference mutation harness (`scripts/verify_reference_mutations.py`): control passes, 20/20 mutants killed (re-run after the RV-01 fix); 7 separate scratch mutants of the RV-01 guard all killed
+- Independent final gate findings FR-01 through FR-13: remediated (FR-12 and PG-18 preserved per user decision, below); independent re-gate of the remediation: PENDING
+- Root `scripts/verify.ps1`: NOT RUN (it installs into system Python/npm); equivalent checks were run individually
+- Physical hardware qualification: NOT RUN. Trust Engine remains NOT_READY; `trust_score` remains `None`. No OEM authenticity or provenance claim is made.
+
+#### Phase 8E Deferred Work and Boundaries
+- DEFERRED, NOT COMPLETED: Android provenance/anomaly signal collectors (real OEM provenance collectors and anomaly detection) originally planned under the 8E name. Phase 8E did not implement them.
+- The reference catalog is in-memory only; all seed assertions remain UNVERIFIED until a curator verifies them against source documents.
+- FIXED (RV-01, MEDIUM, focused review): `PerformanceReferenceManager.evaluate_metric` returned CONSISTENT / DIFFERS for a variant-restricted baseline when the variant was unresolved. It now returns VARIANT_AMBIGUOUS (observation preserved) when the baseline lists applicable variants and the variant is None or empty; explicitly resolved variants and model-wide baselines are unchanged. The manager was never wired to a production scan path. Remaining low-severity review items RV-03, RV-04 (LOW) and RV-05 (INFO) are recorded in `docs/PHASE_8E_CLOSURE.md`.
+- OPEN (RV2-01, LOW): `PerformanceReferenceManager.evaluate_metric` checks that the variant is in `applicable_variant_ids` but not that it belongs to `model_id`. It needs an inconsistent caller pairing and nothing calls it in production. It MUST be resolved before the performance-evaluation path is exposed through any production API.
+- MA-006 (Host validation) and MA-020 (registry bounds) are carried to Phase 8G.
+- `frontend/vitest.config.ts` carries a preexisting uncommitted modification (PG-18, user decision: leave untouched); it is excluded from the Phase 8E checkpoint. `local-agent/3.11/` (untracked tool cache, FR-12) is preserved unchanged and excluded.
+
 ### Next Implementation Slice
-8E - Android Provenance / Anomaly Signals - NEXT (NOT STARTED). Phase 8 remains IN PROGRESS; this status update does not start later work.
+8F - Premium Frontend, Real Diagnostics Integration, Quick Scan, Optional Deep Scan + VECTOR Core Animation - NEXT (NOT STARTED; requires separate explicit authorization). Phase 8 remains IN PROGRESS; this status update does not start later work.
 
 ---
 
