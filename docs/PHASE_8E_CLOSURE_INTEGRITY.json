@@ -1,0 +1,372 @@
+{
+  "schema": "vector-checkpoint-integrity-v2",
+  "purpose": "Portable integrity record of the committed Phase 8E checkpoint. Added by the Phase 8E closure documentation; it does not replace or alter docs/PHASE_8E_RECOVERY_INTEGRITY.json.",
+  "checkpoint_commit": "11720a0ebadf7510e8b06cfa3b2c1532c6d5bed7",
+  "checkpoint_parent": "e6e7ff4cddf16e1797ce4b81e2d3ff7f5db6fba4",
+  "branch": "main",
+  "push_state_when_recorded": "checkpoint commit local only (origin/main was at the parent); this record does not claim it was pushed",
+  "hash_basis": "SHA-256 of each file exactly as stored in the checkpoint commit (git blob bytes, LF as committed). Independent of working-tree line-ending conversion. Verify: git show <checkpoint_commit>:<path> | sha256sum, or compare git_blob_id with git rev-parse <checkpoint_commit>:<path>.",
+  "excluded_from_checkpoint": [
+    "frontend/vitest.config.ts (preexisting uncommitted modification, PG-18)",
+    "local-agent/3.11/ (untracked tool cache, FR-12)"
+  ],
+  "docs_superseded_after_checkpoint": {
+    "files": [
+      "STATUS.md",
+      "docs/PHASE_8E_CLOSURE.md"
+    ],
+    "note": "These two files were updated by the separately committed Phase 8E closure documentation. The hashes below are their content at the checkpoint commit and are correct historical evidence for that commit, not for later revisions."
+  },
+  "historical_manifest": {
+    "path": "docs/PHASE_8E_RECOVERY_INTEGRITY.json",
+    "status": "preserved unchanged as historical evidence",
+    "head_field_meaning": "'head' and 'origin_main' (e6e7ff4) record the baseline the work started from, before the checkpoint commit existed. They are not the checkpoint commit.",
+    "hash_basis": "SHA-256 of working-tree bytes on the Windows checkout (core.autocrlf=true) when generated. Entries for files checked out with CRLF do not equal the committed LF blob hash and will not verify on a clean or non-Windows checkout.",
+    "entries": 69,
+    "comparison_with_checkpoint_blobs": {
+      "match_committed_blob": 42,
+      "differ_line_endings_only": 10,
+      "differ_content_or_not_committed": 17
+    },
+    "line_ending_only_differences": [
+      "docs/PHASE_8E_CHECKPOINT_2A.md",
+      "docs/PHASE_8E_CHECKPOINT_2C.md",
+      "docs/PHASE_8E_CHECKPOINT_2C1.md",
+      "docs/PHASE_8E_SEED_SOURCE_AUDIT.json",
+      "docs/PHASE_8E_SPECIFICATION_CATALOG.md",
+      "local-agent/src/vector_agent/models/reference.py",
+      "local-agent/src/vector_agent/reference/comparator.py",
+      "local-agent/src/vector_agent/reference/seed.py",
+      "local-agent/tests/test_phase8e_checkpoint2b.py",
+      "local-agent/tests/test_phase8e_checkpoint2c.py"
+    ],
+    "content_or_not_committed_entries": [
+      "frontend/vitest.config.ts",
+      "local-agent/3.11/cache.0.db (not in checkpoint commit)",
+      "local-agent/3.11/cache.1.db (not in checkpoint commit)",
+      "local-agent/3.11/cache.2.db (not in checkpoint commit)",
+      "local-agent/3.11/cache.3.db (not in checkpoint commit)",
+      "local-agent/3.11/cache.4.db (not in checkpoint commit)",
+      "local-agent/3.11/cache.5.db (not in checkpoint commit)",
+      "local-agent/3.11/cache.6.db (not in checkpoint commit)",
+      "local-agent/3.11/cache.7.db (not in checkpoint commit)",
+      "local-agent/3.11/cache.8.db (not in checkpoint commit)",
+      "local-agent/3.11/cache.9.db (not in checkpoint commit)",
+      "local-agent/3.11/cache.10.db (not in checkpoint commit)",
+      "local-agent/3.11/cache.11.db (not in checkpoint commit)",
+      "local-agent/3.11/cache.12.db (not in checkpoint commit)",
+      "local-agent/3.11/cache.13.db (not in checkpoint commit)",
+      "local-agent/3.11/cache.14.db (not in checkpoint commit)",
+      "local-agent/3.11/cache.15.db (not in checkpoint commit)"
+    ],
+    "comparison_note": "The 17 entries in content_or_not_committed_entries are the preserved items, not checkpoint content: the 16 untracked local-agent/3.11 cache databases and the preexisting uncommitted frontend/vitest.config.ts. They were recorded to prove they were left untouched and remain excluded from the checkpoint."
+  },
+  "files": [
+    {
+      "path": "STATUS.md",
+      "sha256": "e9f01a3d96cf53b328360b3eaea0b1844b3f306d7a66b4c658e058be0100acfb",
+      "bytes": 83086,
+      "git_blob_id": "7b30f0ae2b7004b82c157bd976f0bbb2ca069ab5"
+    },
+    {
+      "path": "docs/PHASE_8E_CHECKPOINT_1.md",
+      "sha256": "356a7533537cd315477c09020ce6060a61ff375fb4f368f4558c639c5039456c",
+      "bytes": 19486,
+      "git_blob_id": "8d70a186401c9f2794e1c67c15ea4690b460cc70"
+    },
+    {
+      "path": "docs/PHASE_8E_CHECKPOINT_2A.md",
+      "sha256": "a173b94277dc3fec14400552d24136e93c49de05716d016ba138abe5b31bc758",
+      "bytes": 19110,
+      "git_blob_id": "a329c66bbc71aaf92e70adc51a37cb2501661763"
+    },
+    {
+      "path": "docs/PHASE_8E_CHECKPOINT_2B.md",
+      "sha256": "da0e25835640564d127c4aa3f3b2c8fea47cca9e6c447669c666df634d817c0a",
+      "bytes": 32612,
+      "git_blob_id": "601b23e84c261eb0de1ce1d89602b3c52ecb04ec"
+    },
+    {
+      "path": "docs/PHASE_8E_CHECKPOINT_2B1.md",
+      "sha256": "426b50ce4a7647508351e3c441e1169736c8cb92e6d056b710261d482779ca56",
+      "bytes": 24431,
+      "git_blob_id": "7d05e13da3582f4e7bb5edbde9ae3f0707401513"
+    },
+    {
+      "path": "docs/PHASE_8E_CHECKPOINT_2C.md",
+      "sha256": "bbcdd60e3bc67269f6a2bd0c6175fbd06a004293475adaef0ee14345536ece10",
+      "bytes": 24383,
+      "git_blob_id": "902364624ee739bc40fa01a4dfdf64226c086793"
+    },
+    {
+      "path": "docs/PHASE_8E_CHECKPOINT_2C1.md",
+      "sha256": "7510cfd2d71918c7257baf26a52a06db3c5417e6be260a9305ca426c564a26b5",
+      "bytes": 22567,
+      "git_blob_id": "afddb6897105b5306453c89cda428d709fdef54f"
+    },
+    {
+      "path": "docs/PHASE_8E_CLOSURE.md",
+      "sha256": "1f66a275e0e68dab712b3b5a2e4045d38e73bd4af59e6d22c806748ff3660e34",
+      "bytes": 6512,
+      "git_blob_id": "5af9b14359dfefcc5e0609340f2396dffe7bbc45"
+    },
+    {
+      "path": "docs/PHASE_8E_FINAL_REMEDIATION.md",
+      "sha256": "d787c1bf6ad41e325655b1fb5b34e5110e9536e6d8415b6c955e91b8901b6b21",
+      "bytes": 6820,
+      "git_blob_id": "eb9bfe4c4fd58e61906f6df4961d412fd92643c7"
+    },
+    {
+      "path": "docs/PHASE_8E_FINAL_REMEDIATION_MUTATIONS.json",
+      "sha256": "9f8b1af32a118a538ebc88c5f87f6e4b5a773604d174f5654afb00f80e67bb15",
+      "bytes": 9561,
+      "git_blob_id": "31447fe0681c20db9290d0eaf9dd348ee0c5cc87"
+    },
+    {
+      "path": "docs/PHASE_8E_RECOVERY.md",
+      "sha256": "6cc0ccc5cf7eb563a7d565386bc3117aa9cf3620e625ffb7756986a31cb23894",
+      "bytes": 20812,
+      "git_blob_id": "eb8b2902268a84f2bbd3a7a473deb6cd088ea730"
+    },
+    {
+      "path": "docs/PHASE_8E_RECOVERY_CLAUDE_REVIEW.txt",
+      "sha256": "b893981e8235bc1a9445f3e7060e65768b98bca8d886c2b83ce0eb08f0f080b0",
+      "bytes": 8497,
+      "git_blob_id": "1112a7b42325186245ad8921b506792734f8d783"
+    },
+    {
+      "path": "docs/PHASE_8E_RECOVERY_INTEGRITY.json",
+      "sha256": "76d16c26b12b3cb3836b049a2ab2b6f1b218405a244ae524dbe633a705b3c509",
+      "bytes": 16976,
+      "git_blob_id": "199a5148823e21b6937f5354fe1a296f58f64ebc"
+    },
+    {
+      "path": "docs/PHASE_8E_RECOVERY_MUTATIONS.json",
+      "sha256": "2f4f251fe20d91360d96dfe94dc64a6f1f2521a64d969bb0944c07d44a2e016d",
+      "bytes": 24178,
+      "git_blob_id": "ac8c8172f36ebbb5416191cd789d5d25a5b9183f"
+    },
+    {
+      "path": "docs/PHASE_8E_SEED_SOURCE_AUDIT.json",
+      "sha256": "b7c658b86635e6ac09181c62daabc9c34bc3635a4a50a2fed89d31bbec6956ee",
+      "bytes": 200884,
+      "git_blob_id": "d7ffbd14afe66965e76549ca953e3ad586ea6d39"
+    },
+    {
+      "path": "docs/PHASE_8E_SPECIFICATION_CATALOG.md",
+      "sha256": "02e95c214759b0152063b76330c872cf04fbfd18cd0f69385867ea3ea68c4076",
+      "bytes": 21397,
+      "git_blob_id": "986209fb444910212595411f4ddd363223476237"
+    },
+    {
+      "path": "frontend/src/__tests__/final_remediation.test.tsx",
+      "sha256": "a1f0de621959071d4d29213b348acfd9f67fcc87fe2bd6e6f24bfe9ee34acb7a",
+      "bytes": 2410,
+      "git_blob_id": "80e5169fada715062748166f55a9b824b23b909a"
+    },
+    {
+      "path": "frontend/src/__tests__/recovery_safety.test.tsx",
+      "sha256": "1926dffbc6bebf660baf2a67a72806f5cb036b366686bc27a570006c2d01826a",
+      "bytes": 1856,
+      "git_blob_id": "30025ca30d0338bfec25a562f0e63ec3bbd7173d"
+    },
+    {
+      "path": "frontend/src/components/AndroidStatus.tsx",
+      "sha256": "d1c22e55d3275d7f017557a4b787a0ad66ac96e481285b3d21ad865b5ec1420d",
+      "bytes": 16192,
+      "git_blob_id": "6eaac6920439afaa8987fba8fd29396b729d0945"
+    },
+    {
+      "path": "frontend/src/lib/api/types.ts",
+      "sha256": "8a81afb090edf8880501a01bf5fce8749d9172b3125858662faadbbe20fc94de",
+      "bytes": 15267,
+      "git_blob_id": "768e319efc1136e39c668256864b86472c934b10"
+    },
+    {
+      "path": "frontend/src/providers/LiveDiagnosticProvider.ts",
+      "sha256": "1ef8427786213b6a729a419cf081571c3dcd92f4f614bbb8cbd07b2f19d7f020",
+      "bytes": 3602,
+      "git_blob_id": "99d5241bb58ccaeb5ac302ff96f7350ce2ee021c"
+    },
+    {
+      "path": "local-agent/src/vector_agent/api/android.py",
+      "sha256": "87c4d084b0934af69143838ae9dd513cbd0630dafdd56f0a9e71c13e4afd4b6f",
+      "bytes": 6822,
+      "git_blob_id": "fc8364928df0aa3e3b7b3a38b09120c216f6268a"
+    },
+    {
+      "path": "local-agent/src/vector_agent/devices/android/bridge.py",
+      "sha256": "60815595740bb4a457f143a535956a3ea3f3e5aead682e8f93d8b843bbdeb01e",
+      "bytes": 42746,
+      "git_blob_id": "bd63e372e4efdbace51ea98654a97f932c2c3435"
+    },
+    {
+      "path": "local-agent/src/vector_agent/diagnostics/battery/battery_diagnostic.py",
+      "sha256": "b9d2767a5fa9a3782e2be78ef2b5b24dbc80d0ab6e2a2b19bda4b9ac3ac9009f",
+      "bytes": 9856,
+      "git_blob_id": "ea31a20d5dadacbb6625c5e063caebb51939e75b"
+    },
+    {
+      "path": "local-agent/src/vector_agent/diagnostics/camera/camera_diagnostic.py",
+      "sha256": "be84dfbf6f9ad93bab32a2cabeee2b5448dae4efe307a698bc4ef31b91c36ff5",
+      "bytes": 8679,
+      "git_blob_id": "001d85ac1aae859b2314e825d231cb7091128ee8"
+    },
+    {
+      "path": "local-agent/src/vector_agent/diagnostics/display/display_diagnostic.py",
+      "sha256": "f62c5b47d373ad3194641526a4153fb91dcf8c22243809ea079e6e1cdbfad8a9",
+      "bytes": 8795,
+      "git_blob_id": "ed8ea20a3261802523579a9d403884d136179c3a"
+    },
+    {
+      "path": "local-agent/src/vector_agent/diagnostics/memory/memory_diagnostic.py",
+      "sha256": "c0f855a337673e53caa939a74a5759490081a004ce44080514c765bcf35a77c6",
+      "bytes": 8202,
+      "git_blob_id": "11e91290695d8b5038217c4d0e7827e9d0a1220f"
+    },
+    {
+      "path": "local-agent/src/vector_agent/diagnostics/storage/storage_diagnostic.py",
+      "sha256": "c51f0e7427dfd0ad4dd4430f5e22d8c31d9e1dde0168666c5b3f472f8c7e0ba7",
+      "bytes": 8375,
+      "git_blob_id": "8ef56f3040a64567841b252cb8bb7a1c76ae923a"
+    },
+    {
+      "path": "local-agent/src/vector_agent/diagnostics/thermal/thermal_diagnostic.py",
+      "sha256": "e9303ed561453d27dfe9d8a88854066a7cbc3ae83d38855925042e4baff6766d",
+      "bytes": 8726,
+      "git_blob_id": "3ff8c86a59564bf453c2565bb9cb29e8a9b5eb2b"
+    },
+    {
+      "path": "local-agent/src/vector_agent/models/android.py",
+      "sha256": "0856446b156dc5e627d70cd8ef728905aabcc23a83d6c03ea77277aa2c6e4d10",
+      "bytes": 2262,
+      "git_blob_id": "fb1e3bf0aac484ec9357d3512539a235a6948cbb"
+    },
+    {
+      "path": "local-agent/src/vector_agent/models/reference.py",
+      "sha256": "4374d967169e716ab565158f2e74424b4c401d30dcdb400b1e151836a86240bc",
+      "bytes": 30103,
+      "git_blob_id": "cb6e4e5d185a29c8576ba267574cea98fbf8b4f2"
+    },
+    {
+      "path": "local-agent/src/vector_agent/reference/__init__.py",
+      "sha256": "54af0e83ea0758e08c2c77bf21ecaaee88ff88083e0c4603bf1fb59fdbe19d83",
+      "bytes": 886,
+      "git_blob_id": "beef67b620bf65ff272d564b20dc118a08136453"
+    },
+    {
+      "path": "local-agent/src/vector_agent/reference/catalog.py",
+      "sha256": "ce9d35d6a5cfb2f48b49f0a02797d93d07f6fb1447d4b13c4529da6e05daa728",
+      "bytes": 17277,
+      "git_blob_id": "5216140ff9c5834d6705a7ce90f385e9458e0cde"
+    },
+    {
+      "path": "local-agent/src/vector_agent/reference/comparator.py",
+      "sha256": "6af510f857ede760fde7ee2bcf5612d752d41bfd42208e493cc6563115780f56",
+      "bytes": 45044,
+      "git_blob_id": "0dad0c28452550b5124c8686c55bac15def0bc7f"
+    },
+    {
+      "path": "local-agent/src/vector_agent/reference/evidence_adapter.py",
+      "sha256": "851b5409a75237938ac47948bd6171ee5f2131ad8898ab8f087105c917f5e754",
+      "bytes": 17937,
+      "git_blob_id": "92291a449a22de998c20ad913b16c938d741cd02"
+    },
+    {
+      "path": "local-agent/src/vector_agent/reference/importer.py",
+      "sha256": "e36a6b9de2c07740ea1afdf94a2dd017fb4abf4f8cd767d7d5bfda9980dd9512",
+      "bytes": 8379,
+      "git_blob_id": "31a325b2404672756913d45c0cb862ff27a33fe4"
+    },
+    {
+      "path": "local-agent/src/vector_agent/reference/performance.py",
+      "sha256": "908638de0827e9488ad4ca04f24f46cf6b326cb1bec3835a56f81edc17f9f426",
+      "bytes": 9540,
+      "git_blob_id": "ca34de390afb62599a11f3264117e3a512062ecf"
+    },
+    {
+      "path": "local-agent/src/vector_agent/reference/resolver.py",
+      "sha256": "c968ef6c59410852260726fa9738a5a13b63c395e649128db0c03355f2532cfa",
+      "bytes": 14733,
+      "git_blob_id": "163ad3760abf65f00050fce1f9e8a4b0251fd56b"
+    },
+    {
+      "path": "local-agent/src/vector_agent/reference/seed.py",
+      "sha256": "8f9f779b121b61a4e7bcfa1b2829c77863a84f5efe1f64053d6841f24a0b76f9",
+      "bytes": 48725,
+      "git_blob_id": "962fd0e1ad9ce920a6a345a8072f9b44d86e12ce"
+    },
+    {
+      "path": "local-agent/src/vector_agent/scan/service.py",
+      "sha256": "3fa446e6eaf11232851fbefe5b0cea61e88352e91761f9c5826486d3c4e25750",
+      "bytes": 8624,
+      "git_blob_id": "0e6ba17ac8b4e059e79018a8b886f8a206074423"
+    },
+    {
+      "path": "local-agent/tests/test_phase1_diagnostic_protocol.py",
+      "sha256": "b11b100f61c77d3ff3749b6cddfb2014e5dc209cf2175c12815846a59ebca7d6",
+      "bytes": 20130,
+      "git_blob_id": "09905777e2ffe3d0f865987a19c06b1667f4831d"
+    },
+    {
+      "path": "local-agent/tests/test_phase8e_checkpoint1.py",
+      "sha256": "9d64a19e802c8320e37911fc05f7b66ada3720f27eff1572ca05b225264b5f42",
+      "bytes": 16514,
+      "git_blob_id": "ccb9be3f2cc24e215de83e99d53d3953e43669f9"
+    },
+    {
+      "path": "local-agent/tests/test_phase8e_checkpoint2a.py",
+      "sha256": "12a736850b0c8f5441e681ebe184fa27c84c11057980eb06c4b9c526b37090f8",
+      "bytes": 14844,
+      "git_blob_id": "aa64207c5d8740af1a12f87a656592cd43dd3e92"
+    },
+    {
+      "path": "local-agent/tests/test_phase8e_checkpoint2b.py",
+      "sha256": "88b51a10ae01ad0a81686d3df663c2ecc347b5a8774b592c4ee8aa663dd1e936",
+      "bytes": 42721,
+      "git_blob_id": "3b086e26cbadb42b292335c19dcade422eed93b2"
+    },
+    {
+      "path": "local-agent/tests/test_phase8e_checkpoint2c.py",
+      "sha256": "4b3b1f68bedb488998a6991c1a9c472ff839a9262ebf8e1ba8d7a71fe5aa85d1",
+      "bytes": 86801,
+      "git_blob_id": "fb08a58eff4a1d849e98b0f70d79f92c36cfd48a"
+    },
+    {
+      "path": "local-agent/tests/test_phase8e_final_remediation.py",
+      "sha256": "c39f77cfd932ac6677cb767c4543aaa1a0ed1ac1309f5cf2533b2bc6c81d098e",
+      "bytes": 22478,
+      "git_blob_id": "10dd682a0d910550892789b72ef143d9274c686c"
+    },
+    {
+      "path": "local-agent/tests/test_phase8e_reference.py",
+      "sha256": "96f378c71dcd1132b73e4dea0e403dc59ab87c63e8f65bf0a3ac593c4fe3a21a",
+      "bytes": 31897,
+      "git_blob_id": "b51e5942f6d768e5707f762da50036a7bf84f1bc"
+    },
+    {
+      "path": "local-agent/tests/test_phase8e_rv01.py",
+      "sha256": "da2eccd2691243f31aca31957fac0579f2d6c7730e6eb1d805c9fcfa4054ca92",
+      "bytes": 5411,
+      "git_blob_id": "0767147af0778f421c1668b718e91e49b40b8507"
+    },
+    {
+      "path": "local-agent/tests/test_recovery_reference.py",
+      "sha256": "36c74a7d4687684af2a21f5b289c8668ef5be62dc706aca087e3c15d46b46df7",
+      "bytes": 21678,
+      "git_blob_id": "597d997cb63deb5a30fb7ad78ea9b808edcfa52c"
+    },
+    {
+      "path": "local-agent/tests/test_recovery_safety.py",
+      "sha256": "d4a066fb04d0fbe1c41d08f1953eba80fa1b6709d38b1e7aa82ed5d705c205dc",
+      "bytes": 10828,
+      "git_blob_id": "78109e0715c050c32051ded05a7dcdf11f1cb54a"
+    },
+    {
+      "path": "scripts/verify_reference_mutations.py",
+      "sha256": "0affddf720443decb6d1d13de5a210e8d4c2c0a59a5ca9df08c6cb6887d08663",
+      "bytes": 7195,
+      "git_blob_id": "a14adeba77d17532d00a8e130e7da1fd4d818f9e"
+    }
+  ]
+}

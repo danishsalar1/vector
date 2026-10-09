@@ -22,7 +22,7 @@ Current completed slices:
 - Phase 8D - Platform-Neutral Component Authenticity / Provenance Domain (COMPLETE / VERIFIED / FORMAL GATE PASSED / IMPLEMENTATION COMMITTED: 03d80b4)
 - Phase 8B - Signed Android Probe + Discovery / Consent / Lifecycle (COMPLETE / VERIFIED / FORMAL GATE PASSED / IMPLEMENTATION COMMITTED: 365f0e8)
 - Phase 8C - Deep Android Functional Diagnostics (COMPLETE / INDEPENDENT GATE PASSED; baseline 0aa0cbe; committed in the Phase 8C completion commit that follows 0aa0cbe)
-- Phase 8E - OEM Reference Catalog, Identity Resolution, Evidence-Based Comparison + Hardening (IMPLEMENTATION COMPLETE / REMEDIATED; committed in the Phase 8E checkpoint commit, SHA not recorded here; independent post-remediation acceptance re-gate PENDING, so full Phase 8E closure is NOT claimed). Android provenance/anomaly collectors are DEFERRED, not completed.
+- Phase 8E - OEM Reference Catalog, Identity Resolution, Evidence-Based Comparison + Hardening (COMPLETE / INDEPENDENT POST-REMEDIATION ACCEPTANCE GATE PASSED; checkpoint commit 11720a0ebadf7510e8b06cfa3b2c1532c6d5bed7, closure recorded in a separate documentation commit; physical hardware qualification NOT RUN; no OEM authenticity or provenance claim; RV2-01 and RV-03 must be fixed before their functionality is exposed through any production API). Android provenance/anomaly collectors are DEFERRED, not completed.
 Baseline before Phase 8A: 638955c
 Codex instructions commit: 638955c
 Phase 8A implementation commit: 4f073da
@@ -36,7 +36,8 @@ Formal Phase 8D Gate: PASSED
 Formal Phase 8B Gate: PASSED
 Independent Phase 8C Gate: PASSED (0 BLOCKER, 0 HIGH, 0 MEDIUM, 2 LOW, 5 INFO accepted as nonblocking)
 Independent Phase 8E Final Gate (before remediation): PASSED (0 BLOCKER, 0 HIGH, 0 MEDIUM; FR-01..FR-13 were LOW findings)
-Phase 8E FR-01..FR-13 remediation: applied and verified by the implementer; focused post-remediation review raised RV-01 (MEDIUM), which is now FIXED and covered by `local-agent/tests/test_phase8e_rv01.py`; a second focused read-only review of the fix found no BLOCKER/HIGH/MEDIUM issue. The independent re-gate of the remediation is still PENDING (see docs/PHASE_8E_CLOSURE.md)
+Phase 8E FR-01..FR-13 remediation: applied and verified by the implementer; focused post-remediation review raised RV-01 (MEDIUM), which is now FIXED and covered by `local-agent/tests/test_phase8e_rv01.py`; a second focused read-only review of the fix found no BLOCKER/HIGH/MEDIUM issue. The independent post-remediation acceptance gate was subsequently performed and PASSED (next line; see docs/PHASE_8E_CLOSURE.md)
+Independent Phase 8E Post-Remediation Acceptance Gate: PASSED (0 BLOCKER, 0 HIGH, 0 MEDIUM; RV2-01, RV-03, RV-04, RV-05 and AG-01..AG-06 are LOW/INFO and accepted as nonblocking, with RV2-01 and RV-03 required fixes before production-API exposure) - target checkpoint commit 11720a0ebadf7510e8b06cfa3b2c1532c6d5bed7
 Final staged-boundary review (8B): APPROVED
 Hardware qualification: NOT RUN
 Trust Engine: NOT_READY
@@ -51,7 +52,7 @@ Next implementation slice: 8F - Premium Frontend, Real Diagnostics Integration, 
 5. Diagnostic Registry + Scan Planner + Scan Lifecycle + Diagnostic Events — COMPLETE
 6. Additional Android Standard Diagnostics — COMPLETE
 7. iOS Discovery, Pairing + Advanced / Version-Aware iOS Diagnostics — COMPLETE
-8. VECTOR Probe + Deep Android Diagnostics - IN PROGRESS (8A, 8D, 8B & 8C complete; 8E implementation complete with acceptance re-gate PENDING; 8F next)
+8. VECTOR Probe + Deep Android Diagnostics - IN PROGRESS (8A, 8D, 8B & 8C complete; 8E complete, independent acceptance gate PASSED; 8F next)
 9. Cross-Platform Evidence Normalization + Verification Coverage — NOT STARTED
 10. Explainable Verification / Trust Engine — NOT STARTED
 11. Real-Device Validation + Calibration — NOT STARTED
@@ -70,7 +71,7 @@ Next implementation slice: 8F - Premium Frontend, Real Diagnostics Integration, 
 - 8D - Platform-Neutral Component Authenticity / Provenance Domain - COMPLETE
 - 8B - Signed Android Probe + Discovery / Consent / Lifecycle - COMPLETE (development-foundation scope; physical hardware qualification NOT RUN)
 - 8C - Deep Android Functional Diagnostics - COMPLETE (Independent Gate PASSED; physical hardware qualification NOT RUN)
-- 8E - OEM Reference Catalog, Identity Resolution, Evidence-Based Comparison + Associated Hardening - IMPLEMENTATION COMPLETE (remediation verified and committed; independent acceptance re-gate PENDING; physical hardware qualification NOT RUN)
+- 8E - OEM Reference Catalog, Identity Resolution, Evidence-Based Comparison + Associated Hardening - COMPLETE (checkpoint commit 11720a0ebadf7510e8b06cfa3b2c1532c6d5bed7; independent post-remediation acceptance gate PASSED; physical hardware qualification NOT RUN)
 - 8F - Premium Frontend, Real Diagnostics Integration, Quick Scan, Optional Deep Scan + VECTOR Core Animation - NEXT (NOT STARTED)
 - 8G - Security, Reliability, Performance, Accessibility + Physical-Device Qualification - NOT STARTED
 - DEFERRED (not completed, not assigned to a named slice): Android provenance/anomaly signal collectors (real OEM provenance collectors and anomaly detection) originally planned under the 8E name. Phase 8E did not implement them.
@@ -303,7 +304,7 @@ Next implementation slice: 8F - Premium Frontend, Real Diagnostics Integration, 
 - **UG-03 through UG-07 (INFO):** Informational limitations, documentation qualifications and development-tooling notes.
 - Inherited Phase 8B debt (including FG-01, FG-02 and FG-06) is preserved unchanged, with its established pre-8F remediation boundary.
 
-### Phase 8E - IMPLEMENTATION COMPLETE (remediation verified and committed; independent acceptance re-gate PENDING)
+### Phase 8E - COMPLETE (independent post-remediation acceptance gate PASSED; checkpoint commit 11720a0ebadf7510e8b06cfa3b2c1532c6d5bed7)
 
 #### Verified Phase 8E Implementation (reconciled scope)
 - Platform-neutral reference domain models (`models/reference.py`) and an in-memory OEM reference catalog (`local-agent/src/vector_agent/reference/`): sources, manufacturers, models, variants, specifications and performance baselines, with atomic import. Test-only catalogs are labeled TEST-ONLY at report and item level.
@@ -321,15 +322,26 @@ Next implementation slice: 8F - Premium Frontend, Real Diagnostics Integration, 
 - Frontend: 111 passed (12 test files); `tsc -b` and ESLint clean (verified in a scratch copy; NOT re-run after the RV-01 fix, which changed no frontend file)
 - Android JVM/Robolectric: 141 passed (no Android or fixture files changed in Phase 8E; NOT re-run after the RV-01 fix)
 - Reference mutation harness (`scripts/verify_reference_mutations.py`): control passes, 20/20 mutants killed (re-run after the RV-01 fix); 7 separate scratch mutants of the RV-01 guard all killed
-- Independent final gate findings FR-01 through FR-13: remediated (FR-12 and PG-18 preserved per user decision, below); independent re-gate of the remediation: PENDING
+- Independent final gate findings FR-01 through FR-13: remediated (FR-12 and PG-18 preserved per user decision, below); independent post-remediation acceptance gate: PASSED (section below)
 - Root `scripts/verify.ps1`: NOT RUN (it installs into system Python/npm); equivalent checks were run individually
 - Physical hardware qualification: NOT RUN. Trust Engine remains NOT_READY; `trust_score` remains `None`. No OEM authenticity or provenance claim is made.
+
+#### Phase 8E Independent Post-Remediation Acceptance Gate (PASSED)
+- Target: checkpoint commit `11720a0ebadf7510e8b06cfa3b2c1532c6d5bed7` (parent `e6e7ff4cddf16e1797ce4b81e2d3ff7f5db6fba4`). Read-only independent gate, 2026-10-10; no production code, test or frontend file was modified and nothing was staged, committed or pushed by the gate. Verdict: PASSED, 0 BLOCKER / 0 HIGH / 0 MEDIUM.
+- FR-01..FR-13 and RV-01 were verified against the committed implementation by independent executable probes, not by the implementer's statements: a 16,800-cell variant-restricted performance-evaluator grid produced no unsupported definitive verdict; the production seed catalog (642 unverified source assertions, 0 `verified_claims`, 0 synthetic sources, 0 performance metrics) produced no CONSISTENT / DIFFERS outcome and no non-zero consistent/differs count across 36 resolve-and-compare reports (324 items); battery parsing, platform/maker contradiction, synthetic-source isolation and importer atomicity held.
+- Reproduced results: local-agent 2,727 passed; Ruff check/format and mypy (100 files) clean; intelligence 21 passed; frontend vitest 111 passed (12 files, identical with the committed and the uncommitted `vitest.config.ts`), `tsc -b` and ESLint clean; `scripts/verify_reference_mutations.py` control passes, 20/20 killed, mutant hashes identical to the committed record; RV-01 guard removed: 16 of 33 `test_phase8e_rv01.py` cases fail. The gate's own 47-mutant harness killed 37, detected 3 through exception-type failures and left 7 survivors (redundant or unpinned-but-correct guards, see AG-01..AG-03).
+- Not re-run by the gate: Android JVM/Robolectric (the checkpoint commit contains no Android or fixture file; 141 passed in the earlier gate), `scripts/verify.ps1`. Physical-device qualification: NOT RUN. No OEM authenticity, provenance or genuine-part claim is made or implied; all 642 seed assertions remain UNVERIFIED and non-authoritative.
+- REQUIRED FIXES BEFORE EXPOSURE through any production API (neither is a Phase 8E blocker; neither is exposed today because nothing outside `vector_agent/reference/` imports the package): RV2-01 (`evaluate_metric` must check that the variant belongs to `model_id`; reproduced in a production-mode catalog, 120 mispaired cells in the gate grid) and RV-03 (`curator_authorized` is enforced only on raw dict sources; `register_source` and a `ReferenceSource` instance placed in an import payload can carry `verified_claims` into a production catalog).
+- Preserved LOW/INFO findings (all accepted as nonblocking, none resolved by this documentation): RV-04 (LOW, consensus note on items without a reference value), RV-05 (INFO, device-controlled battery `technology` string echoed unbounded; bounded by the 512 KB subprocess cap, not rendered by the frontend), AG-01 (LOW, performance claim entity binding unpinned by tests), AG-02 (LOW, battery voltage upper bound, invalid-status-is-INCONCLUSIVE and boolean-count rejection are correct but unpinned), AG-03 (INFO, evaluator-level synthetic-source check unpinned; redundant `isfinite` guards), AG-05 (INFO, test-only seed yields labeled definitive items by design; `test_only=True` is not reachable from `src`), AG-06 (INFO, compat `compare()` treats a rear camera count of 0 as a valid count; the evidence adapter admits only `feature_nfc` / `feature_barometer`). AG-04 (LOW, documentation) is resolved by this closure documentation except its "RV-01 scratch mutants have no retained artifact" sub-item, which remains INFO (the gate reproduced the kills).
+- Integrity records: `docs/PHASE_8E_RECOVERY_INTEGRITY.json` is preserved unchanged as historical evidence (its `head` / `origin_main` `e6e7ff4` is the pre-checkpoint baseline, and its hashes are Windows working-tree bytes); `docs/PHASE_8E_CLOSURE_INTEGRITY.json` is the portable record of the checkpoint commit (git blob SHA-256 values).
 
 #### Phase 8E Deferred Work and Boundaries
 - DEFERRED, NOT COMPLETED: Android provenance/anomaly signal collectors (real OEM provenance collectors and anomaly detection) originally planned under the 8E name. Phase 8E did not implement them.
 - The reference catalog is in-memory only; all seed assertions remain UNVERIFIED until a curator verifies them against source documents.
 - FIXED (RV-01, MEDIUM, focused review): `PerformanceReferenceManager.evaluate_metric` returned CONSISTENT / DIFFERS for a variant-restricted baseline when the variant was unresolved. It now returns VARIANT_AMBIGUOUS (observation preserved) when the baseline lists applicable variants and the variant is None or empty; explicitly resolved variants and model-wide baselines are unchanged. The manager was never wired to a production scan path. Remaining low-severity review items RV-03, RV-04 (LOW) and RV-05 (INFO) are recorded in `docs/PHASE_8E_CLOSURE.md`.
-- OPEN (RV2-01, LOW): `PerformanceReferenceManager.evaluate_metric` checks that the variant is in `applicable_variant_ids` but not that it belongs to `model_id`. It needs an inconsistent caller pairing and nothing calls it in production. It MUST be resolved before the performance-evaluation path is exposed through any production API.
+- OPEN, REQUIRED FIX BEFORE EXPOSURE (RV2-01, LOW): `PerformanceReferenceManager.evaluate_metric` checks that the variant is in `applicable_variant_ids` but not that it belongs to `model_id`. It needs an inconsistent caller pairing and nothing calls it in production. It MUST be resolved before the performance-evaluation path is exposed through any production API. Smallest fix: look the variant up in the catalog and compare its `model_id` with `model_id`.
+- OPEN, REQUIRED FIX BEFORE EXPOSURE (RV-03, LOW): `import_catalog_payload` enforces `curator_authorized` only for raw dict sources; `ReferenceCatalog.register_source` and a `ReferenceSource` instance inside an import payload can carry `verified_claims` into a production catalog. It MUST be resolved before catalog import or source registration is reachable from any production API or scan path (earlier recorded as accepted for 8G; superseded by this requirement).
+- OPEN, PRESERVED (not blocking): RV-04, RV-05, AG-01, AG-02, AG-03, AG-05, AG-06 and the retained-artifact sub-item of AG-04, as listed in the acceptance gate section above and in `docs/PHASE_8E_CLOSURE.md`.
 - MA-006 (Host validation) and MA-020 (registry bounds) are carried to Phase 8G.
 - `frontend/vitest.config.ts` carries a preexisting uncommitted modification (PG-18, user decision: leave untouched); it is excluded from the Phase 8E checkpoint. `local-agent/3.11/` (untracked tool cache, FR-12) is preserved unchanged and excluded.
 
