@@ -568,6 +568,62 @@ class DeviceSessionManager:
                 return True
             return False
 
+    def bound_device_target(
+        self, device_id: str, *, expected_session: DeviceSession, expected_epoch: int
+    ) -> tuple[Platform, str | None] | None:
+        """Atomic snapshot for a presence probe of the device a scan is bound to.
+
+        Returns (platform, internal serial) only while ``expected_session`` is still the very
+        same object, at ``expected_epoch`` and CONNECTED; otherwise None (the manager already
+        knows the device went away or changed). The serial is for the platform tool only.
+        """
+        with self._lock:
+            current = self._sessions.get(device_id)
+            if (
+                current is not expected_session
+                or current.session_epoch != expected_epoch
+                or current.connection_state != ConnectionState.CONNECTED
+            ):
+                return None
+            return current.platform, current.get_serial_for_diagnostic()
+
+    def mark_device_lost(
+        self,
+        device_id: str,
+        *,
+        expected_session: DeviceSession,
+        expected_epoch: int,
+        expected_serial: str,
+        new_state: ConnectionState,
+    ) -> bool:
+        """Record a CONFIRMED loss of one specific device (never a whole platform).
+
+        Applied only if the session is still the very same object, still at the epoch and
+        serial the caller observed, and still CONNECTED. Mirrors discovery reconciliation
+        (new state + epoch advance) so a later reconnect starts a fresh epoch. Returns False
+        if anything changed in the meantime: the caller must then re-read the session.
+        """
+        if new_state not in (ConnectionState.OFFLINE, ConnectionState.UNAUTHORIZED):
+            raise ValueError("A lost device can only become OFFLINE or UNAUTHORIZED.")
+        with self._lock:
+            current = self._sessions.get(device_id)
+            if (
+                current is not expected_session
+                or current.session_epoch != expected_epoch
+                or current.raw_serial != expected_serial
+                or current.connection_state != ConnectionState.CONNECTED
+            ):
+                return False
+            current.session_epoch += 1
+            current.connection_state = new_state
+            current.authorization_state = (
+                DeviceAuthorizationState.AUTHORIZATION_REQUIRED
+                if new_state == ConnectionState.UNAUTHORIZED
+                else DeviceAuthorizationState.UNKNOWN
+            )
+            current.last_capability_attempt_mono = None
+            return True
+
     def mark_platform_offline(self, platform: Platform) -> None:
         """Mark all active sessions for a platform as OFFLINE when discovery fails."""
         with self._lock:

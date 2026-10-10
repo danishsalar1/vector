@@ -433,6 +433,19 @@ class ProbeProtocolSession:
                 self._dispatch_request = None
                 self.abandon_request(request)
 
+    def lifetime_exhausted(self) -> bool:
+        """Read-only: has the 900 s session lifetime elapsed (monotonic or wall clock)?
+
+        Mirrors the expiry test in ``_now`` without mutating state, so the lifecycle can
+        label a failure SESSION_EXPIRED only when the session really outlived its limit.
+        """
+        with self._lock:
+            return bool(
+                self._monotonic() - self._created_mono >= SESSION_MAX_DURATION_SECONDS
+                or require_utc(self._clock())
+                >= self._created_at + timedelta(seconds=SESSION_MAX_DURATION_SECONDS)
+            )
+
     def close(self) -> None:
         """Idempotent invalidation. A closed object cannot be reopened."""
         with self._lock:

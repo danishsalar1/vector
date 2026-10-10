@@ -36,6 +36,7 @@ from vector_agent.models.device import (
     ScanMode,
     ScanPlan,
     ScanRequest,
+    VerificationLevel,
 )
 
 
@@ -49,6 +50,23 @@ class UnknownDiagnosticError(ScanPlanningError, ValueError):
 
 class InvalidScanRequestError(ScanPlanningError, ValueError):
     """Raised when a scan request has invalid parameters."""
+
+
+def _verification_level_of(defn: DiagnosticDefinition) -> VerificationLevel | None:
+    """The registered level, or None when it is missing or unrecognised.
+
+    Fails closed: an unknown level is reported as unknown, never as a stronger (functional)
+    or a weaker-looking default.
+    """
+    try:
+        return VerificationLevel(defn.verification_level)
+    except (ValueError, TypeError):
+        return None
+
+
+def _requires_probe_of(defn: DiagnosticDefinition) -> bool | None:
+    """The registered Probe requirement, or None when it is not a genuine boolean."""
+    return defn.requires_probe if isinstance(defn.requires_probe, bool) else None
 
 
 class ScanPlanner:
@@ -162,6 +180,8 @@ class ScanPlanner:
                     diagnostic_id=defn.diagnostic_id,
                     applicability=applicability,
                     reason=reason,
+                    verification_level=_verification_level_of(defn),
+                    requires_probe=_requires_probe_of(defn),
                 )
             )
 

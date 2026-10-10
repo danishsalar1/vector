@@ -16,19 +16,29 @@ from fastapi.responses import JSONResponse
 
 from vector_agent import __version__
 from vector_agent.api import android, devices, health, probe, scans, system
-from vector_agent.core.config import get_settings
+from vector_agent.core.config import AgentSettings, get_settings
 from vector_agent.core.errors import VectorError
 from vector_agent.core.logging import configure_logging, get_logger
+from vector_agent.devices.android.bridge import AndroidDeviceBridge
+from vector_agent.devices.ios.bridge import IOSDeviceBridge
+from vector_agent.devices.presence import (
+    AdbPresenceProvider,
+    DevicePresenceMonitor,
+    IosPresenceProvider,
+)
 from vector_agent.devices.session import device_session_manager
+from vector_agent.models.device import Platform
 from vector_agent.probe.lifecycle import ProbeService
 from vector_agent.probe.trust_build import load_trusted_artifact
+from vector_agent.scan.service import scan_service
+from vector_agent.security.http_boundary import HttpBoundaryMiddleware
 
 logger = get_logger(__name__)
 
 
-def create_app() -> FastAPI:
+def create_app(settings: AgentSettings | None = None) -> FastAPI:
     """Application factory."""
-    settings = get_settings()
+    settings = settings if settings is not None else get_settings()
     configure_logging(settings.log_level)
 
     @asynccontextmanager
@@ -38,9 +48,28 @@ def create_app() -> FastAPI:
             __version__,
             "DEMO" if settings.demo_mode else "LIVE",
         )
+        # Active device-presence verification for scans (never in DEMO mode: no hardware).
+        presence_enabled = settings.presence_check_enabled and not settings.demo_mode
+        if presence_enabled:
+            scan_service.set_presence_monitor(
+                DevicePresenceMonitor(
+                    device_session_manager,
+                    {
+                        Platform.ANDROID: AdbPresenceProvider(
+                            lambda: AndroidDeviceBridge(adb_path=settings.adb_path)
+                        ),
+                        Platform.IOS: IosPresenceProvider(
+                            lambda: IOSDeviceBridge(settings=settings)
+                        ),
+                    },
+                    probe_timeout_seconds=settings.presence_probe_timeout_seconds,
+                )
+            )
         try:
             yield
         finally:
+            if presence_enabled:
+                scan_service.set_presence_monitor(None)
             application.state.probe_service.close()
         logger.info("VECTOR agent shutting down.")
 
@@ -65,14 +94,22 @@ def create_app() -> FastAPI:
         enabled=not settings.demo_mode,
     )
     # ---- CORS ----
-    # Only allow the Vite dev server. In production the React build is served
-    # from the same origin so CORS is not needed.
+    # Only the explicit configured origins (Vite dev/preview). No wildcard.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=False,
         allow_methods=["GET", "POST", "DELETE"],
         allow_headers=["Content-Type", "Accept"],
+    )
+    # ---- Host / Origin boundary (MA-006) ----
+    # Added after CORS so it is the OUTERMOST layer: an untrusted Host or a
+    # hostile Origin on a state-changing request never reaches CORS or a route.
+    # This is not authentication; see security/http_boundary.py for its limits.
+    app.add_middleware(
+        HttpBoundaryMiddleware,
+        trusted_hosts=settings.trusted_hosts,
+        allowed_origins=settings.cors_origins,
     )
 
     # ---- Error handlers ----

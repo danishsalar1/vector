@@ -10,6 +10,7 @@ import threading
 from typing import TYPE_CHECKING
 
 from vector_agent.core.logging import get_logger
+from vector_agent.devices.presence import DevicePresenceMonitor
 from vector_agent.devices.session import (
     ConnectionState,
     DeviceNotConnectedError,
@@ -50,9 +51,11 @@ class ScanService:
     ) -> None:
         self._registry = registry or create_default_registry()
         self._planner = ScanPlanner()
+        self._presence: DevicePresenceMonitor | None = None
         self._orchestrator = ScanOrchestrator(
             session_manager=device_session_manager,
             registry=self._registry,
+            presence=self._presence,
         )
         self._scans: dict[str, ScanSession] = {}
         self._lock = threading.RLock()
@@ -64,6 +67,21 @@ class ScanService:
             self._orchestrator = ScanOrchestrator(
                 session_manager=device_session_manager,
                 registry=self._registry,
+                presence=self._presence,
+            )
+
+    def set_presence_monitor(self, presence: DevicePresenceMonitor | None) -> None:
+        """Enable (or, with None, disable) active presence verification for scans.
+
+        Applies to scans that start afterwards; a running scan keeps the orchestrator it began
+        with. Off by default so nothing probes hardware unless the agent explicitly wires it.
+        """
+        with self._lock:
+            self._presence = presence
+            self._orchestrator = ScanOrchestrator(
+                session_manager=device_session_manager,
+                registry=self._registry,
+                presence=presence,
             )
 
     @property

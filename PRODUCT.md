@@ -349,4 +349,4 @@ The current frontend is functional engineering UI only. The premium production v
 
 ## Accessibility & Inclusion
 
-Accessibility is a product requirement. Semantic HTML, keyboard accessibility, visible focus, sufficient contrast, status text in addition to color, reduced-motion support, clear loading and error states, and appropriate ARIA are required. WCAG 2.1 AA is the baseline. Do not sacrifice accessibility for visual effects.
+Accessibility is a product requirement. Semantic HTML, keyboard accessibility, visible focus, sufficient contrast, status text in addition to color, reduced-motion support, clear loading and error states, and appropriate ARIA are required. WCAG 2.2 AA is the minimum. Do not sacrifice accessibility for visual effects.

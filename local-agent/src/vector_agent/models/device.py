@@ -388,6 +388,14 @@ class PlannedDiagnostic(BaseModel):
     diagnostic_id: str
     applicability: DiagnosticApplicability
     reason: str | None = None
+    verification_level: VerificationLevel | None = None
+    """What kind of claim a PASS from this diagnostic can support, copied from its registered
+    definition. RUNTIME_DETECTION: the permitted observation/collection succeeded (inventory
+    or telemetry); it does NOT prove the component works. FUNCTIONAL_VERIFICATION: the
+    component was actually exercised. None means unknown and must be treated as NOT
+    functional: it never defaults to a stronger claim."""
+    requires_probe: bool | None = None
+    """Whether the registered diagnostic needs the VECTOR Probe. None means unknown."""
 
 
 class ScanPlan(BaseModel):

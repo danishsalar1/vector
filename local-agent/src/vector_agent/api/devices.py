@@ -21,6 +21,7 @@ from vector_agent.devices.ios.bridge import IOSCommandStatus, IOSDeviceBridge, I
 from vector_agent.devices.session import (
     DeviceNotConnectedError,
     DeviceNotFoundError,
+    DeviceSession,
     DeviceUnauthorizedError,
     device_session_manager,
 )
@@ -79,13 +80,15 @@ def _trigger_discovery() -> dict[str, str]:
         bridge = _get_android_bridge()
         discovery = bridge.discover_devices()
 
+        # An uncertain provider outcome (tool missing, error, timeout, unrecognised output)
+        # is NOT evidence that a phone was unplugged: the last committed sessions are kept
+        # untouched (no state change, no epoch advance) and the failure is reported through
+        # provider_statuses. Only a trustworthy listing may change a session (reconcile).
         if not discovery.adb_available:
             logger.info("Android toolchain (adb) unavailable on host.")
-            device_session_manager.mark_platform_offline(Platform.ANDROID)
             provider_statuses["android"] = "UNAVAILABLE"
-        elif discovery.state == AdbDeviceState.ERROR:
-            logger.warning("Android discovery returned error: %s", discovery.message)
-            device_session_manager.mark_platform_offline(Platform.ANDROID)
+        elif discovery.state == AdbDeviceState.ERROR or not discovery.trusted:
+            logger.warning("Android discovery was not trustworthy: %s", discovery.message)
             provider_statuses["android"] = "ERROR"
             android_error = True
         else:
@@ -105,19 +108,16 @@ def _trigger_discovery() -> dict[str, str]:
             provider_statuses["android"] = "AVAILABLE"
     except (FileNotFoundError, OSError):
         logger.info("Android toolchain (adb) unavailable on host.")
-        device_session_manager.mark_platform_offline(Platform.ANDROID)
         provider_statuses["android"] = "UNAVAILABLE"
     except Exception as exc:
         logger.warning("Android discovery failed (%s)", type(exc).__name__)
-        device_session_manager.mark_platform_offline(Platform.ANDROID)
         provider_statuses["android"] = "ERROR"
         android_error = True
 
-    # 2. iOS discovery
+    # 2. iOS discovery (same rule: only a trustworthy answer changes sessions)
     try:
         ios_bridge = _get_ios_bridge()
         if not ios_bridge.is_available():
-            device_session_manager.mark_platform_offline(Platform.IOS)
             provider_statuses["ios"] = "UNAVAILABLE"
         else:
             disc_res = ios_bridge.discover_devices_result()
@@ -129,27 +129,56 @@ def _trigger_discovery() -> dict[str, str]:
                 )
                 provider_statuses["ios"] = "AVAILABLE"
             elif disc_res.status == IOSToolchainStatus.UNAVAILABLE:
-                device_session_manager.mark_platform_offline(Platform.IOS)
                 provider_statuses["ios"] = "UNAVAILABLE"
             else:
                 logger.warning("iOS discovery returned error: %s", disc_res.status.value)
-                device_session_manager.mark_platform_offline(Platform.IOS)
                 provider_statuses["ios"] = "ERROR"
                 ios_error = True
     except (FileNotFoundError, OSError):
         logger.info("iOS toolchain unavailable on host.")
-        device_session_manager.mark_platform_offline(Platform.IOS)
         provider_statuses["ios"] = "UNAVAILABLE"
     except Exception as exc:
         logger.warning("iOS discovery failed (%s)", type(exc).__name__)
-        device_session_manager.mark_platform_offline(Platform.IOS)
         provider_statuses["ios"] = "ERROR"
         ios_error = True
 
     if android_error and ios_error:
-        raise RuntimeError("Device discovery failed on all active providers.")
+        raise DiscoveryUncertainError("Device discovery failed on all active providers.")
 
     return provider_statuses
+
+
+class DiscoveryUncertainError(RuntimeError):
+    """Every active provider failed to give a trustworthy answer. Sessions are untouched."""
+
+
+# Provider outcomes that mean "could not observe": sessions of that platform are
+# still the last committed knowledge, never freshly verified connectivity.
+_UNVERIFIED_PROVIDER_STATUSES = frozenset({"ERROR", "UNAVAILABLE"})
+
+
+def _as_listed(session: DeviceSession, provider_statuses: dict[str, str]) -> ConnectedDevice:
+    """Public view of a session, honest about whether discovery just verified it.
+
+    If this request's provider for the session's platform could not observe devices, a
+    previously present session is reported with UNKNOWN connection/authorization and no
+    capability profile instead of stale CONNECTED. The stored session (state, epoch, serial)
+    is NOT modified, so a running scan is unaffected. Non-present sessions are unchanged.
+    """
+    device = session.to_connected_device()
+    status = provider_statuses.get(session.platform.value.lower())
+    if status in _UNVERIFIED_PROVIDER_STATUSES and session.connection_state in (
+        ConnectionState.CONNECTED,
+        ConnectionState.UNAUTHORIZED,
+    ):
+        return device.model_copy(
+            update={
+                "connection_state": ConnectionState.UNKNOWN,
+                "authorization_state": DeviceAuthorizationState.UNKNOWN,
+                "capability_profile": None,
+            }
+        )
+    return device
 
 
 @router.get("", response_model=DeviceListResponse)
@@ -160,16 +189,20 @@ async def list_devices() -> DeviceListResponse:
     try:
         provider_statuses = await run_in_threadpool(_trigger_discovery)
     except Exception as exc:
+        # Any discovery failure, typed (all providers uncertain) or unexpected, is a failure
+        # to OBSERVE, never evidence of disconnection: committed sessions (identity, state,
+        # epoch) are left exactly as they were. The failure stays visible as this 503, and no
+        # device list (which could imply fresh connectivity) is returned. Only the exception
+        # type is logged.
         logger.error("Discovery trigger failed (%s)", type(exc).__name__)
-        device_session_manager.mark_platform_offline(Platform.ANDROID)
-        device_session_manager.mark_platform_offline(Platform.IOS)
         raise HTTPException(
             status_code=503,
             detail="Device discovery failed.",
         ) from None
 
     sessions = device_session_manager.list_sessions()
-    devices = [session.to_connected_device() for session in sessions]
+    stats = provider_statuses if isinstance(provider_statuses, dict) else {}
+    devices = [_as_listed(session, stats) for session in sessions]
     return DeviceListResponse(
         devices=devices,
         count=len(devices),
@@ -384,12 +417,12 @@ async def get_device_capabilities(
     try:
         await run_in_threadpool(_trigger_discovery)
     except Exception as exc:
+        # A failure to observe (typed or unexpected) is not proof of disconnection: sessions
+        # stay as last committed and the failure is surfaced as 503 (type-only logging).
         logger.error(
             "Discovery trigger failed before capability check (%s)",
             type(exc).__name__,
         )
-        device_session_manager.mark_platform_offline(Platform.ANDROID)
-        device_session_manager.mark_platform_offline(Platform.IOS)
         raise HTTPException(
             status_code=503,
             detail="Device discovery failed.",

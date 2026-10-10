@@ -86,6 +86,10 @@ class AndroidDiscoveryResult:
     devices: list[AdbDeviceEntry]
     message: str
     adb_available: bool
+    trusted: bool = True
+    """False when adb exited 0 but its answer cannot be trusted as evidence about what is
+    attached (no list header, daemon restart notice, truncated output). An untrusted result
+    must never be used to conclude that a device disappeared."""
 
 
 @dataclass(frozen=True)
@@ -270,7 +274,37 @@ class AndroidDeviceBridge:
                 message="Failed to execute ADB discovery command.",
             )
 
-        return _parse_devices_output(result.stdout)
+        parsed = _parse_devices_output(result.stdout)
+        if not _adb_listing_is_trustworthy(result):
+            return AndroidDiscoveryResult(
+                state=parsed.state,
+                devices=parsed.devices,
+                message="ADB returned an unrecognised answer; device state was not updated.",
+                adb_available=True,
+                trusted=False,
+            )
+        return parsed
+
+    def list_attached_devices(self, timeout: float = 3.0) -> list[AdbDeviceEntry] | None:
+        """Trustworthy, bounded ``adb devices -l`` snapshot for presence checks.
+
+        Returns the listed entries ONLY when the answer can be trusted as evidence about
+        what is attached right now: adb ran, exited 0, printed its list header and did not
+        report that it was just (re)starting the server. In every other case (adb missing,
+        timeout, non-zero exit, truncated or unrecognised output, daemon restart) it returns
+        None, which callers must treat as "unknown", never as "no devices".
+        """
+        try:
+            adb = self._require_adb()
+            result = run_command([adb, "devices", "-l"], timeout=timeout)
+        except (FileNotFoundError, ADBCommandTimeoutError, OSError):
+            return None
+        except Exception as exc:  # fail-uncertain backstop; only the type is logged
+            logger.warning("ADB presence listing failed (%s)", type(exc).__name__)
+            return None
+        if result.return_code != 0 or not _adb_listing_is_trustworthy(result):
+            return None
+        return _parse_devices_output(result.stdout).devices
 
     # ----------------------------------------------------------
     # Device identity
@@ -929,6 +963,21 @@ class AndroidDeviceBridge:
 # ============================================================
 # Parsing helpers
 # ============================================================
+
+
+def _adb_listing_is_trustworthy(result: Any) -> bool:
+    """May this ``adb devices -l`` answer be used as evidence about what is attached?
+
+    Only if it was not truncated, printed adb's list header and did not report that the
+    adb server was (re)starting or mismatched (a restart can legitimately list nothing).
+    """
+    if result.truncated:
+        return False
+    text = result.stdout + "\n" + result.stderr
+    lines = [line.strip() for line in text.splitlines()]
+    if not any(line.startswith("List of devices attached") for line in lines):
+        return False
+    return not any(line.startswith("*") or "daemon" in line.lower() for line in lines)
 
 
 def _parse_devices_output(output: str) -> AndroidDiscoveryResult:

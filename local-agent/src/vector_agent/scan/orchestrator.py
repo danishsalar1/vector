@@ -19,7 +19,8 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from vector_agent.core.logging import get_logger
-from vector_agent.devices.session import DeviceSessionManager
+from vector_agent.devices.presence import DevicePresenceMonitor, PresenceVerdict
+from vector_agent.devices.session import DeviceSession, DeviceSessionManager
 from vector_agent.diagnostics.registry import DiagnosticRegistry
 from vector_agent.models.device import (
     AutomationLevel,
@@ -47,9 +48,24 @@ class ScanOrchestrator:
         self,
         session_manager: DeviceSessionManager,
         registry: DiagnosticRegistry,
+        presence: DevicePresenceMonitor | None = None,
     ) -> None:
         self._session_manager = session_manager
         self._registry = registry
+        # Optional active presence verification (Stage 2B-3). Without it the orchestrator
+        # relies solely on what the session manager already records (previous behaviour).
+        self._presence = presence
+
+    def _device_lost(self, device_id: str, session: DeviceSession, epoch: int) -> bool:
+        """True only when the bound device's loss is confirmed (and recorded) or already known.
+
+        An unverifiable answer (timeout, tool error, flapping) returns False: the scan goes on
+        and the diagnostics themselves report any real failure. Never raises.
+        """
+        if self._presence is None:
+            return False
+        verdict = self._presence.verify(device_id, session, epoch)
+        return verdict is PresenceVerdict.LOST
 
     def run_scan(
         self,
@@ -157,6 +173,8 @@ class ScanOrchestrator:
                 current_dev is None
                 or current_dev.connection_state != ConnectionState.CONNECTED
                 or current_dev.session_epoch != initial_epoch
+                or current_dev is not dev_session
+                or self._device_lost(device_id, dev_session, initial_epoch)
             ):
                 logger.warning(
                     "Device %s disconnected or session epoch changed before diagnostic %s",
@@ -288,11 +306,20 @@ class ScanOrchestrator:
                 )
 
             # Check for stale device / epoch change AFTER diagnostic execution
+            # A clean measured outcome proves the device answered while it ran; anything else
+            # (ERROR, INCONCLUSIVE, RESTRICTED, ...) is exactly how an unplug shows up, so
+            # confirm the device is still attached before trusting or recording the result.
             current_dev = self._session_manager.get_session(device_id)
             if (
                 current_dev is None
                 or current_dev.connection_state != ConnectionState.CONNECTED
                 or current_dev.session_epoch != initial_epoch
+                or current_dev is not dev_session
+                or (
+                    result.status
+                    not in (DiagnosticStatus.PASS, DiagnosticStatus.FAIL, DiagnosticStatus.DEGRADED)
+                    and self._device_lost(device_id, dev_session, initial_epoch)
+                )
             ):
                 logger.warning(
                     "Device %s disconnected or session changed during diagnostic %s",
@@ -342,7 +369,28 @@ class ScanOrchestrator:
                 )
             )
 
-        # Step 4: Complete scan
+        # Step 4: Final verification. Clean results skip the per-diagnostic post-check, so a
+        # phone unplugged during/after the LAST diagnostic would otherwise still read as a
+        # completed scan. One bounded probe per scan (not per diagnostic) closes that gap;
+        # recorded results and evidence are kept, exactly as for any other mid-scan loss.
+        if self._device_lost(device_id, dev_session, initial_epoch):
+            logger.warning("Device %s disconnected before scan completion", device_id)
+            scan_session.current_diagnostic_id = None
+            scan_session.transition_to(
+                ScanLifecycleState.FAILED,
+                error="Device disconnected or session changed during scan.",
+            )
+            emit(
+                DiagnosticEvent(
+                    scan_id=scan_session.scan_id,
+                    device_id=device_id,
+                    event_type=DiagnosticEventType.SCAN_FAILED,
+                    message="Device disconnected during scan.",
+                )
+            )
+            return scan_session
+
+        # Step 5: Complete scan
         scan_session.current_diagnostic_id = None
         scan_session.transition_to(ScanLifecycleState.COMPLETED)
         emit(

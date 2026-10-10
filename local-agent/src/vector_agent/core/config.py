@@ -11,6 +11,8 @@ from pathlib import Path
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from vector_agent.security.http_boundary import validate_allowed_origins, validate_trusted_hosts
+
 
 class AgentSettings(BaseSettings):
     """Runtime configuration for the VECTOR local agent."""
@@ -29,10 +31,20 @@ class AgentSettings(BaseSettings):
     port: int = 8742
     """Local agent port. Chosen to avoid conflicts with common dev ports."""
 
-    # ---- CORS ----
-    # Only allow the Vite dev server when running locally.
-    # In Vercel demo mode no CORS is needed (same-origin).
-    cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    # ---- HTTP boundary (Host / Origin) ----
+    trusted_hosts: list[str] = ["127.0.0.1", "localhost"]
+    """Explicit Host allow-list (bare hostnames, no wildcard or port). Loopback only by default."""
+
+    # ---- CORS / allowed Origins ----
+    # Exact origins (no wildcard, no "null"): the Vite dev server (5173) and the
+    # Vite preview server (4173). The same list authorizes the Origin header of
+    # state-changing requests, including same-origin POSTs through the Vite proxy.
+    cors_origins: list[str] = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:4173",
+        "http://127.0.0.1:4173",
+    ]
 
     # ---- ADB ----
     adb_path: str = "adb"
@@ -55,6 +67,13 @@ class AgentSettings(BaseSettings):
     # ---- Subprocess security ----
     subprocess_max_output_bytes: int = 512_000
     """Hard limit on subprocess stdout to prevent memory exhaustion."""
+
+    # ---- Scan device presence (Stage 2B-3) ----
+    presence_check_enabled: bool = True
+    """Verify the scan's bound device is still attached before/after diagnostics."""
+
+    presence_probe_timeout_seconds: float = 3.0
+    """Timeout for ONE presence probe (a single bounded 'adb devices' / 'idevice_id -l')."""
 
     # ---- Scan ----
     scan_max_duration_seconds: float = 300.0
@@ -83,6 +102,23 @@ class AgentSettings(BaseSettings):
         if v not in allowed:
             raise ValueError(f"log_level must be one of {allowed}")
         return v
+
+    @field_validator("presence_probe_timeout_seconds")
+    @classmethod
+    def validate_presence_probe_timeout(cls, v: float) -> float:
+        if not 0.5 <= v <= 10.0:
+            raise ValueError("presence_probe_timeout_seconds must be between 0.5 and 10.")
+        return v
+
+    @field_validator("trusted_hosts")
+    @classmethod
+    def validate_trusted_hosts_field(cls, v: list[str]) -> list[str]:
+        return list(validate_trusted_hosts(v))
+
+    @field_validator("cors_origins")
+    @classmethod
+    def validate_cors_origins_field(cls, v: list[str]) -> list[str]:
+        return list(validate_allowed_origins(v))
 
     @property
     def data_path(self) -> Path:

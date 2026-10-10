@@ -17,14 +17,14 @@ Do not edit files. Read `PRODUCT.md` (Design Status, Accessibility, Real-Time Di
 1. **Hierarchy and readability** for non-technical buyers: plain-language status, the key answer first, evidence/detail on demand, no jargon without explanation.
 2. **Aesthetic:** premium diagnostic hardware/software feel - restrained typography, neutral surfaces, one accent, real charts/tables, modest radii, simple icons.
 3. **Responsive behavior:** usable at narrow and wide widths; no clipped or overlapping content.
-4. **Accessibility (WCAG 2.1 AA baseline):** semantic HTML, visible focus, contrast, status text in addition to color, correct ARIA only where needed.
+4. **Accessibility (WCAG 2.2 AA minimum):** semantic HTML, visible focus, contrast, status text in addition to color, correct ARIA only where needed. Also check focus not obscured (2.4.11), a non-drag alternative for drag interactions (2.5.7), target sizes (2.5.8, 44 px for primary touch controls), consistent help location (3.2.6), and no flashing content (2.3.1).
 5. **Keyboard support:** all actions reachable and operable, logical focus order, no traps.
 6. **Reduced motion:** `prefers-reduced-motion` respected; information never conveyed by motion alone.
 7. **Loading / error / empty states:** present, explicit, and honest (LIVE failure is shown as failure, never replaced by Demo).
 8. **Truthful state:** nothing fabricated - availability, timestamps, platform (never inferred from opaque IDs), capabilities, results. Unsupported/restricted/unknown are distinct from failed. Battery percentage is not shown as health. Demo is labeled DEMO DATASET.
 9. **No fake progress/timers:** no arbitrary timers or animation standing in for execution.
 10. **No fake social proof:** no invented reviews, metrics, counts, or logos.
-11. **Avoid:** excessive neon/glow/glassmorphism, giant pills/cards, gradients for their own sake, emoji icons, generic AI-dashboard look.
+11. **Avoid:** neon/glow/glassmorphism outside the narrow approved exceptions in `.claude/rules/frontend.md` (flag glass on data or evidence surfaces, nested glass, more than 3 visible backdrop-filter layers, missing opaque fallbacks, and glow outside the VECTOR Core and the active component halo), giant pills/cards, gradients for their own sake, emoji icons, generic AI-dashboard look.
 
 ## Motion contract (for any future animation work)
 

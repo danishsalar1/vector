@@ -53,6 +53,11 @@ class AdbProbeTransport(ProbeTransport):
         self._port = bridge.forward(bootstrap)
         try:
             self._socket = socket.create_connection(("127.0.0.1", self._port), timeout=3)
+        except TimeoutError:
+            # A connect that timed out is a TIMEOUT, not an unavailable endpoint (FG-02).
+            bridge.remove_forward(self._port)
+            self._key = b""
+            raise TimeoutError("Probe endpoint timed out.") from None
         except OSError:
             bridge.remove_forward(self._port)
             self._key = b""
@@ -131,6 +136,10 @@ class AdbProbeTransport(ProbeTransport):
             sock.close()
         try:
             self._bridge.remove_forward(self._port)
-        except Exception:
+        except (OSError, ValueError):
+            # Expected failures of the bridge: ADB/subprocess errors (OSError, including
+            # ConnectionError and TimeoutError), unowned forward or undecodable output
+            # (ValueError). Anything else escapes to ProbeTransport.close(), which still
+            # reports ERROR, so cleanup is never presented as verified (FG-13).
             self.cleanup_failed = True
             raise ConnectionError("Probe forward cleanup failed.") from None

@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from uuid import uuid4
 
+from vector_agent.core.logging import get_logger
 from vector_agent.devices.android.probe_bridge import (
     AndroidProbeBridge,
     ProbeBootstrap,
@@ -22,14 +24,23 @@ from vector_agent.models.probe_lifecycle import ProbeReason as R
 from vector_agent.models.probe_lifecycle import ProbeState
 from vector_agent.probe.adb_transport import AdbProbeTransport
 from vector_agent.probe.diagnostic_evidence import diagnostic_result
-from vector_agent.probe.protocol import ProbeProtocolSession
+from vector_agent.probe.protocol import ProbeErrorCode, ProbeProtocolSession, ProbeValidationError
 from vector_agent.probe.transport import ProbeTransport
 from vector_agent.probe.transport import ProbeTransportStatus as T
 
 # ruff: noqa: TID252
 from ..devices.session import DeviceSession, DeviceSessionManager
 
+logger = get_logger(__name__)
+
 CONTROL_OPERATIONS = (O.HELLO, O.GET_CAPABILITIES, O.HEARTBEAT)
+
+# FG-06: no state query or connection hand-off waits indefinitely behind an in-flight
+# operation. A GET returns the last committed state after STATE_WAIT_SECONDS; connection()
+# gives a closing predecessor / a competing caller CONNECTION_WAIT_SECONDS, then fails with a
+# retryable ValueError (existing 409 mapping) instead of hanging the request thread.
+STATE_WAIT_SECONDS = 0.5
+CONNECTION_WAIT_SECONDS = 5.0
 
 # One transport-failure vocabulary for control and diagnostic exchanges.
 TRANSPORT_FAILURES: dict[T, tuple[A, R]] = {
@@ -153,31 +164,103 @@ class ProbeConnection:
         self._diagnostic_running = False
         return self._state
 
+    def _peer_recorded_expiry(self) -> bool:
+        """True only when the Probe app's own private record says it expired the session.
+
+        A peer-closed socket alone is indistinguishable from an unplugged cable, so
+        DEVICE_UNAVAILABLE stays the default. This is a bounded, read-only ``run-as`` read of
+        the app's state file; any failure to obtain that evidence is "no evidence".
+        """
+        if not self._live():
+            return False
+        try:
+            return bool(self._bridge.bootstrap() == "EXPIRED")
+        except (OSError, ValueError):
+            return False
+
+    def _failure(self, status: T) -> tuple[A, R]:
+        """Truthful (availability, reason) for a failed exchange (FG-02).
+
+        A requested stop explains every failure that follows it (CANCELLED); a session that
+        outlived its 900 s lifetime, or that the app recorded as expired, is SESSION_EXPIRED
+        rather than a generic timeout or disconnect.
+        """
+        if self._cancel.is_set():
+            return A.DISCONNECTED, R.CANCELLED
+        if status == T.TIMEOUT and self._session is not None and self._session.lifetime_exhausted():
+            return A.DISCONNECTED, R.SESSION_EXPIRED
+        if status == T.UNAVAILABLE and self._peer_recorded_expiry():
+            return A.DISCONNECTED, R.SESSION_EXPIRED
+        return TRANSPORT_FAILURES.get(status, TRANSPORT_FAILURE_DEFAULT)
+
+    def _validation_failure(self, error: ProbeValidationError) -> tuple[A, R]:
+        """The desktop protocol session itself rejected the request (FG-02)."""
+        if (
+            error.code == ProbeErrorCode.EXPIRED
+            and self._session is not None
+            and self._session.lifetime_exhausted()
+        ):
+            return A.DISCONNECTED, R.SESSION_EXPIRED
+        return TRANSPORT_FAILURE_DEFAULT
+
+    def _end_not_live(self) -> ProbeState:
+        """Record why a connection is no longer live, without relabelling a user stop.
+
+        Owner change is SESSION_CHANGED. A completed stop keeps STOPPED and an earlier
+        recorded end keeps its own reason; an interrupted in-flight operation is CANCELLED.
+        """
+        if self._current_epoch() != self._epoch:
+            return self._drop(A.DISCONNECTED, R.SESSION_CHANGED)
+        state = self._state
+        if state.availability in (A.DISCONNECTED, A.ERROR):
+            return self._drop(state.availability, state.reason)
+        return self._drop(A.DISCONNECTED, R.CANCELLED)
+
     def _guarded(self, action: Callable[[], ProbeState]) -> ProbeState:
         with self._operation:
-            if not self._live():
-                return self._drop(A.DISCONNECTED, R.SESSION_CHANGED)
-            try:
-                state = action()
-                if not self._live():
-                    return self._drop(A.DISCONNECTED, R.SESSION_CHANGED)
-                return state
-            except ConnectionError:
-                if not self._live():
-                    return self._drop(A.DISCONNECTED, R.SESSION_CHANGED)
-                return self._drop(A.DISCONNECTED, R.DEVICE_UNAVAILABLE)
-            except FileNotFoundError:
-                if not self._live():
-                    return self._drop(A.DISCONNECTED, R.SESSION_CHANGED)
-                return self._drop(A.RESTRICTED, R.TOOL_UNAVAILABLE)
-            except TimeoutError:
-                if not self._live():
-                    return self._drop(A.DISCONNECTED, R.SESSION_CHANGED)
-                return self._drop(A.DISCONNECTED, R.TIMEOUT)
-            except Exception:
-                if not self._live():
-                    return self._drop(A.DISCONNECTED, R.SESSION_CHANGED)
-                return self._drop(A.ERROR, R.INVALID_RESPONSE)
+            return self._run_guarded(action)
+
+    def state_bounded(self, timeout: float) -> ProbeState:
+        """Current state, waiting at most ``timeout`` seconds for an in-flight operation.
+
+        If the operation is still running the last COMMITTED state is returned: never a
+        guess about the outcome of the unfinished operation (FG-06).
+        """
+        if not self._operation.acquire(timeout=timeout):
+            return self._state
+        try:
+            return self._run_guarded(lambda: self._state)
+        finally:
+            self._operation.release()
+
+    def _run_guarded(self, action: Callable[[], ProbeState]) -> ProbeState:
+        """Run ``action`` holding the operation lock; map every failure to a typed state."""
+        if not self._live():
+            return self._end_not_live()
+        failure: tuple[A, R]
+        try:
+            state = action()
+        except ProbeValidationError as exc:
+            failure = self._validation_failure(exc)
+        except ConnectionError:
+            failure = (A.DISCONNECTED, R.DEVICE_UNAVAILABLE)
+        except FileNotFoundError:
+            failure = (A.RESTRICTED, R.TOOL_UNAVAILABLE)
+        except TimeoutError:
+            failure = (A.DISCONNECTED, R.TIMEOUT)
+        except (OSError, ValueError):
+            # Expected: bounded-subprocess/ADB errors and malformed or undecodable output.
+            failure = (A.ERROR, R.INVALID_RESPONSE)
+        except Exception as exc:
+            # Last-resort fail-closed backstop (FG-13): the session is torn down below and
+            # reported as ERROR. Only the exception TYPE is logged, never its message.
+            logger.error("Probe lifecycle failed closed on unexpected %s", type(exc).__name__)
+            failure = (A.ERROR, R.INVALID_RESPONSE)
+        else:
+            return state if self._live() else self._end_not_live()
+        if not self._live():
+            return self._end_not_live()
+        return self._drop(*failure)
 
     def discover(self) -> ProbeState:
         def action() -> ProbeState:
@@ -273,7 +356,7 @@ class ProbeConnection:
         )
         result = self._transport.request(request, timeout_seconds=3, cancellation=self._cancel)
         if result.status != T.RECEIVED or result.response is None:
-            state, reason = TRANSPORT_FAILURES.get(result.status, TRANSPORT_FAILURE_DEFAULT)
+            state, reason = self._failure(result.status)
             self._drop(state, reason)
             return False
         response = result.response
@@ -406,7 +489,7 @@ class ProbeConnection:
                 if not self._live():
                     raise self._ended()
                 if result.status != T.RECEIVED or result.response is None:
-                    state, reason = TRANSPORT_FAILURES.get(result.status, TRANSPORT_FAILURE_DEFAULT)
+                    state, reason = self._failure(result.status)
                     raise self._dropped(
                         state,
                         reason,
@@ -445,9 +528,14 @@ class ProbeConnection:
                 )
             except (DiagnosticUnavailableError, DiagnosticSessionError):
                 raise
-            except (ConnectionError, ValueError):
+            except (ConnectionError, ValueError) as exc:
                 if not self._live():
                     raise self._ended() from None
+                if isinstance(exc, ProbeValidationError):
+                    state, reason = self._validation_failure(exc)
+                    raise self._dropped(
+                        state, reason, "Diagnostic unavailable; reconnect with fresh consent."
+                    ) from None
                 raise self._dropped(
                     *TRANSPORT_FAILURE_DEFAULT,
                     "Diagnostic unavailable; reconnect with fresh consent.",
@@ -471,12 +559,28 @@ class ProbeConnection:
             self.heartbeat()
 
     def stop(self, *, stop_app: bool = False) -> ProbeState:
+        state = self._stop(stop_app=stop_app, wait=None)
+        assert state is not None  # an unbounded wait always completes
+        return state
+
+    def stop_within(self, wait: float) -> bool:
+        """Stop, waiting at most ``wait`` seconds for an in-flight operation (FG-06).
+
+        Resources are released immediately (cancellation + transport close). Returns False if
+        the in-flight operation had not finished in time, so the caller keeps tracking this
+        connection and retries instead of treating it as closed.
+        """
+        return self._stop(stop_app=False, wait=wait) is not None
+
+    def _stop(self, *, stop_app: bool, wait: float | None) -> ProbeState | None:
         self._cancel.set()
         # close() unblocks socket I/O without waiting for the operation lock.
         transport = self._transport
         if transport is not None and transport.close() == T.ERROR:
             self._cleanup_failed = True
-        with self._operation:
+        if not self._operation.acquire(timeout=-1 if wait is None else wait):
+            return None
+        try:
             state = self._drop(A.DISCONNECTED, R.STOPPED)
             if stop_app and self._current_epoch() == self._epoch:
                 try:
@@ -488,9 +592,25 @@ class ProbeConnection:
                         return self._drop(A.DISCONNECTED, R.SESSION_CHANGED)
                     if not self._bridge.stop():
                         state = self._drop(A.ERROR, R.TOOL_ERROR)
-                except Exception:
+                except (OSError, ValueError):
+                    state = self._drop(A.ERROR, R.TOOL_ERROR)
+                except Exception as exc:
+                    # Last-resort fail-closed backstop (FG-13): never report a clean stop.
+                    logger.error("Probe stop failed closed on unexpected %s", type(exc).__name__)
                     state = self._drop(A.ERROR, R.TOOL_ERROR)
             return state
+        finally:
+            self._operation.release()
+
+
+class _DeviceGate:
+    """Per-device serialization lock plus the number of callers using it (FG-01)."""
+
+    __slots__ = ("lock", "users")
+
+    def __init__(self) -> None:
+        self.lock = threading.Lock()
+        self.users = 0
 
 
 class ProbeService:
@@ -507,18 +627,38 @@ class ProbeService:
         self._manager, self._adb, self._artifact = manager, adb_path, artifact
         self._enabled = enabled
         self._connections: dict[str, ProbeConnection] = {}
-        self._device_locks: dict[str, threading.Lock] = {}
+        self._device_locks: dict[str, _DeviceGate] = {}
         self._lock = threading.Lock()
         self._shutdown = threading.Event()
         self._workers: dict[str, threading.Thread] = {}
 
-    def _device_lock(self, device_id: str) -> threading.Lock:
+    @contextmanager
+    def _device_guard(self, device_id: str, timeout: float) -> Iterator[None]:
+        """Serialize lifecycle changes for one device, waiting at most ``timeout`` (FG-06).
+
+        The registry entry exists only while a caller holds or awaits it and is removed with
+        the last user, so it can never outgrow the callers currently in flight, whatever
+        device ids are presented (FG-01).
+        """
         with self._lock:
-            lock = self._device_locks.get(device_id)
-            if lock is None:
-                lock = threading.Lock()
-                self._device_locks[device_id] = lock
-            return lock
+            gate = self._device_locks.get(device_id)
+            if gate is None:
+                gate = _DeviceGate()
+                self._device_locks[device_id] = gate
+            gate.users += 1
+        acquired = False
+        try:
+            acquired = gate.lock.acquire(timeout=timeout)
+            if not acquired:
+                raise ValueError("Probe lifecycle is busy.")
+            yield
+        finally:
+            if acquired:
+                gate.lock.release()
+            with self._lock:
+                gate.users -= 1
+                if gate.users == 0 and self._device_locks.get(device_id) is gate:
+                    del self._device_locks[device_id]
 
     def _prune_locked(self) -> None:
         """Evict dead connections and completed worker threads."""
@@ -549,7 +689,7 @@ class ProbeService:
                 if conn is None or not conn._live():
                     return ProbeState(availability=A.DISCONNECTED, reason=R.STOPPED)
 
-            state = conn.state()
+            state = conn.state_bounded(STATE_WAIT_SECONDS)
             with self._lock:
                 current = self._connections.get(device_id)
                 if current is conn or current is None or not current._live():
@@ -558,8 +698,7 @@ class ProbeService:
         return state
 
     def connection(self, device_id: str) -> ProbeConnection:
-        dev_lock = self._device_lock(device_id)
-        with dev_lock:
+        with self._device_guard(device_id, CONNECTION_WAIT_SECONDS):
             to_stop: ProbeConnection | None = None
             to_join: threading.Thread | None = None
 
@@ -578,16 +717,24 @@ class ProbeService:
                 if old is not None and old._live():
                     return old
                 if old is not None:
+                    # Stay tracked until the predecessor has really closed, so a stuck
+                    # cleanup is retried by the next call and never orphaned.
                     to_stop = old
-                    to_join = self._workers.pop(device_id, None)
-                    self._connections.pop(device_id, None)
+                    to_join = self._workers.get(device_id)
 
             if to_stop is not None:
-                to_stop.stop()
-                if to_join is not None:
-                    to_join.join(timeout=5)
-                    if to_join.is_alive():
-                        raise ValueError("Previous Probe lifecycle is still closing.")
+                deadline = time.monotonic() + CONNECTION_WAIT_SECONDS
+                closed = to_stop.stop_within(CONNECTION_WAIT_SECONDS)
+                if closed and to_join is not None:
+                    to_join.join(timeout=max(0.0, deadline - time.monotonic()))
+                    closed = not to_join.is_alive()
+                if not closed:
+                    raise ValueError("Previous Probe lifecycle is still closing.")
+                with self._lock:
+                    if self._connections.get(device_id) is to_stop:
+                        del self._connections[device_id]
+                    if self._workers.get(device_id) is to_join:
+                        self._workers.pop(device_id, None)
 
             with self._lock:
                 if self._shutdown.is_set() or not self._enabled:

@@ -59,7 +59,7 @@ inspect -> implement -> focused tests -> affected-project regression -> `scripts
 
 ## UI
 
-Premium diagnostic hardware/software feel: restrained typography, neutral surfaces, one accent, real charts/tables, modest radii, simple icons, accessibility and reduced motion. Avoid fake progress/timers/metrics/reviews/logos, neon/glow/glassmorphism, giant pills/cards, and generic AI-dashboard looks. `frontend/` is currently an engineering UI, not the final visual language.
+Premium diagnostic hardware/software feel: restrained typography, neutral surfaces, one accent, real charts/tables, modest radii, simple icons, accessibility and reduced motion. Avoid fake progress/timers/metrics/reviews/logos, neon/glow/glassmorphism (except the narrow approved exceptions in `.claude/rules/frontend.md`), giant pills/cards, and generic AI-dashboard looks. `frontend/` is currently an engineering UI, not the final visual language.
 
 ## Scoped rules and review aids
 

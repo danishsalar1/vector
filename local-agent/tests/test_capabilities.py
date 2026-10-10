@@ -1001,4 +1001,9 @@ class TestCapabilitiesApiEndpoint:
         assert sensitive_marker not in caplog.text
         assert "Discovery trigger failed before capability check" in caplog.text
         assert "RuntimeError" in caplog.text
-        assert session.connection_state == ConnectionState.OFFLINE
+        # A failure to observe is not proof of disconnection: the committed session
+        # (identity, state, epoch) is unchanged and the error is surfaced as the 503 above.
+        assert session.connection_state == ConnectionState.CONNECTED
+        assert session.session_epoch == 0
+        assert session.raw_serial == _FAKE_SERIAL
+        assert device_session_manager.get_session(device_id) is session

@@ -167,7 +167,7 @@ class TestDevicesEndpoint:
         assert response.status_code == 400
         assert "not connected" in response.json()["detail"].lower()
 
-    async def test_discovery_failure_returns_503_and_marks_offline(
+    async def test_discovery_failure_returns_503_and_preserves_session(
         self, client: AsyncClient
     ) -> None:
         session = DeviceSession(
@@ -186,7 +186,14 @@ class TestDevicesEndpoint:
         assert response.status_code == 503
         assert response.json()["detail"] == "Device discovery failed."
         assert "ADB crash" not in response.text
-        assert session.connection_state == ConnectionState.OFFLINE
+        # An unexpected discovery exception is a failure to OBSERVE, not proof of
+        # disconnection: the committed session (identity, state, epoch) is unchanged.
+        assert session.connection_state == ConnectionState.CONNECTED
+        assert session.session_epoch == 0
+        assert session.raw_serial == "ACTIVE_SERIAL"
+        assert device_session_manager.get_session("dev-active") is session
+        # The error stays visible and no device list implying fresh connectivity is returned.
+        assert "devices" not in response.json()
 
     async def test_devices_includes_explicit_platform(self, client: AsyncClient) -> None:
         session = DeviceSession(

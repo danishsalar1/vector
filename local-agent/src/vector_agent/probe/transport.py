@@ -110,12 +110,16 @@ class ProbeTransport(ABC):
                 return ProbeTransportResult(ProbeTransportStatus.BUSY)
             self._busy = True
         claimed = False
+        # Cancellation (caller event or transport close) explains any exchange failure that
+        # follows it: closing a socket under a blocked read surfaces as an arbitrary OSError,
+        # and closing the session as SESSION_CLOSED. Report those as CANCELLED, never as a
+        # generic disconnect, error or session expiry.
+        token = ProbeCancellation(cancellation, self._closed)
         try:
             self._session.claim_dispatch(request, current_device_epoch=self._current_epoch())
             claimed = True
             start = self._monotonic()
             deadline = start + timeout_seconds
-            token = ProbeCancellation(cancellation, self._closed)
             if token.is_cancelled():
                 return ProbeTransportResult(ProbeTransportStatus.CANCELLED)
             reply = self._exchange(request, deadline=deadline, cancellation=token)
@@ -147,6 +151,8 @@ class ProbeTransport(ABC):
                 )
                 return ProbeTransportResult(ProbeTransportStatus.RECEIVED, response)
         except ProbeValidationError as exc:
+            if token.is_cancelled():
+                return ProbeTransportResult(ProbeTransportStatus.CANCELLED)
             mapped = {
                 ProbeErrorCode.BOUNDS_VIOLATION: ProbeTransportStatus.BOUNDS_VIOLATION,
                 ProbeErrorCode.UNSUPPORTED_PROTOCOL: ProbeTransportStatus.UNSUPPORTED_PROTOCOL,
@@ -156,11 +162,19 @@ class ProbeTransport(ABC):
             }.get(exc.code, ProbeTransportStatus.PROTOCOL_VIOLATION)
             return ProbeTransportResult(mapped)
         except TimeoutError:
+            if token.is_cancelled():
+                return ProbeTransportResult(ProbeTransportStatus.CANCELLED)
             return ProbeTransportResult(ProbeTransportStatus.TIMEOUT)
         except ConnectionError:
+            if token.is_cancelled():
+                return ProbeTransportResult(ProbeTransportStatus.CANCELLED)
             return ProbeTransportResult(ProbeTransportStatus.UNAVAILABLE)
         except Exception:
-            # Deliberately never log or expose str(exc), payloads or command details.
+            # Last-resort fail-closed backstop (FG-13): any other adapter failure is ERROR
+            # unless a cancellation already explains it. Deliberately never log or expose
+            # str(exc), payloads or command details.
+            if token.is_cancelled():
+                return ProbeTransportResult(ProbeTransportStatus.CANCELLED)
             return ProbeTransportResult(ProbeTransportStatus.ERROR)
         finally:
             if claimed:
@@ -177,5 +191,8 @@ class ProbeTransport(ABC):
         try:
             self._cleanup()
         except Exception:
+            # Adapter boundary (FG-13): concrete adapters raise their own typed failures;
+            # any adapter fault, expected or not, is reported as ERROR (cleanup unverified)
+            # and never swallowed. The details are deliberately not logged or exposed.
             return ProbeTransportStatus.ERROR
         return ProbeTransportStatus.CLOSED

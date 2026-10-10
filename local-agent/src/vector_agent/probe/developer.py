@@ -9,12 +9,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 import threading
+from typing import TextIO
 
 from vector_agent.core.config import get_settings
-from vector_agent.devices.android.bridge import _parse_devices_output
+from vector_agent.devices.android.bridge import AndroidDeviceBridge
 from vector_agent.devices.session import DeviceSessionManager
-from vector_agent.models.device import Platform
 from vector_agent.models.probe import ProbeOperation as O
 from vector_agent.probe.lifecycle import (
     DiagnosticSessionError,
@@ -22,7 +23,6 @@ from vector_agent.probe.lifecycle import (
     ProbeService,
 )
 from vector_agent.probe.trust_build import load_trusted_artifact
-from vector_agent.security.bounded_process import capture
 
 UNAVAILABLE_MESSAGE = (
     "Diagnostic busy or cleaning up on the device; the session is still connected. Retry."
@@ -30,16 +30,42 @@ UNAVAILABLE_MESSAGE = (
 REJECTED_MESSAGE = "Command unavailable or rejected. Inspect state; reconnect with fresh consent after interruption."
 
 
-def discover(manager: DeviceSessionManager, adb: str) -> None:
-    """Bounded existing discovery parser; no raw output is printed or retained."""
+def discover(manager: DeviceSessionManager, adb: str) -> bool:
+    """Refresh sessions from ONE trustworthy ``adb devices -l`` listing; never guess.
+
+    Uses the agent's own trust rule (``AndroidDeviceBridge.list_attached_devices``): a
+    missing adb, non-zero exit, timeout, exception, truncated or malformed output, missing
+    list header or daemon-restart notice is NOT evidence about the phone. In that case
+    sessions, states and epochs stay exactly as last committed and False is returned so the
+    console can say so. Only a trustworthy listing (including a genuinely empty one) is
+    reconciled, which is the sole way a device becomes OFFLINE or UNAUTHORIZED here.
+    """
+    entries = AndroidDeviceBridge(adb_path=adb).list_attached_devices(timeout=3.0)
+    if entries is None:
+        return False
     try:
-        result = capture([adb, "devices", "-l"], timeout=3, limit=65536)
-        if result.returncode:
-            raise ConnectionError
-        discovered = _parse_devices_output(result.stdout.decode("utf-8", errors="strict"))
-        manager.reconcile_android_discovery(discovered.devices)
+        manager.reconcile_android_discovery(entries)
     except (OSError, ValueError, TimeoutError):
-        manager.mark_platform_offline(Platform.ANDROID)
+        return False
+    return True
+
+
+def refresh_discovery(
+    manager: DeviceSessionManager,
+    adb: str,
+    uncertain: threading.Event,
+    out: TextIO | None = None,
+) -> bool:
+    """One discovery pass that keeps uncertainty visible (once per transition, no details)."""
+    stream = out if out is not None else sys.stderr
+    trusted = discover(manager, adb)
+    if not trusted and not uncertain.is_set():
+        uncertain.set()
+        print("Device discovery is uncertain; device state left unchanged.", file=stream)
+    elif trusted and uncertain.is_set():
+        uncertain.clear()
+        print("Device discovery recovered.", file=stream)
+    return trusted
 
 
 def run_command(
@@ -112,12 +138,13 @@ def main() -> None:
     manager = DeviceSessionManager()
     service = ProbeService(manager, adb_path=settings.adb_path, artifact=artifact)
     stopping = threading.Event()
+    uncertain = threading.Event()
 
     def monitor() -> None:
         while not stopping.wait(2):
-            discover(manager, settings.adb_path)
+            refresh_discovery(manager, settings.adb_path, uncertain)
 
-    discover(manager, settings.adb_path)
+    refresh_discovery(manager, settings.adb_path, uncertain)
     worker = threading.Thread(target=monitor, name="vector-developer-discovery", daemon=True)
     worker.start()
     selected: str | None = None
