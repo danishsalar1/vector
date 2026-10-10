@@ -23,6 +23,7 @@ Current completed slices:
 - Phase 8B - Signed Android Probe + Discovery / Consent / Lifecycle (COMPLETE / VERIFIED / FORMAL GATE PASSED / IMPLEMENTATION COMMITTED: 365f0e8)
 - Phase 8C - Deep Android Functional Diagnostics (COMPLETE / INDEPENDENT GATE PASSED; baseline 0aa0cbe; committed in the Phase 8C completion commit that follows 0aa0cbe)
 - Phase 8E - OEM Reference Catalog, Identity Resolution, Evidence-Based Comparison + Hardening (COMPLETE / INDEPENDENT POST-REMEDIATION ACCEPTANCE GATE PASSED; checkpoint commit 11720a0ebadf7510e8b06cfa3b2c1532c6d5bed7, closure recorded in a separate documentation commit; physical hardware qualification NOT RUN; no OEM authenticity or provenance claim; RV2-01 and RV-03 must be fixed before their functionality is exposed through any production API). Android provenance/anomaly collectors are DEFERRED, not completed.
+- Phase 8F backend foundation only (Stages 2A-2B-4) - COMMITTED as `219f8ad40473ae4fbea31b50e9ac4bffe88bcb8c` (`219f8ad`), CODE_TESTED; hardware qualification NOT RUN. This is NOT the completed Phase 8F product: frontend, VECTOR Core, functional Deep Scan, safe scan cancellation and Phase 8G are NOT STARTED. See "Phase 8F Backend Foundation" below.
 Baseline before Phase 8A: 638955c
 Codex instructions commit: 638955c
 Phase 8A implementation commit: 4f073da
@@ -42,7 +43,7 @@ Final staged-boundary review (8B): APPROVED
 Hardware qualification: NOT RUN
 Trust Engine: NOT_READY
 trust_score: None
-Next implementation slice: 8F - Premium Frontend, Real Diagnostics Integration, Quick Scan, Optional Deep Scan + VECTOR Core Animation (NEXT / NOT STARTED; requires separate explicit authorization)
+Next implementation slice: 8F - Premium Frontend, Real Diagnostics Integration, Quick Scan, Optional Deep Scan + VECTOR Core Animation (IN PROGRESS: backend prerequisites only, committed in 219f8ad and CODE_TESTED; frontend, Deep Scan, safe scan cancellation and VECTOR Core NOT STARTED; remaining work requires separate explicit authorization)
 
 ### Canonical Production Roadmap
 1. Foundation / Production Audit — COMPLETE
@@ -52,7 +53,7 @@ Next implementation slice: 8F - Premium Frontend, Real Diagnostics Integration, 
 5. Diagnostic Registry + Scan Planner + Scan Lifecycle + Diagnostic Events — COMPLETE
 6. Additional Android Standard Diagnostics — COMPLETE
 7. iOS Discovery, Pairing + Advanced / Version-Aware iOS Diagnostics — COMPLETE
-8. VECTOR Probe + Deep Android Diagnostics - IN PROGRESS (8A, 8D, 8B & 8C complete; 8E complete, independent acceptance gate PASSED; 8F next)
+8. VECTOR Probe + Deep Android Diagnostics - IN PROGRESS (8A, 8D, 8B & 8C complete; 8E complete, independent acceptance gate PASSED; 8F IN PROGRESS: backend prerequisites committed in 219f8ad, product NOT complete)
 9. Cross-Platform Evidence Normalization + Verification Coverage — NOT STARTED
 10. Explainable Verification / Trust Engine — NOT STARTED
 11. Real-Device Validation + Calibration — NOT STARTED
@@ -72,7 +73,7 @@ Next implementation slice: 8F - Premium Frontend, Real Diagnostics Integration, 
 - 8B - Signed Android Probe + Discovery / Consent / Lifecycle - COMPLETE (development-foundation scope; physical hardware qualification NOT RUN)
 - 8C - Deep Android Functional Diagnostics - COMPLETE (Independent Gate PASSED; physical hardware qualification NOT RUN)
 - 8E - OEM Reference Catalog, Identity Resolution, Evidence-Based Comparison + Associated Hardening - COMPLETE (checkpoint commit 11720a0ebadf7510e8b06cfa3b2c1532c6d5bed7; independent post-remediation acceptance gate PASSED; physical hardware qualification NOT RUN)
-- 8F - Premium Frontend, Real Diagnostics Integration, Quick Scan, Optional Deep Scan + VECTOR Core Animation - NEXT (NOT STARTED)
+- 8F - Premium Frontend, Real Diagnostics Integration, Quick Scan, Optional Deep Scan + VECTOR Core Animation - IN PROGRESS (backend prerequisites committed in 219f8ad and CODE_TESTED; frontend, Deep Scan, safe scan cancellation and VECTOR Core NOT STARTED)
 - 8G - Security, Reliability, Performance, Accessibility + Physical-Device Qualification - NOT STARTED
 - DEFERRED (not completed, not assigned to a named slice): Android provenance/anomaly signal collectors (real OEM provenance collectors and anomaly detection) originally planned under the 8E name. Phase 8E did not implement them.
 - Roadmap reconciliation for 8E / 8F / 8G approved by the user on 2026-10-10; it supersedes the earlier working titles (8E "Android Provenance / Anomaly Signals", 8F "Planner / Evidence / Coverage / Frontend Integration", 8G "Adversarial Regression + Hardware Qualification").
@@ -204,7 +205,7 @@ Next implementation slice: 8F - Premium Frontend, Real Diagnostics Integration, 
   - Challenge operations (`START_CHALLENGE`, `CANCEL_CHALLENGE`, `FETCH_OBSERVATIONS`) fail closed with `UNAVAILABLE` without executing hardware work or allocating state.
 - **Desktop Probe Lifecycle Service (`ProbeService` & `ProbeConnection`)**:
   - Object identity and session epoch binding: `ProbeConnection` binds to specific `DeviceSession` instance and epoch. Epoch invalidation supersedes transport errors, reporting `SESSION_CHANGED` rather than `DEVICE_UNAVAILABLE`.
-  - Concurrency & state query lock behavior: GET does not allocate a new connection or worker. Cross-device service-wide lock contention was mitigated (service-wide lock released before querying connection state or executing stop/join calls). However, state queries are not universally non-blocking: same-device GET/connection operations may still wait behind an in-flight operation. FG-06 remains an accepted LOW finding requiring correction before Phase 8F.
+  - Concurrency & state query lock behavior: GET does not allocate a new connection or worker. Cross-device service-wide lock contention was mitigated (service-wide lock released before querying connection state or executing stop/join calls). However, state queries are not universally non-blocking: same-device GET/connection operations may still wait behind an in-flight operation. FG-06 remains an accepted LOW finding requiring correction before Phase 8F. Update (Phase 8F backend, 219f8ad): the authorized bounded-wait remediation is CODE_TESTED / CLOSED; API stop, monitor stop and shutdown stop remain unbounded (see "Phase 8F Backend Foundation").
   - Concurrency cap: enforces maximum of 16 live connections; rejects 17th device when 16 live connections exist, and admits new device when an existing connection is retired.
   - Background monitor thread per connection polls ownership every 1s and sends heartbeat after 5s.
 - **Development Trust Enrollment Utility (`trust_build.py`)**:
@@ -248,7 +249,9 @@ Next implementation slice: 8F - Premium Frontend, Real Diagnostics Integration, 
 
 #### Accepted Low Debt
 - **FG-01 (LOW, Remediation: PRE-8F):** Unbounded per-device lock registry. `ProbeService._device_locks` grows monotonically with new device IDs. Must be bounded or pruned before Phase 8F frontend/token access.
+  - **Update (Phase 8F Stage 2B-2, 219f8ad): CODE_TESTED / CLOSED at the code-level acceptance gate.** Entries are retained only while an operation holds or awaits them and are pruned when unused. Not hardware-qualified.
 - **FG-02 (LOW, Remediation: PRE-8F):** Cancellation, timeout and expiry reason-fidelity gaps. In `AdbProbeTransport`, cancellation, socket timeouts, or frame expiry can collapse to generic disconnect or session-expired reasons. Refine reason fidelity before Phase 8F.
+  - **Update (Phase 8F Stage 2B-2, 219f8ad): CODE_TESTED / CLOSED with documented limitations.** Stop/cancellation, desktop 900 s session expiry and connect timeouts are classified accurately; peer expiry is SESSION_EXPIRED only with the Probe app's own EXPIRED record, otherwise conservatively DEVICE_UNAVAILABLE. No claim of perfect timing or race-free hardware behavior.
 - **FG-03 (LOW, Remediation: Phase 8G):** ADB forward cleanup failure during transport-constructor failure. In `AdbProbeTransport.__init__`, if an exception occurs after creating `adb forward`, cleanup error handling is incomplete and could leak the forward rule until ADB daemon restart.
 - **FG-04 (LOW, Remediation: Phase 8G / Next Relevant Implementation):** Five identified test-quality gaps (distinct from FG-03's ADB forward-cleanup issue):
   - Session-change regression test bypasses the intended exception branch.
@@ -258,6 +261,7 @@ Next implementation slice: 8F - Premium Frontend, Real Diagnostics Integration, 
   - One monitor timing test has a narrow scheduling margin.
 - **FG-05 (LOW, Remediation: Phase 8G):** No executable Android Activity/Server lifecycle tests. JVM tests cover `ControlProtocolTest` (6 tests), but `ProbeActivity` and `ProbeServer` lack Robolectric/instrumentation unit tests in CI. Address in Phase 8G.
 - **FG-06 (LOW, Remediation: PRE-8F):** Same-device state query and connection operation waits. GET does not allocate a new connection or worker, and cross-device service-wide lock contention was mitigated. However, same-device GET/connection operations may still wait behind an in-flight operation. FG-06 remains an accepted LOW finding requiring correction before Phase 8F.
+  - **Update (Phase 8F Stage 2B-2, 219f8ad): CODE_TESTED / CLOSED for the specifically authorized waits** (GET waits at most 0.5 s and returns the last committed state; `connection()` waits at most 5 s for the device gate and a closing predecessor). **Open risk retained:** API stop, monitor stop and shutdown stop may still be unbounded; this does not make the entire Probe lifecycle bounded.
 
 #### Accepted Info Debt & Gate Observations
 - **FG-07 (INFO, Remediation: Phase 8G):** Coarse run-as failure classification. Distinction between missing package vs permission-denied run-as responses could be more granular.
@@ -267,6 +271,7 @@ Next implementation slice: 8F - Premium Frontend, Real Diagnostics Integration, 
 - **FG-11 (INFO, Remediation: Resolved in Phase 8B Finalization):** Documentation precision issues (test counts, file inventories, operator instructions). Corrected during this documentation finalization pass.
 - **FG-12 (INFO, Remediation: Later Production Phases):** Missing Android CI, Gradle wrapper and reproducible build metadata. Gradle and Android SDK are currently host-installed; wrapper and reproducible build configurations deferred to production tooling setup.
 - **FG-13 (INFO, Remediation: Resolve alongside FG-02):** Broad exception mapping. Exception handlers catch generic `Exception` in several lifecycle guards. Narrow down alongside FG-02.
+  - **Update (Phase 8F Stage 2B-2, 219f8ad): PARTIAL / OPEN (not closed).** Expected exception families were narrowed to explicit handlers; several defensive catch-all handlers remain by design (lifecycle guard, stop-app path, transport request and close).
 - **FG-14 (INFO, Remediation: Phase 8G / Production):** Local forwarding and development ADB-host trust limitations. Relies on ADB host trust boundary; production pairing and host authentication deferred.
 - **FG-15 (INFO, Remediation: Test branches in Phase 8G):** Benign working-copy line endings and untested enrollment branches (such as negative hash-checking branches). Exercise remaining negative branches in Phase 8G.
 
@@ -302,7 +307,7 @@ Next implementation slice: 8F - Premium Frontend, Real Diagnostics Integration, 
 - **UG-01 (LOW):** Touch input-source validation. Resolve before a touchscreen PASS is presented as a comprehensive hardware result.
 - **UG-02 (LOW):** Eight surviving negative-test mutations. Address in the relevant follow-up testing/qualification phase.
 - **UG-03 through UG-07 (INFO):** Informational limitations, documentation qualifications and development-tooling notes.
-- Inherited Phase 8B debt (including FG-01, FG-02 and FG-06) is preserved unchanged, with its established pre-8F remediation boundary.
+- Inherited Phase 8B debt (including FG-01, FG-02 and FG-06) is preserved unchanged, with its established pre-8F remediation boundary. Update: FG-01, FG-02 and FG-06 were subsequently remediated at the code level in Phase 8F Stage 2B-2 (219f8ad, CODE_TESTED); FG-13 remains PARTIAL (see "Phase 8F Backend Foundation").
 
 ### Phase 8E - COMPLETE (independent post-remediation acceptance gate PASSED; checkpoint commit 11720a0ebadf7510e8b06cfa3b2c1532c6d5bed7)
 
@@ -342,11 +347,63 @@ Next implementation slice: 8F - Premium Frontend, Real Diagnostics Integration, 
 - OPEN, REQUIRED FIX BEFORE EXPOSURE (RV2-01, LOW): `PerformanceReferenceManager.evaluate_metric` checks that the variant is in `applicable_variant_ids` but not that it belongs to `model_id`. It needs an inconsistent caller pairing and nothing calls it in production. It MUST be resolved before the performance-evaluation path is exposed through any production API. Smallest fix: look the variant up in the catalog and compare its `model_id` with `model_id`.
 - OPEN, REQUIRED FIX BEFORE EXPOSURE (RV-03, LOW): `import_catalog_payload` enforces `curator_authorized` only for raw dict sources; `ReferenceCatalog.register_source` and a `ReferenceSource` instance inside an import payload can carry `verified_claims` into a production catalog. It MUST be resolved before catalog import or source registration is reachable from any production API or scan path (earlier recorded as accepted for 8G; superseded by this requirement).
 - OPEN, PRESERVED (not blocking): RV-04, RV-05, AG-01, AG-02, AG-03, AG-05, AG-06 and the retained-artifact sub-item of AG-04, as listed in the acceptance gate section above and in `docs/PHASE_8E_CLOSURE.md`.
-- MA-006 (Host validation) and MA-020 (registry bounds) are carried to Phase 8G.
+- MA-006 (Host validation) and MA-020 (registry bounds) are carried to Phase 8G. Update: MA-006 was implemented earlier, in Phase 8F Stage 2B-1 (219f8ad, CODE_TESTED); MA-020 remains carried to Phase 8G.
 - `frontend/vitest.config.ts` carries a preexisting uncommitted modification (PG-18, user decision: leave untouched); it is excluded from the Phase 8E checkpoint. `local-agent/3.11/` (untracked tool cache, FR-12) is preserved unchanged and excluded.
 
+### Phase 8F Backend Foundation (Stages 2A-2B-4) - COMMITTED, CODE_TESTED (commit `219f8ad40473ae4fbea31b50e9ac4bffe88bcb8c`, `219f8ad`)
+
+Scope: backend prerequisites for the Phase 8F Quick Scan frontend ONLY. This is NOT the completed Phase 8F product. The frontend, VECTOR Core, functional Deep Scan, safe scan cancellation and Phase 8G are NOT STARTED. Subject: `feat(phase8f): establish secure Quick Scan backend foundation` (29 files, parent `992ff0a`, local commit; documentation reconciliation is a separate commit).
+
+#### Verification (CODE_TESTED, not HARDWARE_VALIDATED)
+- Committed tree exported with `git archive` into an external directory and tested without any uncommitted file: local-agent 3,241 passed (2,727 Phase 8E baseline plus the Phase 8F tests); Ruff check and format clean; mypy clean (102 source files).
+- Targeted mutation campaigns, each with an unmodified positive control, all killed: Stage 2B-1 18/18; Stage 2B-2 28/28; Stage 2B-3 presence 30/30; discovery-consistency correction 18/18; unexpected-exception closure 11/11; developer-console discovery 13/13; Stage 2B-4 metadata 17/17. Scratch-copy runs only; no mutation artifact is retained in the repository.
+- Physical hardware qualification: NOT RUN. No HARDWARE_VALIDATED claim is made for any Phase 8F backend behavior.
+- Trust Engine: NOT_READY; `trust_score`: None. No OEM authenticity or provenance claim; all 642 OEM seed assertions remain UNVERIFIED and non-authoritative.
+
+#### Stage 2A - environment and policy verification
+- Figma file access verified (read, one temporary write test element created, read back and deleted; the file was left empty). Playwright MCP verified with Brave (isolated profile) and Edge. HONOR motion reference inspected for motion grammar only. Dependency licences recorded (GSAP Standard "No Charge" licence has no explicit end-user-fee wording; fonts OFL-1.1). `playwright-cli show` dashboard failed to start (optional tooling, unresolved).
+- Five approved policy amendments applied: WCAG 2.2 AA minimum and the narrow GlassSurface / VECTOR Core luminous exceptions in `.claude/rules/frontend.md`, `CLAUDE.md`, `PRODUCT.md` and `.claude/skills/vector-ui-review/SKILL.md`.
+- Impeccable was NOT installed and NO Impeccable design validation has run (design-validation checkpoint remains OPEN).
+
+#### Stage 2B-1 - Host/Origin API boundary (MA-006)
+- New outermost middleware (`security/http_boundary.py`). Host must be exactly one header naming an allow-listed hostname (default `127.0.0.1` and `localhost`, optional port): malformed, missing or duplicated Host returns 400; a well-formed but untrusted Host returns 403. `[::1]` is rejected by design.
+- On state-changing requests (any method except GET, HEAD, OPTIONS) a present `Origin` must exactly match a configured origin, otherwise 403 (`null`, malformed, multiple and wildcard values are rejected). Default origins: `http://localhost:5173`, `http://127.0.0.1:5173`, `http://localhost:4173`, `http://127.0.0.1:4173`. WebSocket handshakes are checked as well. Settings reject wildcards and `null` at startup.
+- Native/local clients that send no `Origin` remain supported; an absent Origin is NOT authentication. Safe methods are not Origin-checked (browser CORS and the preflight allow-list govern them). Probe routes keep their own token, Host and no-Origin checks.
+- This is not full local-process authentication and does not defend against other processes on the machine or local malware. Test-only note: `tests/conftest.py` trusts the synthetic hosts `test` and `testserver` for the test process through the same setting; production defaults are unchanged.
+- Tests passed (278 new tests, 18/18 mutants killed); real-socket check against uvicorn and the Vite proxy performed.
+
+#### Stage 2B-2 - Phase 8B pre-8F Probe debt (scoped remediation, CODE_TESTED)
+- **FG-01 - CODE_TESTED / CLOSED at the code-level acceptance gate.** `ProbeService._device_locks` entries are retained only while an operation holds or awaits them and are pruned when unused, so the registry cannot outgrow the callers in flight (unknown device ids never leave an entry). No hardware qualification.
+- **FG-02 - CODE_TESTED / CLOSED with documented limitations.** A user stop or in-flight cancellation is reported as CANCELLED/STOPPED (not SESSION_CHANGED); desktop 900 s session expiry is SESSION_EXPIRED (not ERROR/INVALID_RESPONSE); a transport connect timeout stays TIMEOUT; any failure that follows a cancellation is CANCELLED. Peer expiry is reported as SESSION_EXPIRED ONLY when the Probe app's own private state record says EXPIRED; any uncertain situation (no record, read failure, record written after the read) is conservatively reported as DEVICE_UNAVAILABLE. No claim of perfect timing or race-free behavior on real hardware.
+- **FG-06 - CODE_TESTED / CLOSED for the specifically authorized waits.** GET state queries wait at most 0.5 s and then return the last committed state (never a guessed outcome); `connection()` bounds both the per-device gate and a closing predecessor to 5 s, then raises the existing retryable error (409 mapping) and keeps the unfinished predecessor tracked so cleanup is retried. This does NOT make the whole Probe lifecycle bounded.
+- **FG-13 - PARTIAL / OPEN (not closed).** Expected exception families now have explicit handlers (Probe validation, OS/ValueError families, forward-cleanup failures), but several defensive catch-all handlers remain by design (lifecycle guard, stop-app path, transport request and close), pinned by existing fail-closed tests; they log only the exception type.
+- Open risk retained: API stop (`POST .../probe/stop`), monitor-initiated stop and shutdown stop (`ProbeService.close()`) may still wait without a bound, and discover/launch/connect/heartbeat POST actions still serialize behind an in-flight operation.
+- No Probe installation, uninstallation, ownership or cleanup feature was added. FG-03 (forward cleanup on constructor failure) is unchanged and remains Phase 8G.
+
+#### Stage 2B-3 - evidence-based device presence and discovery (CODE_TESTED only)
+- A scan's bound device is verified on demand, without any client polling `GET /devices`: one bounded (3 s) targeted probe of that device through `adb devices -l` (Android) or `idevice_id -l` (iOS) before each diagnostic, after any non-clean result, and once before the scan is allowed to complete. Probes are rate limited, run outside every lock, and no background thread exists. Disabled in DEMO mode or by `presence_check_enabled=false`.
+- A loss is confirmed only after two agreeing trustworthy observations and is applied through `DeviceSessionManager.mark_device_lost`, bound to the exact session object, epoch and serial; the epoch advances only on a confirmed loss. A timeout, tool error, missing executable, malformed or truncated output, missing list header, daemon-restart notice, flapping answer or a provider exception is UNCERTAIN and changes nothing. A scan is never retargeted to another phone, and completed results and evidence are preserved when a scan fails.
+- One trust rule (`_adb_listing_is_trustworthy`) is shared by production discovery, the presence monitor and the developer console. `GET /devices` no longer marks platforms OFFLINE on provider ERROR/UNAVAILABLE or on an unexpected discovery exception: sessions are left as last committed, the failure stays visible (provider status or 503) and a previously present device is listed as UNKNOWN rather than stale CONNECTED. A trustworthy empty or unauthorized listing still updates sessions. `DeviceSessionManager.mark_platform_offline` remains a manager method but has no production caller.
+- Two existing tests (`test_api.py`, `test_capabilities.py`) were updated under explicit authorization to assert the corrected contract (session preserved) instead of the obsolete OFFLINE-on-exception behavior. Tests passed; physical-device behavior (real `adb`/`idevice_id` output and timing) NOT validated.
+
+#### Stage 2B-4 - diagnostic verification-level metadata
+- Additive `verification_level` and `requires_probe` on `PlannedDiagnostic`, both derived from the registered `DiagnosticDefinition`; clients join a result to its level through `plan.planned_items` by `diagnostic_id` (no duplicate field on results). NOT_APPLICABLE items keep their metadata and stay distinct from UNAVAILABLE/RESTRICTED.
+- All 12 current Quick Scan collectors (6 Android, 6 iOS) are RUNTIME_DETECTION with `requires_probe` false; none is classified as functional verification. A missing or unknown level is `None` (never functional); a non-boolean probe flag is `None`. A probe-requiring definition is planned UNAVAILABLE, never operational. No change to trust, authenticity or result-status semantics; Trust Engine remains NOT_READY.
+- The frontend TypeScript `PlannedDiagnostic` type has not been updated yet (existing guards tolerate the additive fields).
+
+#### Open items preserved after the backend checkpoint (Phase 8F is NOT complete)
+- FG-13 remaining catch-all exception handling (PARTIAL); remaining unbounded stop operations (API stop, monitor stop, shutdown stop).
+- Real Android hardware qualification (everything above is CODE_TESTED).
+- Functional Deep Scan and the secure Probe install / ownership / cleanup lifecycle; browser-to-Probe bootstrap.
+- Safe scan cancellation (no cancel contract exists; scans cannot reach CANCELLED).
+- Frontend integration of the verification metadata, the premium frontend and VECTOR Core (Stage 3 onward).
+- Impeccable design-validation checkpoint (not installed, no review run).
+- RV2-01 and RV-03 production-exposure restrictions (OEM reference path stays unreachable from the API).
+- Unverified OEM assertions (642 UNVERIFIED); Trust Engine NOT_READY; MA-020 and the other Phase 8G items.
+- Phase 8G security, performance, fault-injection, accessibility and physical-device acceptance.
+
 ### Next Implementation Slice
-8F - Premium Frontend, Real Diagnostics Integration, Quick Scan, Optional Deep Scan + VECTOR Core Animation - NEXT (NOT STARTED; requires separate explicit authorization). Phase 8 remains IN PROGRESS; this status update does not start later work.
+8F - Premium Frontend, Real Diagnostics Integration, Quick Scan, Optional Deep Scan + VECTOR Core Animation - IN PROGRESS (backend prerequisites committed in 219f8ad and CODE_TESTED; the frontend product, VECTOR Core, functional Deep Scan and safe scan cancellation are NOT STARTED; remaining work requires separate explicit authorization). Phase 8 remains IN PROGRESS; this status update does not start later work.
 
 ---
 

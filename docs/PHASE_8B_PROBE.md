@@ -140,6 +140,18 @@ in-flight operation (accepted debt FG-06, requiring correction before Phase 8F).
 traffic within 12s and expires the whole consent after 900s. Liveness means only
 that the authenticated control endpoint responded, never hardware health.
 
+Phase 8F update (backend commit `219f8ad`, CODE_TESTED; physical qualification NOT RUN):
+the pre-8F lifecycle debt recorded above is remediated at the code level. FG-01: per-device
+lock entries exist only while an operation holds or awaits them and are pruned when unused.
+FG-02: stop and cancellation report CANCELLED/STOPPED, desktop 900s session expiry reports
+SESSION_EXPIRED, and peer expiry reports SESSION_EXPIRED only when the app's own private
+record says EXPIRED (otherwise DEVICE_UNAVAILABLE). FG-06: GET waits at most 0.5s and then
+returns the last committed state; `connection()` waits at most 5s for the device gate and a
+closing predecessor, then fails with the retryable error. The sentence above is retained as
+the historical Phase 8B record. Still open: API stop, monitor stop and shutdown stop may
+wait without a bound; discover/launch/connect/heartbeat still serialize behind an in-flight
+operation; FG-13 is only partially narrowed (defensive catch-all handlers remain).
+
 The first successful HELLO consumes the bootstrap. The app's foreground consent
 is revoked on pause/destroy, deny, socket loss or deadline. Process death destroys
 the socket; a stale private bootstrap cannot restore the missing endpoint. A new
@@ -167,6 +179,12 @@ process-local authorization header, a localhost Host and no browser Origin.
 The token is available only to trusted in-process bootstrap, never via an HTTP
 distribution endpoint. Phase 8F must design any frontend bootstrap separately.
 DEMO mode rejects the service instead of producing fake or real Probe activity.
+
+Phase 8F update (backend commit `219f8ad`): an application-wide Host/Origin boundary now
+fronts every route (loopback Host allow-list; exact Origin allow-list on state-changing
+requests). The Probe routes keep their own token, Host and no-Origin checks, which are
+unchanged and stricter. The boundary is not authentication, and the browser-to-Probe
+bootstrap remains NOT implemented.
 
 Raw ADB serials remain transient/private; public state contains closed reason
 codes and verified build metadata, not raw tool output, exception strings, paths,
@@ -235,6 +253,8 @@ qualification later. No production signer or release transport is claimed. No se
 from passing fixture tests.
 
 8C NOT STARTED; 8E NOT STARTED; 8F NOT STARTED; 8G NOT STARTED.
+(Phase 8B handoff snapshot. Current phase status, including the Phase 8F backend commit
+`219f8ad`, is recorded in STATUS.md; the Phase 8F product is not complete.)
 Trust Engine NOT_READY; trust_score remains None. No SaaS, billing or production
 UX redesign. The only Android UI is the required Probe consent screen.
 
