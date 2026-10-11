@@ -250,12 +250,26 @@ describe("Quick Scan workflow (LIVE)", () => {
 
   it("derives progress from real counts and events, never a percentage", async () => {
     const running = summary({ state: "RUNNING", diagnostic_results: [BATTERY_RESULT] });
+    // The second poll is held until released, so the mid-scan state is observed deterministically.
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
     const provider = makeProvider({
-      getScanSummary: vi.fn().mockResolvedValueOnce(ok(running)).mockResolvedValue(ok(summary())),
+      getScanSummary: vi
+        .fn()
+        .mockResolvedValueOnce(ok(running))
+        .mockImplementation(async () => {
+          await gate;
+          return ok(summary());
+        }),
       getScanEvents: vi
         .fn()
         .mockResolvedValueOnce(ok({ scan_id: "scan-1", events: ALL_EVENTS.slice(0, 5) }))
-        .mockResolvedValue(ok({ scan_id: "scan-1", events: ALL_EVENTS })),
+        .mockImplementation(async () => {
+          await gate;
+          return ok({ scan_id: "scan-1", events: ALL_EVENTS });
+        }),
     });
     renderApp(provider);
     await startScan();
@@ -270,6 +284,7 @@ describe("Quick Scan workflow (LIVE)", () => {
     const statuses = screen.getAllByTestId("diagnostic-status").map((n) => n.textContent);
     expect(statuses).toEqual(["PASS", "RUNNING"]);
 
+    release();
     await waitFor(() => expect(screen.getByTestId("scan-state")).toHaveTextContent("COMPLETED"));
     expect(screen.getByTestId("scan-progress-text")).toHaveTextContent(
       "2 of 2 diagnostics reported · 1 evidence events · 7 events"
@@ -288,7 +303,8 @@ describe("Quick Scan workflow (LIVE)", () => {
 
     const table = await screen.findByTestId("evidence-table");
     expect(within(table).getByText("Battery Level")).toBeInTheDocument();
-    expect(within(table).getByText("97 percent")).toBeInTheDocument();
+    // Formatted for readability; the table keeps the exact collection method and provenance.
+    expect(within(table).getByText("97%")).toBeInTheDocument();
     expect(within(table).getByText("adb shell dumpsys battery")).toBeInTheDocument();
     expect(within(table).getByText("not modeled")).toBeInTheDocument();
 

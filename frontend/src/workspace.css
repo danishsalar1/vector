@@ -561,6 +561,17 @@
   color: var(--tone-bad-fg);
 }
 
+.qs-raw {
+  display: block;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--text);
+}
+
+.qs-evidence-note {
+  margin-top: 8px;
+}
+
 /* ---- Details / event log / skipped ---- */
 
 .qs-details summary,
