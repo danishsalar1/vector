@@ -45,6 +45,18 @@ class StorageTelemetryResult:
     collected_at: datetime
 
 
+def _is_data_mount(token: str) -> bool:
+    """True if a df "Mounted on" token is the primary data filesystem.
+
+    `df -k /data` prints the mount point of the filesystem that contains /data.
+    Some devices report that as /data itself; others report a path beneath it
+    (observed: Redmi Note 8 Pro, Android 11 -> /data/user/0). Any other mount
+    (/, /system, ...) is rejected so a different filesystem is never reported as /data.
+    """
+    normalized = token.rstrip("/")
+    return normalized == "/data" or normalized.startswith("/data/")
+
+
 def parse_storage_df(
     stdout: str,
     stderr: str = "",
@@ -143,10 +155,10 @@ def parse_storage_df(
             continue
         all_tokens.extend(parts)
 
-    # Search for token sequence ending with "/data" (or "/data/")
+    # Search for the mount-point token of the /data filesystem
     target_idx = -1
     for i, tok in enumerate(all_tokens):
-        if tok == "/data" or tok == "/data/":
+        if _is_data_mount(tok):
             target_idx = i
             break
 

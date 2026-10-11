@@ -5,6 +5,7 @@ import type {
   DiscoverAndroidOptions,
   GetBatteryOptions,
   ProviderMode,
+  ProviderRequestOptions,
 } from "./DiagnosticProvider";
 import type {
   AndroidConnectionState,
@@ -13,11 +14,27 @@ import type {
   BatteryTelemetryResult,
   HealthCheckResult,
   PreflightResult,
+  ScanEventsResponse,
+  ScanPlan,
+  ScanStartResponse,
+  ScanSummary,
 } from "../lib/api/types";
 import { checkHealth } from "../lib/api/health";
 import { fetchPreflight } from "../lib/api/preflight";
 import { fetchAndroidBatteryTelemetry } from "../lib/api/android";
-import { fetchDevices } from "../lib/api/devices";
+import { fetchDevices, type DeviceDiscoveryResult } from "../lib/api/devices";
+import {
+  fetchScanEvents,
+  fetchScanPlan,
+  fetchScanSummary,
+  startScan,
+  type ScanApiRequest,
+} from "../lib/api/scans";
+import type { SafeFetchResult } from "../lib/api/request";
+
+const PLAN_TIMEOUT_MS = 20_000;
+const START_TIMEOUT_MS = 20_000;
+const POLL_TIMEOUT_MS = 8_000;
 
 /**
  * Live hardware diagnostic provider.
@@ -109,5 +126,39 @@ export class LiveDiagnosticProvider implements DiagnosticProvider {
     options?: GetBatteryOptions
   ): Promise<BatteryTelemetryResult> {
     return fetchAndroidBatteryTelemetry(deviceId, options);
+  }
+
+  async listDevices(
+    options?: ProviderRequestOptions
+  ): Promise<DeviceDiscoveryResult> {
+    return fetchDevices(options);
+  }
+
+  async planScan(
+    request: ScanApiRequest,
+    options?: ProviderRequestOptions
+  ): Promise<SafeFetchResult<ScanPlan>> {
+    return fetchScanPlan(request, { timeoutMs: PLAN_TIMEOUT_MS, ...options });
+  }
+
+  async startScan(
+    request: ScanApiRequest,
+    options?: ProviderRequestOptions
+  ): Promise<SafeFetchResult<ScanStartResponse>> {
+    return startScan(request, false, { timeoutMs: START_TIMEOUT_MS, ...options });
+  }
+
+  async getScanSummary(
+    scanId: string,
+    options?: ProviderRequestOptions
+  ): Promise<SafeFetchResult<ScanSummary>> {
+    return fetchScanSummary(scanId, { timeoutMs: POLL_TIMEOUT_MS, ...options });
+  }
+
+  async getScanEvents(
+    scanId: string,
+    options?: ProviderRequestOptions
+  ): Promise<SafeFetchResult<ScanEventsResponse>> {
+    return fetchScanEvents(scanId, { timeoutMs: POLL_TIMEOUT_MS, ...options });
   }
 }

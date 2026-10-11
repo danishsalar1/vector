@@ -3,7 +3,14 @@ import type {
   BatteryTelemetryResult,
   HealthCheckResult,
   PreflightResult,
+  ScanEventsResponse,
+  ScanPlan,
+  ScanStartResponse,
+  ScanSummary,
 } from "../lib/api/types";
+import type { DeviceDiscoveryResult } from "../lib/api/devices";
+import type { ScanApiRequest } from "../lib/api/scans";
+import type { SafeFetchResult } from "../lib/api/request";
 
 export type ProviderMode = "live" | "demo";
 
@@ -25,6 +32,10 @@ export interface GetBatteryOptions {
   signal?: AbortSignal;
 }
 
+export interface ProviderRequestOptions {
+  signal?: AbortSignal;
+}
+
 /**
  * Common abstraction boundary for VECTOR diagnostic data sources.
  * In Live mode, delegates to the local FastAPI hardware agent.
@@ -43,4 +54,24 @@ export interface DiagnosticProvider {
     deviceId: string,
     options?: GetBatteryOptions
   ): Promise<BatteryTelemetryResult>;
+
+  // Phase 8F: platform-neutral device listing and Quick Scan workflow.
+  // Unlike discoverAndroidDevices, listDevices preserves authorization_state.
+  listDevices(options?: ProviderRequestOptions): Promise<DeviceDiscoveryResult>;
+  planScan(
+    request: ScanApiRequest,
+    options?: ProviderRequestOptions
+  ): Promise<SafeFetchResult<ScanPlan>>;
+  startScan(
+    request: ScanApiRequest,
+    options?: ProviderRequestOptions
+  ): Promise<SafeFetchResult<ScanStartResponse>>;
+  getScanSummary(
+    scanId: string,
+    options?: ProviderRequestOptions
+  ): Promise<SafeFetchResult<ScanSummary>>;
+  getScanEvents(
+    scanId: string,
+    options?: ProviderRequestOptions
+  ): Promise<SafeFetchResult<ScanEventsResponse>>;
 }

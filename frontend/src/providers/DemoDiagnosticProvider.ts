@@ -5,13 +5,20 @@ import type {
   DiscoverAndroidOptions,
   GetBatteryOptions,
   ProviderMode,
+  ProviderRequestOptions,
 } from "./DiagnosticProvider";
 import type {
   AndroidDiscoveryResult,
   BatteryTelemetryResult,
   HealthCheckResult,
   PreflightResult,
+  ScanEventsResponse,
+  ScanPlan,
+  ScanStartResponse,
+  ScanSummary,
 } from "../lib/api/types";
+import type { DeviceDiscoveryResult } from "../lib/api/devices";
+import type { SafeFetchResult } from "../lib/api/request";
 import {
   DEMO_HEALTH_FIXTURE,
   DEMO_PREFLIGHT_FIXTURE,
@@ -94,4 +101,62 @@ export class DemoDiagnosticProvider implements DiagnosticProvider {
         "[DEMO] Battery telemetry is not available in Demo mode. Switch to Live mode with a connected device.",
     };
   }
+
+  /**
+   * Demo never contacts hardware and never simulates a device list.
+   */
+  async listDevices(
+    options?: ProviderRequestOptions
+  ): Promise<DeviceDiscoveryResult> {
+    throwIfAborted(options);
+    return { state: "COMPLETE", data: { devices: [], count: 0 }, errorMessage: null };
+  }
+
+  async planScan(
+    _request: unknown,
+    options?: ProviderRequestOptions
+  ): Promise<SafeFetchResult<ScanPlan>> {
+    return demoScanUnavailable(options);
+  }
+
+  async startScan(
+    _request: unknown,
+    options?: ProviderRequestOptions
+  ): Promise<SafeFetchResult<ScanStartResponse>> {
+    return demoScanUnavailable(options);
+  }
+
+  async getScanSummary(
+    _scanId: string,
+    options?: ProviderRequestOptions
+  ): Promise<SafeFetchResult<ScanSummary>> {
+    return demoScanUnavailable(options);
+  }
+
+  async getScanEvents(
+    _scanId: string,
+    options?: ProviderRequestOptions
+  ): Promise<SafeFetchResult<ScanEventsResponse>> {
+    return demoScanUnavailable(options);
+  }
+}
+
+function throwIfAborted(options?: ProviderRequestOptions): void {
+  if (options?.signal?.aborted) {
+    throw new DOMException("The operation was aborted.", "AbortError");
+  }
+}
+
+function demoScanUnavailable<T>(
+  options?: ProviderRequestOptions
+): SafeFetchResult<T> {
+  throwIfAborted(options);
+  return {
+    ok: false,
+    error: {
+      kind: "CONFIGURATION",
+      message:
+        "[DEMO] Scans are not available in Demo mode. No scan data is simulated. Switch to Live mode with a connected device.",
+    },
+  };
 }

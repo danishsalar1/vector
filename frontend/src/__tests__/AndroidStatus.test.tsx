@@ -44,6 +44,11 @@ function makeProvider(
     getPreflight: vi.fn<() => Promise<PreflightResult>>(),
     discoverAndroidDevices: vi.fn().mockResolvedValue(discoveryResult),
     getAndroidBatteryTelemetry: vi.fn().mockResolvedValue(batteryResult),
+    listDevices: vi.fn(),
+    planScan: vi.fn(),
+    startScan: vi.fn(),
+    getScanSummary: vi.fn(),
+    getScanEvents: vi.fn(),
   };
 }
 
@@ -340,6 +345,11 @@ describe("AndroidStatus", () => {
         data: null,
         errorMessage: "[DEMO] Not available.",
       }),
+      listDevices: vi.fn(),
+      planScan: vi.fn(),
+      startScan: vi.fn(),
+      getScanSummary: vi.fn(),
+      getScanEvents: vi.fn(),
     };
     render(<AndroidStatus provider={demoProvider} />);
     // In demo mode, detect button is NOT rendered
@@ -363,6 +373,11 @@ describe("AndroidStatus", () => {
       getPreflight: vi.fn(),
       discoverAndroidDevices: vi.fn().mockReturnValue(pendingDiscovery),
       getAndroidBatteryTelemetry: vi.fn(),
+      listDevices: vi.fn(),
+      planScan: vi.fn(),
+      startScan: vi.fn(),
+      getScanSummary: vi.fn(),
+      getScanEvents: vi.fn(),
     };
     render(<AndroidStatus provider={provider} />);
     fireEvent.click(screen.getByTestId("detect-android-btn"));

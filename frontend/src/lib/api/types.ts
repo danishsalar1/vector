@@ -385,6 +385,10 @@ export interface PlannedDiagnostic {
   diagnostic_id: string;
   applicability: DiagnosticApplicability;
   reason?: string | null;
+  /** What a PASS can support. Absent/null means unknown and is never treated as functional. */
+  verification_level?: VerificationLevel | null;
+  /** Whether the diagnostic needs the VECTOR Probe. Absent/null means unknown. */
+  requires_probe?: boolean | null;
 }
 
 export interface ScanPlan {
@@ -401,6 +405,8 @@ export interface ScanPlan {
   capability_profiled_at?: string | null;
   registry_diagnostic_ids: readonly string[];
   created_at: string;
+  total_planned?: number;
+  total_skipped?: number;
 }
 
 export type ScanLifecycleState =
@@ -433,6 +439,36 @@ export interface DiagnosticEvent {
   evidence?: CapabilityEvidenceRecord | null;
   result?: Record<string, unknown> | null;
   message?: string | null;
+}
+
+/**
+ * Result status of one executed diagnostic. Known values are listed for styling;
+ * unrecognised values from a newer backend are carried through verbatim.
+ */
+export type DiagnosticStatus =
+  | "PASS"
+  | "DEGRADED"
+  | "FAIL"
+  | "UNSUPPORTED"
+  | "INCONCLUSIVE"
+  | "RESTRICTED"
+  | "ERROR"
+  | "SKIPPED"
+  | "PENDING"
+  | "RUNNING";
+
+/** One executed diagnostic as returned in ScanSummary.diagnostic_results. */
+export interface DiagnosticResult {
+  diagnostic_id: string;
+  diagnostic_name: string;
+  category: string;
+  status: DiagnosticStatus | (string & {});
+  automation_level?: string | null;
+  evidence: readonly CapabilityEvidenceRecord[];
+  summary?: string | null;
+  started_at?: string | null;
+  completed_at?: string | null;
+  duration_seconds?: number | null;
 }
 
 export interface ScanStartResponse {
@@ -483,6 +519,34 @@ export function isScanPlan(data: unknown): data is ScanPlan {
         typeof (item as Record<string, unknown>).applicability === "string"
     ) &&
     typeof d.created_at === "string"
+  );
+}
+
+export function isCapabilityEvidenceRecord(
+  data: unknown
+): data is CapabilityEvidenceRecord {
+  if (typeof data !== "object" || data === null) return false;
+  const d = data as Record<string, unknown>;
+  return (
+    typeof d.evidence_id === "string" &&
+    typeof d.diagnostic_id === "string" &&
+    typeof d.source_type === "string" &&
+    typeof d.source_name === "string" &&
+    typeof d.collection_method === "string" &&
+    typeof d.timestamp === "string"
+  );
+}
+
+export function isDiagnosticResult(data: unknown): data is DiagnosticResult {
+  if (typeof data !== "object" || data === null) return false;
+  const d = data as Record<string, unknown>;
+  return (
+    typeof d.diagnostic_id === "string" &&
+    typeof d.diagnostic_name === "string" &&
+    typeof d.category === "string" &&
+    typeof d.status === "string" &&
+    Array.isArray(d.evidence) &&
+    d.evidence.every(isCapabilityEvidenceRecord)
   );
 }
 

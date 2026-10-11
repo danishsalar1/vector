@@ -249,6 +249,11 @@ describe("HealthStatus Component", () => {
         getPreflight: vi.fn(),
         discoverAndroidDevices: vi.fn(),
         getAndroidBatteryTelemetry: vi.fn(),
+        listDevices: vi.fn(),
+        planScan: vi.fn(),
+        startScan: vi.fn(),
+        getScanSummary: vi.fn(),
+        getScanEvents: vi.fn(),
       };
 
       render(
