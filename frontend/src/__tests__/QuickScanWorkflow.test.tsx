@@ -220,7 +220,11 @@ describe("Quick Scan workflow (LIVE)", () => {
     );
     // The plan is read-only: nothing has started a scan.
     expect(provider.startScan).not.toHaveBeenCalled();
-    expect(screen.getByTestId("skipped-list")).toHaveTextContent("1 diagnostics not run");
+    // The fixture's one excluded diagnostic is a platform exclusion (NOT_APPLICABLE).
+    expect(screen.getByTestId("skipped-list")).toHaveTextContent(
+      "1 diagnostic not applicable to Android"
+    );
+    expect(screen.getByTestId("skipped-list")).not.toHaveTextContent("not run on this device");
     expect(screen.getByTestId("verification-explainer")).toHaveTextContent(
       /does not prove the component works/
     );
@@ -297,7 +301,7 @@ describe("Quick Scan workflow (LIVE)", () => {
     await waitFor(() => expect(screen.getByTestId("scan-state")).toHaveTextContent("COMPLETED"));
 
     const toggles = screen.getAllByTestId("evidence-toggle");
-    expect(toggles[0]).toHaveTextContent("Show evidence (1)");
+    expect(toggles[0]).toHaveTextContent("Technical evidence (1)");
     expect(toggles[0]).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(toggles[0]);
 

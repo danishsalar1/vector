@@ -132,6 +132,15 @@ export function humanizeDiagnosticId(id: string): string {
     .join(" ");
 }
 
+/**
+ * Card title for a diagnostic. The backend names read "... Verification", which overstates
+ * what a telemetry/inventory collection does, so the suffix is dropped for display.
+ */
+export function displayDiagnosticName(name: string): string {
+  const trimmed = name.replace(/\s+Verification$/i, "").trim();
+  return trimmed || name;
+}
+
 export interface VerificationLevelInfo {
   /** Token shown verbatim as the badge, or a neutral placeholder if unreported. */
   badge: string;
@@ -236,6 +245,39 @@ export function splitPlan(plan: ScanPlan): {
  * `scanFinished` means the backend reported a terminal scan state. After that,
  * a diagnostic without a result is never shown as RUNNING.
  */
+const SKIP_PHRASES: Record<string, string> = {
+  UNSUPPORTED: "unsupported on this device",
+  UNAVAILABLE: "unavailable",
+  RESTRICTED: "restricted",
+  BLOCKED_BY_PREREQUISITE: "blocked by a prerequisite",
+  UNKNOWN: "of unknown applicability",
+};
+
+/**
+ * One accurate line for diagnostics that were planned out. NOT_APPLICABLE is the planner's
+ * platform-incompatibility status, so it alone reads "not applicable to <platform>".
+ * Any other status keeps its own wording rather than being folded into that claim.
+ */
+export function summarizeSkipped(skipped: readonly PlannedDiagnostic[], platform: string): string {
+  const counts = new Map<string, number>();
+  for (const item of skipped) counts.set(item.applicability, (counts.get(item.applicability) ?? 0) + 1);
+
+  const noun = (n: number) => (n === 1 ? "diagnostic" : "diagnostics");
+  const platformName = formatPlatform(platform);
+
+  if (counts.size === 1 && counts.has("NOT_APPLICABLE")) {
+    const n = skipped.length;
+    return `${n} ${noun(n)} not applicable to ${platformName}`;
+  }
+
+  const parts = [...counts.entries()].map(([status, n]) =>
+    status === "NOT_APPLICABLE"
+      ? `${n} not applicable to ${platformName}`
+      : `${n} ${SKIP_PHRASES[status] ?? status.toLowerCase().replace(/_/g, " ")}`
+  );
+  return `${skipped.length} ${noun(skipped.length)} not run: ${parts.join(", ")}`;
+}
+
 export function buildDiagnosticRows(
   plan: ScanPlan,
   results: readonly DiagnosticResult[],

@@ -1,19 +1,10 @@
 import type { FC } from "react";
-import type { ConnectedDevice } from "../../lib/api/devices";
-import {
-  describeDevice,
-  formatPlatform,
-  getDeviceEligibility,
-  statusTone,
-} from "../../lib/scan/quickScanModel";
+import { describeDevice, formatPlatform } from "../../lib/scan/quickScanModel";
 import type { UseDeviceListResult } from "../../lib/scan/useDeviceList";
 
 export interface DevicePanelProps {
   list: UseDeviceListResult;
-  selectedId: string | null;
   onSelect: (deviceId: string) => void;
-  /** True while a scan is starting or running; selection and refresh are frozen. */
-  locked: boolean;
 }
 
 const AUTH_LABELS: Record<string, string> = {
@@ -23,38 +14,29 @@ const AUTH_LABELS: Record<string, string> = {
   UNKNOWN: "Unknown",
 };
 
-function authorizationLabel(device: ConnectedDevice): string {
-  return device.authorization_state
-    ? (AUTH_LABELS[device.authorization_state] ?? device.authorization_state)
-    : "Not reported";
-}
-
-function authorizationTone(device: ConnectedDevice): string {
-  if (device.authorization_state === "AUTHORIZED") return "ok";
-  if (device.authorization_state === "RESTRICTED") return "bad";
-  return "warn";
-}
-
-export const DevicePanel: FC<DevicePanelProps> = ({
-  list,
-  selectedId,
-  onSelect,
-  locked,
-}) => {
+/**
+ * Device discovery states shown when no device is selected: loading, error,
+ * empty, demo, or a list to choose from. Once a device is selected the
+ * DeviceOverview takes over.
+ */
+export const DevicePanel: FC<DevicePanelProps> = ({ list, onSelect }) => {
   const { mode, state, devices, errorMessage, refresh } = list;
   const isDemo = mode === "demo";
 
   return (
-    <section className="qs-panel" aria-labelledby="device-heading" data-testid="device-panel">
+    <section className="vx-hero vx-hero-idle" aria-labelledby="device-heading" data-testid="device-panel">
       <div className="qs-panel-head">
-        <h2 id="device-heading" className="qs-panel-title">
-          Device
-        </h2>
+        <div>
+          <p className="vx-eyebrow">Device</p>
+          <h2 id="device-heading" className="vx-device-name vx-device-name-idle">
+            {devices.length > 1 ? "Choose a device" : "Connect a phone"}
+          </h2>
+        </div>
         <button
           type="button"
           className="qs-button qs-button-quiet"
           onClick={refresh}
-          disabled={state === "CHECKING" || locked || isDemo}
+          disabled={state === "CHECKING" || isDemo}
         >
           {state === "CHECKING" ? "Searching…" : "Refresh"}
         </button>
@@ -68,7 +50,7 @@ export const DevicePanel: FC<DevicePanelProps> = ({
       )}
 
       {!isDemo && state === "CHECKING" && (
-        <p className="qs-muted" role="status" data-testid="device-loading">
+        <p className="vx-muted" role="status" data-testid="device-loading">
           Looking for connected phones…
         </p>
       )}
@@ -76,7 +58,7 @@ export const DevicePanel: FC<DevicePanelProps> = ({
       {!isDemo && state === "ERROR" && (
         <div className="qs-alert" role="alert" data-testid="device-error">
           <p>{errorMessage ?? "Device discovery failed."}</p>
-          <p className="qs-muted">
+          <p className="vx-muted">
             Check that the VECTOR local agent is running, then press Refresh.
           </p>
         </div>
@@ -93,85 +75,34 @@ export const DevicePanel: FC<DevicePanelProps> = ({
         </div>
       )}
 
-      {!isDemo && state === "COMPLETE" && devices.length > 0 && (
+      {!isDemo && state === "COMPLETE" && devices.length > 1 && (
         <ul className="qs-device-list" aria-label="Discovered devices">
           {devices.map((device) => {
             const { title, os } = describeDevice(device);
-            const eligibility = getDeviceEligibility(device);
-            const selected = device.device_id === selectedId;
-            const id = device.identity;
+            const authorization = device.authorization_state
+              ? (AUTH_LABELS[device.authorization_state] ?? device.authorization_state)
+              : "Not reported";
             return (
               <li key={device.device_id}>
                 <button
                   type="button"
-                  className={`qs-device${selected ? " is-selected" : ""}`}
-                  aria-pressed={selected}
-                  disabled={locked && !selected}
+                  className="qs-device"
                   onClick={() => onSelect(device.device_id)}
                   data-testid="device-option"
                 >
                   <span className="qs-device-title">{title}</span>
-                  <span className="qs-device-sub">
-                    {os ?? formatPlatform(device.platform)}
-                  </span>
+                  <span className="qs-device-sub">{os ?? formatPlatform(device.platform)}</span>
                   <span className="qs-chips">
-                    <span
-                      className={`qs-chip tone-${statusTone(
-                        device.connection_state === "CONNECTED" ? "PASS" : "ERROR"
-                      )}`}
-                      data-testid="device-connection"
-                    >
+                    <span className={`qs-chip tone-${device.connection_state === "CONNECTED" ? "ok" : "bad"}`}>
                       {device.connection_state}
                     </span>
-                    <span
-                      className={`qs-chip tone-${authorizationTone(device)}`}
-                      data-testid="device-authorization"
-                    >
-                      {authorizationLabel(device)}
-                    </span>
+                    <span className="qs-chip tone-neutral">{authorization}</span>
                   </span>
                 </button>
-                {selected && (
-                  <dl className="qs-facts" data-testid="device-facts">
-                    <div>
-                      <dt>Manufacturer</dt>
-                      <dd>{id?.manufacturer ?? "—"}</dd>
-                    </div>
-                    <div>
-                      <dt>Model</dt>
-                      <dd>{id?.model ?? "—"}</dd>
-                    </div>
-                    <div>
-                      <dt>{device.platform.toUpperCase() === "IOS" ? "iOS version" : "Android version"}</dt>
-                      <dd>{id?.android_version ?? id?.ios_version ?? "—"}</dd>
-                    </div>
-                    {id?.android_sdk_level != null && (
-                      <div>
-                        <dt>SDK level</dt>
-                        <dd>{id.android_sdk_level}</dd>
-                      </div>
-                    )}
-                    {id?.device_codename && (
-                      <div>
-                        <dt>Codename</dt>
-                        <dd>{id.device_codename}</dd>
-                      </div>
-                    )}
-                  </dl>
-                )}
-                {selected && !eligibility.eligible && (
-                  <p className="qs-alert" role="alert" data-testid="device-blocked">
-                    {eligibility.reason}
-                  </p>
-                )}
               </li>
             );
           })}
         </ul>
-      )}
-
-      {!isDemo && state === "COMPLETE" && devices.length > 1 && selectedId === null && (
-        <p className="qs-muted">Select a device to plan a scan.</p>
       )}
     </section>
   );

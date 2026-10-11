@@ -29,7 +29,15 @@ export const EvidenceTable: FC<{ evidence: readonly CapabilityEvidenceRecord[] }
   const notes = evidenceNotes(evidence);
   return (
     <>
-      <div className="qs-table-wrap">
+      <p className="qs-scroll-hint" aria-hidden="true">
+        Swipe sideways for method, reliability and time.
+      </p>
+      <div
+        className="qs-table-wrap"
+        role="region"
+        aria-label="Evidence table. Scrolls sideways on small screens."
+        tabIndex={0}
+      >
         <table className="qs-table" data-testid="evidence-table">
           <caption className="qs-sr-only">Evidence collected from the device</caption>
           <thead>

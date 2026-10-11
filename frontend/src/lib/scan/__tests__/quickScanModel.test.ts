@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ConnectedDevice } from "../../api/devices";
 import type {
+  DiagnosticApplicability,
   DiagnosticEvent,
   DiagnosticResult,
   ScanPlan,
@@ -15,6 +16,7 @@ import {
   isTerminalScanState,
   parseDiagnosticResults,
   splitPlan,
+  summarizeSkipped,
 } from "../quickScanModel";
 
 function device(overrides: Partial<ConnectedDevice> = {}): ConnectedDevice {
@@ -192,5 +194,56 @@ describe("misc", () => {
   it("recognises only terminal lifecycle states", () => {
     expect(["COMPLETED", "FAILED", "CANCELLED"].every(isTerminalScanState)).toBe(true);
     expect(["CREATED", "PLANNED", "RUNNING"].some(isTerminalScanState)).toBe(false);
+  });
+});
+
+describe("summarizeSkipped", () => {
+  function skipped(...kinds: DiagnosticApplicability[]) {
+    return kinds.map((applicability, i) => ({ diagnostic_id: `d${i}`, applicability }));
+  }
+
+  it("says 'not applicable to Android' only when every exclusion is a platform exclusion", () => {
+    const six = skipped(...Array<DiagnosticApplicability>(6).fill("NOT_APPLICABLE"));
+    expect(summarizeSkipped(six, "ANDROID")).toBe("6 diagnostics not applicable to Android");
+  });
+
+  it("uses singular wording for one and names the right platform", () => {
+    expect(summarizeSkipped(skipped("NOT_APPLICABLE"), "ANDROID")).toBe(
+      "1 diagnostic not applicable to Android"
+    );
+    expect(summarizeSkipped(skipped("NOT_APPLICABLE", "NOT_APPLICABLE"), "IOS")).toBe(
+      "2 diagnostics not applicable to iOS"
+    );
+  });
+
+  it.each([
+    ["UNSUPPORTED", "1 diagnostic not run: 1 unsupported on this device"],
+    ["UNAVAILABLE", "1 diagnostic not run: 1 unavailable"],
+    ["RESTRICTED", "1 diagnostic not run: 1 restricted"],
+    ["BLOCKED_BY_PREREQUISITE", "1 diagnostic not run: 1 blocked by a prerequisite"],
+    ["UNKNOWN", "1 diagnostic not run: 1 of unknown applicability"],
+  ] as const)("never calls a %s exclusion a platform mismatch", (status, expected) => {
+    const text = summarizeSkipped(skipped(status), "ANDROID");
+    expect(text).toBe(expected);
+    expect(text).not.toMatch(/not applicable/);
+  });
+
+  it("keeps each reason accurate when exclusions are mixed", () => {
+    const text = summarizeSkipped(
+      skipped("NOT_APPLICABLE", "NOT_APPLICABLE", "UNAVAILABLE", "RESTRICTED"),
+      "ANDROID"
+    );
+    expect(text).toBe(
+      "4 diagnostics not run: 2 not applicable to Android, 1 unavailable, 1 restricted"
+    );
+  });
+
+  it("falls back to the raw status for a status it does not know", () => {
+    expect(
+      summarizeSkipped(
+        [{ diagnostic_id: "x", applicability: "NEW_STATUS" as DiagnosticApplicability }],
+        "ANDROID"
+      )
+    ).toBe("1 diagnostic not run: 1 new status");
   });
 });
